@@ -7,11 +7,15 @@ import { useRouter } from 'next/navigation';
 
 interface SignInResponse {
   user?: {
-    id: string;
+    user_id: string;
+    student_id: string;
+    name: string;
     email: string;
-    role: 'admin' | 'user' | 'volunteer';
+    role: 'student' | 'volunteer' | 'admin';
+    is_active: boolean;
+    created_at: string;
   };
-  token?: string;
+  message?: string;
   error?: string;
 }
 
@@ -50,8 +54,8 @@ export default function SignIn(): React.ReactElement {
         return;
       }
 
-      // Store user data in localStorage
-      if (rememberMe && data.user) {
+      // Always store user data in localStorage (for home page access)
+      if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       
@@ -59,13 +63,9 @@ export default function SignIn(): React.ReactElement {
       setEmail('');
       setPassword('');
 
-      // Redirect based on user role
+      // Redirect to dashboard
       setTimeout(() => {
-        if (data.user?.role === 'admin') {
-          router.push('/Naveen/Admin/dashboard');
-        } else {
-          router.push('/');
-        }
+        router.push('/home');
       }, 1000);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please try again.';

@@ -33,7 +33,7 @@ export default async function LandingPage() {
           <nav className="hidden md:flex items-center space-x-8">
             <Link href="#features" className="text-gray-600 hover:text-gray-900 font-medium">Features</Link>
             <Link href="#" className="text-gray-600 hover:text-gray-900 font-medium">About</Link>
-            <Link href="/login" className="text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
+            <Link href="/login/signIN" className="text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
             <Link
               href="/login"
               className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition font-medium"
