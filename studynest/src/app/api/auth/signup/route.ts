@@ -29,12 +29,36 @@ const isValidPassword = (password: string): boolean => {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { studentId, fullName, email, mobileNumber, password, confirmPassword } = body;
+    const { studentId, fullName, email, mobileNumber, password, confirmPassword, role = 'student' } = body;
 
     // Validate required fields
-    if (!studentId || !fullName || !email || !password || !confirmPassword) {
+    if (!fullName || !email || !password || !confirmPassword) {
       return NextResponse.json(
         { error: 'All fields are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate role
+    const validRoles = ['student', 'volunteer'];
+    if (!validRoles.includes(role)) {
+      return NextResponse.json(
+        { error: 'Invalid role specified' },
+        { status: 400 }
+      );
+    }
+
+    // Validate student/volunteer ID (required for both)
+    if (!studentId) {
+      return NextResponse.json(
+        { error: 'ID is required' },
+        { status: 400 }
+      );
+    }
+    
+    if (!isValidStudentId(studentId)) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
         { status: 400 }
       );
     }
@@ -43,14 +67,6 @@ export async function POST(request: NextRequest) {
     if (!isValidEmail(email)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
-        { status: 400 }
-      );
-    }
-
-    // Validate student ID
-    if (!isValidStudentId(studentId)) {
-      return NextResponse.json(
-        { error: 'Invalid student ID format' },
         { status: 400 }
       );
     }
@@ -74,14 +90,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if student ID already exists
+    // Check if student ID already exists (for both students and volunteers)
     const existingStudentId = await prisma.users.findUnique({
       where: { student_id: studentId },
     });
 
     if (existingStudentId) {
       return NextResponse.json(
-        { error: 'This student ID is already registered' },
+        { error: 'This ID is already registered' },
         { status: 409 }
       );
     }
@@ -109,7 +125,7 @@ export async function POST(request: NextRequest) {
         email,
         mobile: mobileNumber || null,
         password: hashedPassword,
-        role: 'student', // default role
+        role: role,
         is_active: true,
         reputation_score: 0,
       },

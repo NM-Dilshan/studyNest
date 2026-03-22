@@ -1,20 +1,34 @@
 'use client';
 
+import React, { useState, FormEvent, ChangeEvent } from 'react';
 import { Mail, Lock, CheckCircle2, ShieldCheck, UserCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
-export default function SignIn() {
+interface SignInResponse {
+  user?: {
+    user_id: string;
+    student_id: string;
+    name: string;
+    email: string;
+    role: 'student' | 'volunteer' | 'admin';
+    is_active: boolean;
+    created_at: string;
+  };
+  message?: string;
+  error?: string;
+}
+
+export default function SignIn(): React.ReactElement {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [rememberMe, setRememberMe] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [success, setSuccess] = useState<boolean>(false);
 
-  const handleSignIn = async (e) => {
+  const handleSignIn = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
     setSuccess(false);
@@ -32,16 +46,16 @@ export default function SignIn() {
         }),
       });
 
-      const data = await response.json();
+      const data: SignInResponse = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Sign in failed');
+        setError(data?.error || 'Sign in failed');
         setLoading(false);
         return;
       }
 
-      // Store user data in localStorage
-      if (rememberMe) {
+      // Always store user data in localStorage (for home page access)
+      if (data.user) {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       
@@ -49,16 +63,13 @@ export default function SignIn() {
       setEmail('');
       setPassword('');
 
-      // Redirect based on user role
+      // Redirect to dashboard
       setTimeout(() => {
-        if (data.user.role === 'admin') {
-          router.push('/Naveen/Admin/dashboard');
-        } else {
-          router.push('/');
-        }
+        router.push('/home');
       }, 1000);
-    } catch (err) {
-      setError(err.message || 'Failed to sign in. Please try again.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please try again.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -126,7 +137,7 @@ export default function SignIn() {
                   type="email"
                   placeholder="student@university.edu"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95] transition-all placeholder:text-gray-300 text-sm disabled:opacity-50"
                   required
                   disabled={loading}
@@ -145,7 +156,7 @@ export default function SignIn() {
                   type="password"
                   placeholder="••••••••"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95] transition-all placeholder:text-gray-300 text-sm disabled:opacity-50"
                   required
                   disabled={loading}
@@ -159,13 +170,13 @@ export default function SignIn() {
                 <input
                   type="checkbox"
                   checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 accent-[#2E6F95] cursor-pointer disabled:opacity-50"
                   disabled={loading}
                 />
                 <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">Remember me</span>
               </label>
-              <Link href="/forgot-password" size={18} className="text-xs font-bold text-[#2E6F95] hover:underline">
+              <Link href="/forgot-password" className="text-xs font-bold text-[#2E6F95] hover:underline">
                 Forgot password?
               </Link>
             </div>
