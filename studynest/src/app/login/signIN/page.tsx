@@ -7,11 +7,23 @@ import { useRouter } from 'next/navigation';
 
 interface SignInResponse {
   user?: {
+<<<<<<< HEAD
     id: string;
     email: string;
     role: 'admin' | 'user' | 'volunteer';
   };
   token?: string;
+=======
+    user_id: string;
+    student_id: string;
+    name: string;
+    email: string;
+    role: 'student' | 'volunteer' | 'admin';
+    is_active: boolean;
+    created_at: string;
+  };
+  message?: string;
+>>>>>>> 6ad171d2e2f6071158a61d1be14d708547dfec50
   error?: string;
 }
 
@@ -50,8 +62,13 @@ export default function SignIn(): React.ReactElement {
         return;
       }
 
+<<<<<<< HEAD
       // Store user data in localStorage
       if (rememberMe && data.user) {
+=======
+      // Always store user data in localStorage (for home page access)
+      if (data.user) {
+>>>>>>> 6ad171d2e2f6071158a61d1be14d708547dfec50
         localStorage.setItem('user', JSON.stringify(data.user));
       }
       
@@ -59,13 +76,17 @@ export default function SignIn(): React.ReactElement {
       setEmail('');
       setPassword('');
 
-      // Redirect based on user role
+      // Redirect to dashboard
       setTimeout(() => {
+<<<<<<< HEAD
         if (data.user?.role === 'admin') {
           router.push('/Naveen/Admin/dashboard');
         } else {
           router.push('/home');
         }
+=======
+        router.push('/home');
+>>>>>>> 6ad171d2e2f6071158a61d1be14d708547dfec50
       }, 1000);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to sign in. Please try again.';

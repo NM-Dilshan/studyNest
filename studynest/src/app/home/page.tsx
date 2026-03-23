@@ -1,11 +1,21 @@
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import Image from 'next/image'
+import HeaderStudentID from '@/components/HeaderStudentID'
+
+type RecentUpdate = {
+  type: 'Hall' | 'Study Area'
+  name: string | null | undefined
+  building: string | null | undefined
+  occupancy: string
+  reporter: string | null | undefined
+  time: string
+}
 
 export default async function HomePage() {
   let user = null
   let profile = null
-  let recentUpdates: any[] = []
+  let recentUpdates: RecentUpdate[] = []
 
   // Only try to fetch from Supabase if configured
   if (isSupabaseConfigured) {
@@ -53,7 +63,7 @@ export default async function HomePage() {
       // Merge and sort all recent updates
       recentUpdates = [
         ...(recentHalls || []).map(u => ({
-          type: 'Hall',
+          type: 'Hall' as const,
           name: u.lecture_halls?.hall_name,
           building: u.lecture_halls?.building,
           occupancy: u.occupancy_level,
@@ -61,7 +71,7 @@ export default async function HomePage() {
           time: u.created_at,
         })),
         ...(recentAreas || []).map(u => ({
-          type: 'Study Area',
+          type: 'Study Area' as const,
           name: u.study_areas?.area_name,
           building: u.study_areas?.building,
           occupancy: u.crowd_status,
@@ -77,30 +87,35 @@ export default async function HomePage() {
 
   // Demo data when Supabase is not configured
   if (recentUpdates.length === 0) {
+    const now = new Date()
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString()
+    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString()
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString()
+    
     recentUpdates = [
       {
-        type: 'Hall',
+        type: 'Hall' as const,
         name: 'Lecture Hall A101',
         building: 'Building A',
         occupancy: 'FREE',
         reporter: 'John Doe',
-        time: new Date(Date.now() - 5 * 60000).toISOString(),
+        time: fiveMinutesAgo,
       },
       {
-        type: 'Study Area',
+        type: 'Study Area' as const,
         name: 'Main Library',
         building: 'Building B',
         occupancy: 'MEDIUM',
         reporter: 'Jane Smith',
-        time: new Date(Date.now() - 15 * 60000).toISOString(),
+        time: fifteenMinutesAgo,
       },
       {
-        type: 'Hall',
+        type: 'Hall' as const,
         name: 'Lecture Hall B205',
         building: 'Building C',
         occupancy: 'OCCUPIED',
         reporter: 'Mike Johnson',
-        time: new Date(Date.now() - 30 * 60000).toISOString(),
+        time: thirtyMinutesAgo,
       },
     ]
   }
@@ -113,10 +128,12 @@ export default async function HomePage() {
           <div className="flex justify-between items-center">
             {/* Logo & Branding */}
             <div className="flex items-center space-x-3">
-              <img 
+              <Image 
                 src="/logo.jpeg" 
                 alt="StudyNest Logo" 
-                className="h-10 w-auto rounded-lg shadow-md"
+                width={40}
+                height={40}
+                className="rounded-lg shadow-md"
               />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
@@ -132,6 +149,11 @@ export default async function HomePage() {
               <a href="#" className="text-gray-600 hover:text-gray-900">Complaints</a>
             </nav>
 
+            {/* Student ID Display */}
+            <div className="hidden lg:block">
+              <HeaderStudentID />
+            </div>
+
             {/* Right Actions */}
             <div className="flex items-center space-x-4">
               <button className="relative p-2 text-gray-600 hover:text-gray-900">
@@ -141,7 +163,7 @@ export default async function HomePage() {
                 <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-indigo-600 rounded-full">3</span>
               </button>
               <form action="/api/auth/signout" method="post">
-                <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
+                <button type="submit" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
                   Logout
                 </button>
               </form>
