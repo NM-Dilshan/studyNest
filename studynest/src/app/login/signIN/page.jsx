@@ -165,7 +165,7 @@ export default function SignIn() {
                 />
                 <span className="text-xs font-medium text-gray-500 group-hover:text-gray-700 transition-colors">Remember me</span>
               </label>
-              <Link href="/forgot-password" size={18} className="text-xs font-bold text-[#2E6F95] hover:underline">
+              <Link href="/forgot-password" className="text-xs font-bold text-[#2E6F95] hover:underline">
                 Forgot password?
               </Link>
             </div>
