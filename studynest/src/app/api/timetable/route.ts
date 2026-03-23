@@ -14,6 +14,14 @@ export async function GET(request: NextRequest) {
     if (hallId) {
       where.hall_id = hallId;
     }
+    const academicYear = searchParams.get('academic_year');
+    if (academicYear) {
+      where.academic_year = parseInt(academicYear);
+    }
+    const semester = searchParams.get('semester');
+    if (semester) {
+      where.semester = parseInt(semester);
+    }
 
     const slots = await prisma.timetable.findMany({
       where,
@@ -32,6 +40,8 @@ export async function GET(request: NextRequest) {
     const data = slots.map((slot) => ({
       id: slot.timetable_id,
       hall_id: slot.hall_id,
+      academic_year: slot.academic_year,
+      semester: slot.semester,
       day_of_week: slot.day_of_week,
       start_time: slot.start_time.toISOString().substring(11, 19), // HH:MM:SS
       end_time: slot.end_time.toISOString().substring(11, 19),
@@ -108,6 +118,8 @@ export async function POST(request: NextRequest) {
     const newSlot = await prisma.timetable.create({
       data: {
         hall_id: body.hall_id,
+        academic_year: body.academic_year ? parseInt(body.academic_year) : null,
+        semester: body.semester ? parseInt(body.semester) : null,
         day_of_week: body.day_of_week,
         start_time: startTime,
         end_time: endTime,
@@ -126,6 +138,8 @@ export async function POST(request: NextRequest) {
         data: {
           id: newSlot.timetable_id,
           hall_id: newSlot.hall_id,
+          academic_year: newSlot.academic_year,
+          semester: newSlot.semester,
           day_of_week: newSlot.day_of_week,
           start_time: newSlot.start_time.toISOString().substring(11, 19),
           end_time: newSlot.end_time.toISOString().substring(11, 19),

@@ -25,6 +25,8 @@ export interface LectureHall {
 export interface TimetableSlot {
   id: number;
   hall_id: string;
+  academic_year: number | null;
+  semester: number | null;
   day_of_week: string;           // 'Monday', 'Tuesday', etc.
   start_time: string;            // 'HH:MM:SS'
   end_time: string;              // 'HH:MM:SS'

@@ -22,6 +22,8 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   // Manual form state
   const [formData, setFormData] = useState({
     hall_id: hallId,
+    academic_year: initialData?.academic_year || 3,
+    semester: initialData?.semester || 1,
     day_of_week: initialData?.day_of_week || 'Monday',
     start_time: initialData?.start_time || '08:30:00',
     end_time: initialData?.end_time || '10:30:00',
@@ -266,6 +268,33 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
 
         {mode === 'manual' ? (
           <form onSubmit={handleManualSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Year</label>
+                <select 
+                  value={formData.academic_year}
+                  onChange={(e) => setFormData({ ...formData, academic_year: parseInt(e.target.value) })}
+                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                >
+                  {[1, 2, 3, 4].map(y => (
+                    <option key={y} value={y}>Year {y}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Semester</label>
+                <select 
+                  value={formData.semester}
+                  onChange={(e) => setFormData({ ...formData, semester: parseInt(e.target.value) })}
+                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                >
+                  {[1, 2].map(s => (
+                    <option key={s} value={s}>Semester {s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Day of Week</label>
