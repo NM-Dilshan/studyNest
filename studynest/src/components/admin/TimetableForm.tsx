@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, Save, Clock, X } from 'lucide-react';
-import { TimetableSlot } from '../../types/halls';
+import { Upload, Save, Clock, X, AlertCircle } from 'lucide-react';
+import { TimetableSlot, LectureHall } from '../../types/halls';
 import { timetableService } from '../../services/timetableService';
+import { hallService } from '../../services/hallService';
 
 interface TimetableFormProps {
   hallId: string;
@@ -80,6 +81,30 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     }
   };
 
+  // Helper: normalize time like "8:30" or "08:30" to "08:30:00"
+  const normalizeTime = (t: string): string => {
+    const parts = t.replace(/[^\d:]/g, '').split(':');
+    const hh = (parts[0] || '0').padStart(2, '0');
+    const mm = (parts[1] || '00').padStart(2, '0');
+    const ss = parts[2] || '00';
+    return `${hh}:${mm}:${ss}`;
+  };
+
+  // Helper: short day names to full
+  const normalizeDayName = (d: string): string => {
+    const val = d.trim();
+    const map: Record<string, string> = {
+      'mon': 'Monday', 'monday': 'Monday',
+      'tue': 'Tuesday', 'tuesday': 'Tuesday',
+      'wed': 'Wednesday', 'wednesday': 'Wednesday', 'wednesda': 'Wednesday',
+      'thu': 'Thursday', 'thursday': 'Thursday',
+      'fri': 'Friday', 'friday': 'Friday',
+      'sat': 'Saturday', 'saturday': 'Saturday',
+      'sun': 'Sunday', 'sunday': 'Sunday',
+    };
+    return map[val.toLowerCase()] || val;
+  };
+
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -92,32 +117,96 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
       if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
 
       const headers = lines[0].toLowerCase().replace(/\r/g, '').split(',').map(h => h.trim());
-      const dayIdx = headers.indexOf('day_of_week');
-      const startIdx = headers.indexOf('start_time');
-      const endIdx = headers.indexOf('end_time');
+
+      // Support both formats:
+      // Format A (user's CSV): day, startTime, endTime, module, type, hall, lecturer
+      // Format B (system):     day_of_week, start_time, end_time, subject_code, ...
+
+      const dayIdx = headers.indexOf('day') !== -1 ? headers.indexOf('day') : headers.indexOf('day_of_week');
+      const startIdx = headers.indexOf('starttime') !== -1 ? headers.indexOf('starttime') : headers.indexOf('start_time');
+      const endIdx = headers.indexOf('endtime') !== -1 ? headers.indexOf('endtime') : headers.indexOf('end_time');
+      const moduleIdx = headers.indexOf('module');
+      const typeIdx = headers.indexOf('type');
+      const hallIdx = headers.indexOf('hall');
+      const lecturerIdx = headers.indexOf('lecturer') !== -1 ? headers.indexOf('lecturer') : headers.indexOf('lecturer_name');
       const subjectCodeIdx = headers.indexOf('subject_code');
       const subjectNameIdx = headers.indexOf('subject_name');
       const groupIdx = headers.indexOf('group_name');
-      const lecturerIdx = headers.indexOf('lecturer_name');
 
       if (dayIdx === -1 || startIdx === -1 || endIdx === -1) {
-        throw new Error('CSV must contain headers: day_of_week, start_time, end_time');
+        throw new Error('CSV must contain columns: day (or day_of_week), startTime (or start_time), endTime (or end_time)');
+      }
+
+      // If CSV has a "hall" column, fetch all halls and map name → id
+      let hallNameToId: Record<string, string> = {};
+      if (hallIdx !== -1) {
+        const allHalls: LectureHall[] = await hallService.getLectureHalls();
+        allHalls.forEach(h => {
+          hallNameToId[h.name.toLowerCase()] = h.id;
+          // Also map without spaces for fuzzy matching
+          hallNameToId[h.name.replace(/\s+/g, '').toLowerCase()] = h.id;
+        });
       }
 
       const records: Partial<TimetableSlot>[] = [];
+      const warnings: string[] = [];
+
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].replace(/\r/g, '').split(',').map(v => v.trim());
-        if (values.length < 3) continue; // Skip malformed lines
+        if (values.length < 3) continue;
+
+        // Resolve hall_id
+        let resolvedHallId = hallId; // default to selected hall
+        if (hallIdx !== -1 && values[hallIdx]) {
+          const csvHallName = values[hallIdx].toLowerCase().replace(/\s+/g, '');
+          const foundId = hallNameToId[csvHallName] || hallNameToId[values[hallIdx].toLowerCase()];
+          if (foundId) {
+            resolvedHallId = foundId;
+          } else {
+            warnings.push(`Row ${i + 1}: Hall "${values[hallIdx]}" not found, using selected hall`);
+          }
+        }
+
+        // Parse module column: "IT3010 - NDM Practical" → code: IT3010, name: NDM Practical
+        let subjectCode: string | null = null;
+        let subjectName: string | null = null;
+        if (moduleIdx !== -1 && values[moduleIdx]) {
+          const moduleVal = values[moduleIdx];
+          const dashIdx = moduleVal.indexOf(' - ');
+          if (dashIdx !== -1) {
+            subjectCode = moduleVal.substring(0, dashIdx).trim();
+            subjectName = moduleVal.substring(dashIdx + 3).trim();
+          } else {
+            subjectCode = moduleVal.trim();
+          }
+        }
+        // Override with explicit columns if present
+        if (subjectCodeIdx !== -1 && values[subjectCodeIdx]) subjectCode = values[subjectCodeIdx];
+        if (subjectNameIdx !== -1 && values[subjectNameIdx]) subjectName = values[subjectNameIdx];
+
+        // Type column → append to subject name
+        if (typeIdx !== -1 && values[typeIdx]) {
+          const typeVal = values[typeIdx].trim();
+          if (subjectName && typeVal) {
+            subjectName = `${subjectName} (${typeVal})`;
+          }
+        }
+
+        // Group
+        const groupName = groupIdx !== -1 ? values[groupIdx] || null : null;
+
+        // Lecturer
+        const lecturerName = lecturerIdx !== -1 ? values[lecturerIdx] || null : null;
 
         records.push({
-          hall_id: hallId,
-          day_of_week: values[dayIdx],
-          start_time: values[startIdx],
-          end_time: values[endIdx],
-          subject_code: subjectCodeIdx !== -1 ? values[subjectCodeIdx] || null : null,
-          subject_name: subjectNameIdx !== -1 ? values[subjectNameIdx] || null : null,
-          group_name: groupIdx !== -1 ? values[groupIdx] || null : null,
-          lecturer_name: lecturerIdx !== -1 ? values[lecturerIdx] || null : null,
+          hall_id: resolvedHallId,
+          day_of_week: normalizeDayName(values[dayIdx]),
+          start_time: normalizeTime(values[startIdx]),
+          end_time: normalizeTime(values[endIdx]),
+          subject_code: subjectCode,
+          subject_name: subjectName,
+          group_name: groupName,
+          lecturer_name: lecturerName,
           is_reserved: true,
         });
       }
@@ -126,8 +215,9 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
 
       const result = await timetableService.bulkInsertFromCSV(records);
       
-      if (result.errors && result.errors.length > 0) {
-        setError(`Inserted ${result.count} slots. Warnings: ${result.errors.join(', ')}`);
+      const allWarnings = [...warnings, ...(result.errors || [])];
+      if (allWarnings.length > 0) {
+        setError(`✅ Inserted ${result.count} slots. ⚠️ Warnings: ${allWarnings.join('; ')}`);
       }
       
       onSuccess();
@@ -281,13 +371,18 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
         ) : (
           <div className="py-8 flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-white/40 dark:bg-neutral-800/40 backdrop-blur-md">
             <Upload className="w-12 h-12 text-blue-500 mb-4 opacity-80" />
-            <h4 className="font-semibold text-neutral-900 dark:text-white mb-2">Upload Timetable CSV</h4>
-            <p className="text-sm text-neutral-500 text-center px-6 mb-2 leading-relaxed">
-              Required columns:<br/>
-              <code className="bg-white/60 dark:bg-neutral-900/60 px-2 py-1 rounded mt-1 inline-block text-xs font-mono shadow-sm border border-neutral-200 dark:border-neutral-800">day_of_week, start_time, end_time</code>
+            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Upload Timetable CSV</h4>
+            <div className="text-sm text-neutral-500 text-center px-4 mb-2 leading-relaxed">
+              <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-1">Supported Format:</p>
+              <code className="bg-white/60 dark:bg-neutral-900/60 px-2 py-1 rounded inline-block text-xs font-mono shadow-sm border border-neutral-200 dark:border-neutral-800">
+                day, startTime, endTime, module, type, hall, lecturer
+              </code>
+            </div>
+            <p className="text-xs text-neutral-400 text-center px-6 mb-1">
+              <strong>module:</strong> &quot;IT3010 - NDM Practical&quot; → auto-splits code &amp; name
             </p>
-            <p className="text-xs text-neutral-400 text-center px-6 mb-6">
-              Optional: <code className="text-xs">subject_code, subject_name, group_name, lecturer_name</code>
+            <p className="text-xs text-neutral-400 text-center px-6 mb-4">
+              <strong>hall:</strong> hall name (e.g. G1101) → auto-maps to hall ID
             </p>
             <label className="cursor-pointer bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-3 rounded-full font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all hover:scale-105 shadow-md">
               <span>Choose File</span>
