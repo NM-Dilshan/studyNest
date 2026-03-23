@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, Building, MapPin, AlertCircle } from 'lucide-react'
+import { Home, Building, MapPin, AlertCircle, Calendar, ShieldAlert } from 'lucide-react'
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -28,6 +28,16 @@ export function Sidebar() {
       label: 'Complaints',
       icon: AlertCircle,
       href: '/admin/complaints',
+    },
+    {
+      label: 'Timetables',
+      icon: Calendar,
+      href: '/admin/timetable',
+    },
+    {
+      label: 'Conflict Overrides',
+      icon: ShieldAlert,
+      href: '/admin/conflicts',
     },
   ]
 
