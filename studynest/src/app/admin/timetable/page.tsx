@@ -10,6 +10,8 @@ export default function TimetableManager() {
   const [halls, setHalls] = useState<LectureHall[]>([]);
   const [slots, setSlots] = useState<TimetableSlot[]>([]);
   const [selectedHallId, setSelectedHallId] = useState<string>('');
+  const [filterYear, setFilterYear] = useState<number | ''>('');
+  const [filterSemester, setFilterSemester] = useState<number | ''>('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimetableSlot | undefined>();
@@ -25,7 +27,7 @@ export default function TimetableManager() {
     } else {
       setSlots([]);
     }
-  }, [selectedHallId]);
+  }, [selectedHallId, filterYear, filterSemester]);
 
   const loadHalls = async () => {
     try {
@@ -46,7 +48,11 @@ export default function TimetableManager() {
     try {
       setLoading(true);
       setError(null);
-      const data = await timetableService.getTimetable(hallId);
+      const data = await timetableService.getTimetable(
+        hallId,
+        filterYear || undefined,
+        filterSemester || undefined
+      );
       setSlots(data);
     } catch (err: any) {
       console.error(err);
@@ -96,28 +102,59 @@ export default function TimetableManager() {
           </div>
         )}
 
-        <div className="bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-white/40 dark:border-white/10 p-6 rounded-3xl shadow-sm mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
-          <div className="w-full md:w-1/3">
-            <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">Select Lecture Hall</label>
-            <select 
-              value={selectedHallId}
-              onChange={(e) => setSelectedHallId(e.target.value)}
-              className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+        <div className="bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-white/40 dark:border-white/10 p-6 rounded-3xl shadow-sm mb-8">
+          <div className="flex flex-col md:flex-row gap-4 justify-between items-end">
+            <div className="w-full md:w-1/3">
+              <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">Select Lecture Hall</label>
+              <select 
+                value={selectedHallId}
+                onChange={(e) => setSelectedHallId(e.target.value)}
+                className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+              >
+                <option value="" disabled>Select a hall...</option>
+                {halls.map(h => (
+                  <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3 w-full md:w-auto">
+              <div>
+                <label className="block text-xs font-medium mb-1.5 text-neutral-500 dark:text-neutral-400">Year</label>
+                <select
+                  value={filterYear}
+                  onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : '')}
+                  className="bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm text-sm min-w-[100px]"
+                >
+                  <option value="">All Years</option>
+                  {[1, 2, 3, 4].map(y => (
+                    <option key={y} value={y}>Year {y}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1.5 text-neutral-500 dark:text-neutral-400">Semester</label>
+                <select
+                  value={filterSemester}
+                  onChange={(e) => setFilterSemester(e.target.value ? parseInt(e.target.value) : '')}
+                  className="bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm text-sm min-w-[100px]"
+                >
+                  <option value="">All Sem</option>
+                  {[1, 2].map(s => (
+                    <option key={s} value={s}>Sem {s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => { setEditingSlot(undefined); setShowForm(true); }}
+              disabled={!selectedHallId}
+              className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="" disabled>Select a hall...</option>
-              {halls.map(h => (
-                <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
-              ))}
-            </select>
+              <Plus className="w-4 h-4" /> Add Slot / CSV
+            </button>
           </div>
-          
-          <button 
-            onClick={() => { setEditingSlot(undefined); setShowForm(true); }}
-            disabled={!selectedHallId}
-            className="w-full md:w-auto mt-6 md:mt-0 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium shadow-lg shadow-blue-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Plus className="w-4 h-4" /> Add Slot / CSV
-          </button>
         </div>
 
         {loading ? (
@@ -128,6 +165,7 @@ export default function TimetableManager() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-neutral-100/50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
+                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Year / Sem</th>
                     <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Day</th>
                     <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Time</th>
                     <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Subject</th>
@@ -139,7 +177,7 @@ export default function TimetableManager() {
                 <tbody>
                   {slots.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
+                      <td colSpan={7} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
                         <Calendar className="w-10 h-10 opacity-50 mx-auto mb-3" />
                         No timetable slots found for this hall.
                       </td>
@@ -147,6 +185,15 @@ export default function TimetableManager() {
                   ) : (
                     slots.map(slot => (
                       <tr key={slot.id} className="border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-white/40 dark:hover:bg-neutral-800/40 transition-colors">
+                        <td className="px-5 py-4 text-sm">
+                          {slot.academic_year && slot.semester ? (
+                            <span className="inline-flex px-2 py-0.5 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-md text-xs font-medium border border-purple-100 dark:border-purple-500/20">
+                              Y{slot.academic_year} S{slot.semester}
+                            </span>
+                          ) : (
+                            <span className="text-neutral-400">-</span>
+                          )}
+                        </td>
                         <td className="px-5 py-4 font-medium text-neutral-800 dark:text-neutral-200">{slot.day_of_week}</td>
                         <td className="px-5 py-4 text-neutral-600 dark:text-neutral-400">
                           <span className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-sm font-mono border border-neutral-200 dark:border-neutral-700">{slot.start_time.substring(0,5)}</span>

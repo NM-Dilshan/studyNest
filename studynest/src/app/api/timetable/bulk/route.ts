@@ -47,6 +47,8 @@ export async function POST(request: NextRequest) {
 
       validRecords.push({
         hall_id: record.hall_id,
+        academic_year: record.academic_year ? parseInt(record.academic_year) : null,
+        semester: record.semester ? parseInt(record.semester) : null,
         day_of_week: record.day_of_week,
         start_time: startTime,
         end_time: endTime,

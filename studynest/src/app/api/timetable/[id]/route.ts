@@ -41,6 +41,8 @@ export async function GET(
       data: {
         id: slot.timetable_id,
         hall_id: slot.hall_id,
+        academic_year: slot.academic_year,
+        semester: slot.semester,
         day_of_week: slot.day_of_week,
         start_time: slot.start_time.toISOString().substring(11, 19),
         end_time: slot.end_time.toISOString().substring(11, 19),
@@ -106,6 +108,8 @@ export async function PUT(
     if (body.group_name !== undefined) updateData.group_name = body.group_name || null;
     if (body.lecturer_name !== undefined) updateData.lecturer_name = body.lecturer_name || null;
     if (body.is_reserved !== undefined) updateData.is_reserved = body.is_reserved;
+    if (body.academic_year !== undefined) updateData.academic_year = body.academic_year ? parseInt(body.academic_year) : null;
+    if (body.semester !== undefined) updateData.semester = body.semester ? parseInt(body.semester) : null;
 
     const updated = await prisma.timetable.update({
       where: { timetable_id: timetableId },
@@ -118,6 +122,8 @@ export async function PUT(
       data: {
         id: updated.timetable_id,
         hall_id: updated.hall_id,
+        academic_year: updated.academic_year,
+        semester: updated.semester,
         day_of_week: updated.day_of_week,
         start_time: updated.start_time.toISOString().substring(11, 19),
         end_time: updated.end_time.toISOString().substring(11, 19),
