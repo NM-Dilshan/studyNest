@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import AdminHeader from "@/components/AdminHeader";
 import {
   BarChart,
   Bar,
@@ -11,7 +13,7 @@ import {
   Line,
   ResponsiveContainer,
 } from "recharts";
-import { AlertCircle, Clock, MapPin, Users, Eye, TrendingUp } from "lucide-react";
+import { AlertCircle, Clock, MapPin, Users, Eye, TrendingUp, Plus } from "lucide-react";
 
 // Data
 const lectureHallsData = [
@@ -171,13 +173,13 @@ const ChartCard = ({
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-[#F4F9F8] px-4 py-8 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-2 text-lg">Monitor and manage campus spaces</p>
-        </div>
+    <div className="min-h-screen bg-[#F4F9F8]">
+      {/* Header */}
+      <AdminHeader />
+
+      <div className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -214,7 +216,7 @@ export default function AdminDashboard() {
         {/* Horizontal Bar Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <ChartCard title="Most Used Lecture Halls" subtitle="This week's statistics">
-            <div style={{ height: 320 }}>
+            <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={lectureHallsData} margin={{ top: 10, right: 30, left: 90, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
@@ -228,7 +230,7 @@ export default function AdminDashboard() {
           </ChartCard>
 
           <ChartCard title="Most Used Study Areas" subtitle="This week's statistics">
-            <div style={{ height: 320 }}>
+            <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={studyAreasData} margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
@@ -292,7 +294,7 @@ export default function AdminDashboard() {
         {/* Vertical Bar & Line Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ChartCard title="Peak Usage Time" subtitle="Average student count per hour">
-            <div style={{ height: 320 }}>
+            <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={peakHoursData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -306,7 +308,7 @@ export default function AdminDashboard() {
           </ChartCard>
 
           <ChartCard title="Weekly Usage Trend" subtitle="Student visits per day">
-            <div style={{ height: 320 }}>
+            <div style={{ width: '100%', height: 320 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
@@ -318,6 +320,7 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </div>
           </ChartCard>
+        </div>
         </div>
       </div>
     </div>
