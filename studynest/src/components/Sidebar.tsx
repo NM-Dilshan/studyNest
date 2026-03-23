@@ -1,19 +1,14 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Home, Building, MapPin, AlertCircle } from 'lucide-react'
-
-interface MenuItem {
-  label: string
-  icon: React.ComponentType<{ className?: string }>
-  href: string
-}
 
 export function Sidebar() {
   const pathname = usePathname()
 
-  const menuItems: MenuItem[] = [
+  const menuItems = [
     {
       label: 'Dashboard',
       icon: Home,
@@ -48,9 +43,13 @@ export function Sidebar() {
       {/* Logo Section */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#2E6F95] rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg font-bold">S</span>
-          </div>
+          <Image
+            src="/logo.jpeg"
+            alt="StudyNest Logo"
+            width={40}
+            height={40}
+            className="rounded-lg object-cover"
+          />
           <div>
             <h1 className="text-lg font-bold text-gray-900">StudyNest</h1>
             <p className="text-xs text-gray-500">Admin Panel</p>
