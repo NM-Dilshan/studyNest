@@ -1,7 +1,9 @@
-import { createClient, isSupabaseConfigured } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client';
+
 import Image from 'next/image'
 import HeaderStudentID from '@/components/HeaderStudentID'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 type RecentUpdate = {
   type: 'Hall' | 'Study Area'
@@ -12,87 +14,48 @@ type RecentUpdate = {
   time: string
 }
 
-export default async function HomePage() {
-  let user = null
-  let profile = null
-  let recentUpdates: RecentUpdate[] = []
+interface User {
+  user_id: string
+  student_id: string
+  name: string
+  email: string
+  role: 'student' | 'volunteer' | 'admin'
+  is_active: boolean
+  created_at: string
+}
 
-  // Only try to fetch from Supabase if configured
-  if (isSupabaseConfigured) {
-    try {
-      const supabase = await createClient()
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      
-      if (!authUser) {
-        redirect('/login')
-      }
-      
-      user = authUser
+export default function HomePage() {
+  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null)
+  const [isVolunteer, setIsVolunteer] = useState(false)
+  const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([])
+  const [loading, setLoading] = useState(true)
 
-      // Fetch user profile
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('name, role')
-        .eq('id', user.id)
-        .single()
-      
-      profile = userProfile
-
-      // Fetch latest 3 hall updates
-      const { data: recentHalls } = await supabase
-        .from('volunteer_hall_updates')
-        .select(`
-          *,
-          lecture_halls (hall_name, building),
-          profiles (name, reputation)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      // Fetch latest 3 study area updates
-      const { data: recentAreas } = await supabase
-        .from('volunteer_study_area_updates')
-        .select(`
-          *,
-          study_areas (area_name, building),
-          profiles (name, reputation)
-        `)
-        .order('created_at', { ascending: false })
-        .limit(3)
-
-      // Merge and sort all recent updates
-      recentUpdates = [
-        ...(recentHalls || []).map(u => ({
-          type: 'Hall' as const,
-          name: u.lecture_halls?.hall_name,
-          building: u.lecture_halls?.building,
-          occupancy: u.occupancy_level,
-          reporter: u.profiles?.name,
-          time: u.created_at,
-        })),
-        ...(recentAreas || []).map(u => ({
-          type: 'Study Area' as const,
-          name: u.study_areas?.area_name,
-          building: u.study_areas?.building,
-          occupancy: u.crowd_status,
-          reporter: u.profiles?.name,
-          time: u.created_at,
-        })),
-      ].sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 3)
-    } catch (error) {
-      console.error('Supabase error:', error)
-      // Show demo with no user data
+  useEffect(() => {
+    // Check if user is logged in
+    const userData = localStorage.getItem('user')
+    if (!userData) {
+      router.push('/login/signIN')
+      return
     }
-  }
 
-  // Demo data when Supabase is not configured
-  if (recentUpdates.length === 0) {
+    try {
+      const parsedUser: User = JSON.parse(userData)
+      setUser(parsedUser)
+      setIsVolunteer(parsedUser.role === 'volunteer')
+    } catch (error) {
+      console.error('Failed to parse user data:', error)
+      router.push('/login/signIN')
+      return
+    }
+
+    // Load demo recent updates
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString()
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString()
     
-    recentUpdates = [
+    const updates: RecentUpdate[] = [
       {
         type: 'Hall' as const,
         name: 'Lecture Hall A101',
@@ -118,7 +81,26 @@ export default async function HomePage() {
         time: thirtyMinutesAgo,
       },
     ]
+
+    setRecentUpdates(updates)
+    setLoading(false)
+  }, [router])
+
+  const handleLogout = (e: React.FormEvent) => {
+    e.preventDefault()
+    localStorage.removeItem('user')
+    router.push('/login/signIN')
   }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
+  const profile = user ? { name: user.name } : null
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -143,10 +125,16 @@ export default async function HomePage() {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="#" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Study Areas</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              <a href="/home" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
+              <a href="/lecture-halls" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
+              <a href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</a>
+              <a href="/complaints" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              {/* Show Volunteer button ONLY for volunteers */}
+              {isVolunteer && (
+                <a href="/Sunera/volunteer" className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition">
+                  Volunteer
+                </a>
+              )}
             </nav>
 
             {/* Student ID Display */}
@@ -162,7 +150,7 @@ export default async function HomePage() {
                 </svg>
                 <span className="absolute top-1 right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-indigo-600 rounded-full">3</span>
               </button>
-              <form action="/api/auth/signout" method="post">
+              <form onSubmit={handleLogout}>
                 <button type="submit" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
                   Logout
                 </button>
@@ -176,7 +164,7 @@ export default async function HomePage() {
         {/* Welcome Section */}
         <div className="mb-12">
           <div className="flex items-center space-x-3 mb-4">
-            <h2 className="text-4xl font-bold text-gray-900">Welcome back, {profile?.name?.split(' ')[0] || 'Student'}!</h2>
+            <h2 className="text-4xl font-bold text-gray-900">Welcome, {profile?.name?.split(' ')[0] || 'Student'}!</h2>
             <span className="text-4xl">👋</span>
           </div>
           <p className="text-lg text-gray-600 mb-6">Find your perfect study space on campus</p>
@@ -216,7 +204,7 @@ export default async function HomePage() {
           </div>
 
           {/* Study Area Finder */}
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">
+          <a href="/study-areas" className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden block">
             <div className="p-6">
               <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                 <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
@@ -224,15 +212,15 @@ export default async function HomePage() {
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Study Area Finder</h3>
-              <p className="text-gray-600 mb-4">Check crowd levels in libraries and study spaces</p>
+              <p className="text-gray-600 mb-4">Check crowd levels in libraries and study spaces in real-time</p>
               <div className="flex items-center text-sm text-green-600 font-medium">
                 <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
                 </svg>
-                Low crowd!
+                Real-time GPS tracking
               </div>
             </div>
-          </div>
+          </a>
 
           {/* Submit Complaint */}
           <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">

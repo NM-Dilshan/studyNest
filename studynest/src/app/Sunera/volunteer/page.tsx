@@ -1,4 +1,7 @@
-import { prisma } from '@/lib/prisma'
+'use client'
+
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
 import {
   Home,
   Bell,
@@ -13,6 +16,7 @@ import {
   Clock,
   ChevronRight,
 } from 'lucide-react'
+import VolunteerSubmitForm from '@/components/VolunteerSubmitForm'
 
 // ------------------------------------------------------------
 // Types
@@ -54,7 +58,9 @@ interface LeaderboardEntry {
 // ------------------------------------------------------------
 // Helper function to get status color
 // ------------------------------------------------------------
-const getStatusColor = (status: string) => {
+const getStatusColor = (status: string | null | undefined) => {
+  if (!status) return 'bg-gray-100 text-gray-800'
+  
   switch (status.toLowerCase()) {
     case 'free':
     case 'low':
@@ -72,135 +78,99 @@ const getStatusColor = (status: string) => {
 }
 
 // ------------------------------------------------------------
-// Main Page Component (Server Component)
+// Main Page Component (Client Component)
 // ------------------------------------------------------------
-export default async function VolunteerPage() {
-  // Mock user ID for demo (in real app, get from auth middleware)
-  const currentUserId = '550e8400-e29b-41d4-a716-446655440000'
+export default function VolunteerPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [scoreData, setScoreData] = useState<ScoreData | null>(null)
+  const [history, setHistory] = useState<HistoryItem[]>([])
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [loading, setLoading] = useState(true)
 
-  let user: User | null = null
-  let scoreData: ScoreData | null = null
-  let history: HistoryItem[] = []
-  let leaderboard: LeaderboardEntry[] = []
+  // Get current user ID from localStorage
+  const currentUserId = typeof window !== 'undefined' 
+    ? JSON.parse(localStorage.getItem('user') || '{}')?.user_id || '550e8400-e29b-41d4-a716-446655440000'
+    : '550e8400-e29b-41d4-a716-446655440000'
 
-  try {
-    // Fetch user data
-    const userData = await prisma.users.findUnique({
-      where: { user_id: currentUserId },
-      select: {
-        user_id: true,
-        name: true,
-        role: true,
-      },
-    })
-    user = userData as User
-
-    // Fetch volunteer scores
-    const scores = await prisma.volunteer_scores.findUnique({
-      where: { volunteer_id: currentUserId },
-    })
-    scoreData = scores || {
-      total_updates: 0,
-      total_reviews: 0,
-      average_rating: 0,
-      accurate_count: 0,
-      inaccurate_count: 0,
-      score: 0,
-    }
-
-    // Fetch recent hall updates
-    const hallUpdates = await prisma.volunteer_hall_updates.findMany({
-      where: { volunteer_id: currentUserId },
-      select: {
-        volunteer_hall_update_id: true,
-        occupancy_level: true,
-        confidence_level: true,
-        created_at: true,
-        lecture_halls: {
-          select: { hall_name: true },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-      take: 10,
-    })
-
-    // Fetch recent study area updates
-    const areaUpdates = await prisma.volunteer_study_area_updates.findMany({
-      where: { volunteer_id: currentUserId },
-      select: {
-        volunteer_study_area_update_id: true,
-        crowd_status: true,
-        confidence_level: true,
-        created_at: true,
-        study_areas: {
-          select: { area_name: true },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-      take: 10,
-    })
-
-    // Combine and sort history
-    history = [
-      ...hallUpdates.map((h: any) => ({
-        id: h.volunteer_hall_update_id,
-        type: 'hall' as const,
-        name: h.lecture_halls?.hall_name || 'Unknown Hall',
-        status: h.occupancy_level || 'Unknown',
-        time: h.created_at,
-        points: h.confidence_level === 'high' ? 5 : h.confidence_level === 'medium' ? 3 : 1,
-        confidence: h.confidence_level || 'medium',
-      })),
-      ...areaUpdates.map((a: any) => ({
-        id: a.volunteer_study_area_update_id,
-        type: 'area' as const,
-        name: a.study_areas?.area_name || 'Unknown Area',
-        status: a.crowd_status,
-        time: a.created_at,
-        points: a.confidence_level === 'high' ? 5 : a.confidence_level === 'medium' ? 3 : 1,
-        confidence: a.confidence_level || 'medium',
-      })),
-    ]
-      .sort((a, b) => b.time.getTime() - a.time.getTime())
-      .slice(0, 5)
-
-    // Fetch leaderboard
-    const topVolunteers = await prisma.volunteer_scores.findMany({
-      select: {
-        volunteer_id: true,
-        score: true,
-        total_updates: true,
-      },
-      orderBy: { score: 'desc' },
-      take: 5,
-    })
-
-    const volunteerIds = topVolunteers.map((v) => v.volunteer_id)
-    const users = await prisma.users.findMany({
-      where: { user_id: { in: volunteerIds } },
-      select: { user_id: true, name: true },
-    })
-
-    leaderboard = topVolunteers.map((v, idx) => {
-      const volunteerUser = users.find((u) => u.user_id === v.volunteer_id)
-      return {
-        rank: idx + 1,
-        name: volunteerUser?.name || 'Anonymous',
-        updates: v.total_updates || 0,
-        points: v.score || 0,
-        isCurrentUser: v.volunteer_id === currentUserId,
+  // Fetch volunteer data
+  const fetchVolunteerData = async () => {
+    try {
+      const response = await fetch('/api/volunteer/data?userId=' + currentUserId)
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+        setScoreData(data.scoreData)
+        setHistory(data.history.map((item: any) => ({
+          ...item,
+          time: new Date(item.time),
+        })))
+        setLeaderboard(data.leaderboard)
       }
-    })
-  } catch (error) {
-    console.error('Error fetching volunteer data:', error)
+    } catch (error) {
+      console.error('Error fetching volunteer data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  // Since this is a server component, forms will use standard HTML submission
-  // For now, we'll show a read-only view of the volunteer data
+  useEffect(() => {
+    fetchVolunteerData()
+  }, [])
 
-  // ------------------------------------------------------------
+  // Handle form submission success - add new item to history and update score
+  const handleSubmitSuccess = (newItem: HistoryItem) => {
+    setHistory([newItem, ...history.slice(0, 4)])
+    
+    // Update score display
+    if (scoreData) {
+      setScoreData({
+        ...scoreData,
+        total_updates: scoreData.total_updates + 1,
+        score: scoreData.score + newItem.points,
+      })
+    }
+
+    // Refresh full data after a delay
+    setTimeout(() => {
+      fetchVolunteerData()
+    }, 1000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-3">
+                <Image 
+                  src="/logo.jpeg" 
+                  alt="StudyNest Logo" 
+                  width={40}
+                  height={40}
+                  className="rounded-lg shadow-md"
+                />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
+                  <p className="text-xs text-gray-500">Campus Free Space Finder</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+        <div className="flex items-center justify-center h-[calc(100vh-64px)]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading volunteer data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // -------------------------------------------------------
   // Render
-  // ------------------------------------------------------------
+  // -------------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Top Navbar */}
@@ -208,22 +178,32 @@ export default async function VolunteerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">S</span>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">StudyNest</h1>
-                <p className="text-xs text-gray-500">Campus Free Space Finder</p>
-              </div>
-            </div>
+             <div className="flex items-center space-x-3">
+                          <Image 
+                            src="/logo.jpeg" 
+                            alt="StudyNest Logo" 
+                            width={40}
+                            height={40}
+                            className="rounded-lg shadow-md"
+                          />
+                          <div>
+                            <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
+                            <p className="text-xs text-gray-500">Campus Free Space Finder</p>
+                          </div>
+                        </div>
 
             {/* Center Nav */}
             <div className="hidden md:flex space-x-4">
               <a href="/home" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
                 Home
               </a>
-              <a href="/volunteer" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-600">
+              <a href="/lecture-halls" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Lecture Halls
+              </a>
+              <a href="/study-areas" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Study Areas
+              </a>
+              <a href="/Sunera/volunteer" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-600">
                 Volunteer
               </a>
             </div>
@@ -260,80 +240,11 @@ export default async function VolunteerPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column (2/3 width on large screens) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Submit Update Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900">Submit Space Update</h2>
-              <p className="text-sm text-gray-500 mt-1">Report the current status of a lecture hall or study area</p>
-
-              <form className="mt-6 space-y-5">
-                {/* Row 1: Space Type + Location */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Space Type</label>
-                    <select
-                      name="spaceType"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Select type</option>
-                      <option value="lecture-hall">Lecture Hall</option>
-                      <option value="study-area">Study Area</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-                    <select
-                      name="location"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      required
-                    >
-                      <option value="">Select location</option>
-                      {/* We'd fetch real locations from DB; for now placeholder */}
-                      <option value="hall-101">Hall A101</option>
-                      <option value="hall-102">Hall B205</option>
-                      <option value="area-library">Main Library</option>
-                      <option value="area-room3">Study Room 3</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Current Status */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {['free', 'occupied', 'low crowd', 'medium crowd', 'high crowd', 'maintenance'].map(s => (
-                      <label key={s} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="status" value={s} className="rounded" />
-                        <span className="text-sm font-medium text-gray-700">{s.charAt(0).toUpperCase() + s.slice(1)}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Confidence Level */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Confidence Level</label>
-                  <div className="flex gap-3">
-                    {['low', 'medium', 'high'].map(l => (
-                      <label key={l} className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="confidence" value={l} className="rounded" />
-                        <span className="text-sm font-medium text-gray-700">{l.charAt(0).toUpperCase() + l.slice(1)}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    High confidence = +5 points, Medium = +3 points, Low = +1 point
-                  </p>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition"
-                >
-                  Submit Update
-                </button>
-              </form>
-            </div>
+            {/* Submit Update Card - Using Client Component */}
+            <VolunteerSubmitForm 
+              volunteerId={currentUserId} 
+              onSubmitSuccess={handleSubmitSuccess}
+            />
 
             {/* Your Update History Card */}
             <div className="bg-white rounded-xl shadow-sm p-6">
