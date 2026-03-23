@@ -48,6 +48,8 @@ export interface FreeHallResult {
   whiteboard: boolean
   wheelchair_accessible: boolean
   power_sockets: boolean
+  latitude?: number
+  longitude?: number
   maintenance_status: string
   has_conflict: boolean
   conflict_type?: string

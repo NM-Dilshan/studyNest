@@ -69,8 +69,8 @@ export default function HallCard({
       {/* Conflict badge if present */}
       {hall.has_conflict && (
         <ConflictBadge
-          maintenanceStatus={hall.maintenance_status}
-          conflictSeverity={hall.conflict_severity || 'warning'}
+          maintenanceStatus={hall.maintenance_status as 'available' | 'under_maintenance' | 'reserved_exam' | 'reserved_event' | 'closed'}
+          conflictSeverity={(hall.conflict_severity || 'warning') as 'warning' | 'blocked'}
         />
       )}
 
@@ -82,9 +82,9 @@ export default function HallCard({
       {/* Facilities */}
       {facilities.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {facilities.map((fac) => (
-            <span key={fac} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
-              {facilityIcons[fac] || ''} {fac}
+          {facilities.map((fac, idx) => (
+            <span key={idx} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium">
+              {facilityIcons[fac as keyof typeof facilityIcons] || ''} {fac}
             </span>
           ))}
         </div>
