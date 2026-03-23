@@ -16,6 +16,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   const [mode, setMode] = useState<'manual' | 'csv'>('manual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Manual form state
   const [formData, setFormData] = useState({
@@ -30,8 +31,38 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     is_reserved: initialData?.is_reserved ?? true,
   });
 
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Required field
+    if (!formData.subject_code.trim()) {
+      errors.subject_code = 'Subject Code is required';
+    }
+
+    // Time range: 08:00 - 20:00 only
+    const startHH = parseInt(formData.start_time.substring(0, 2));
+    const endHH = parseInt(formData.end_time.substring(0, 2));
+    const endMM = parseInt(formData.end_time.substring(3, 5));
+
+    if (startHH < 8 || startHH >= 20) {
+      errors.start_time = 'Start time must be between 8:00 AM and 8:00 PM';
+    }
+    if (endHH < 8 || (endHH >= 20 && endMM > 0) || endHH > 20) {
+      errors.end_time = 'End time must be between 8:00 AM and 8:00 PM';
+    }
+
+    // End must be after start
+    if (formData.start_time >= formData.end_time) {
+      errors.end_time = 'End time must be after start time';
+    }
+
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validate()) return;
     try {
       setLoading(true);
       setError(null);
@@ -160,14 +191,15 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Subject Code</label>
+                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Subject Code <span className="text-red-400">*</span></label>
                 <input 
                   type="text" 
                   placeholder="e.g. SE3050"
                   value={formData.subject_code}
-                  onChange={(e) => setFormData({ ...formData, subject_code: e.target.value })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm"
+                  onChange={(e) => { setFormData({ ...formData, subject_code: e.target.value }); setFieldErrors(prev => ({...prev, subject_code: ''})); }}
+                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.subject_code ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm`}
                 />
+                {fieldErrors.subject_code && <p className="text-xs text-red-500 mt-1">{fieldErrors.subject_code}</p>}
               </div>
             </div>
 
@@ -212,11 +244,13 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </label>
                 <input 
                   type="time" 
+                  min="08:00" max="20:00"
                   value={formData.start_time.substring(0, 5)}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value + ':00' })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                  onChange={(e) => { setFormData({ ...formData, start_time: e.target.value + ':00' }); setFieldErrors(prev => ({...prev, start_time: '', end_time: ''})); }}
+                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.start_time ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm`}
                   required
                 />
+                {fieldErrors.start_time && <p className="text-xs text-red-500 mt-1">{fieldErrors.start_time}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1.5 flex items-center justify-between text-neutral-700 dark:text-neutral-300">
@@ -224,11 +258,13 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </label>
                 <input 
                   type="time" 
+                  min="08:00" max="20:00"
                   value={formData.end_time.substring(0, 5)}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value + ':00' })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                  onChange={(e) => { setFormData({ ...formData, end_time: e.target.value + ':00' }); setFieldErrors(prev => ({...prev, end_time: ''})); }}
+                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.end_time ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm`}
                   required
                 />
+                {fieldErrors.end_time && <p className="text-xs text-red-500 mt-1">{fieldErrors.end_time}</p>}
               </div>
             </div>
 
