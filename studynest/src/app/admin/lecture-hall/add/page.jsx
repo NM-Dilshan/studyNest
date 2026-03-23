@@ -13,7 +13,9 @@ export default function AddLectureHallPage() {
   const [formData, setFormData] = useState({
     hall_name: '',
     building: '',
+    block: '',
     floor: '',
+    hall_number: '',
     capacity: '',
     hall_type: 'lecture_hall',
     projector: false,
@@ -23,12 +25,46 @@ export default function AddLectureHallPage() {
     maintenance_status: 'available',
   })
 
+  // Building configuration
+  const buildings = {
+    'New Building': {
+      blocks: ['G', 'F'],
+      floors: Array.from({ length: 14 }, (_, i) => i + 1), // 1-14
+    },
+    'Main Building': {
+      blocks: ['A', 'B'],
+      floors: ['B', '1', '2', '3', '4', '5', '6', '7', '8'],
+    },
+  }
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData(prev => ({
-      ...prev,
+    
+    let updatedData = {
+      ...formData,
       [name]: type === 'checkbox' ? checked : value
-    }))
+    }
+
+    // Reset dependent fields when building changes
+    if (name === 'building') {
+      updatedData.block = ''
+      updatedData.floor = ''
+      updatedData.hall_number = ''
+      updatedData.hall_name = ''
+    }
+
+    // Auto-generate hall_name when block, floor, or hall_number changes
+    if (name === 'block' || name === 'floor' || name === 'hall_number') {
+      if (updatedData.block && updatedData.floor && updatedData.hall_number) {
+        const floorStr = String(updatedData.floor).padStart(2, '0')
+        const hallNumStr = String(updatedData.hall_number).padStart(2, '0')
+        updatedData.hall_name = `${updatedData.block}${floorStr}${hallNumStr}`
+      } else {
+        updatedData.hall_name = ''
+      }
+    }
+
+    setFormData(updatedData)
   }
 
   const handleSubmit = async (e) => {
@@ -37,18 +73,28 @@ export default function AddLectureHallPage() {
     setMessage('')
 
     // Validation
-    if (!formData.hall_name.trim()) {
-      setError('Hall name is required')
+    if (!formData.building.trim()) {
+      setError('Building is required')
+      return
+    }
+
+    if (!formData.block.trim()) {
+      setError('Block is required')
+      return
+    }
+
+    if (!formData.floor) {
+      setError('Floor is required')
+      return
+    }
+
+    if (!formData.hall_number.trim()) {
+      setError('Hall number is required')
       return
     }
 
     if (formData.capacity && isNaN(parseInt(formData.capacity))) {
       setError('Capacity must be a number')
-      return
-    }
-
-    if (formData.floor && isNaN(parseInt(formData.floor))) {
-      setError('Floor must be a number')
       return
     }
 
@@ -62,7 +108,7 @@ export default function AddLectureHallPage() {
         body: JSON.stringify({
           ...formData,
           capacity: formData.capacity ? parseInt(formData.capacity) : null,
-          floor: formData.floor ? parseInt(formData.floor) : null,
+          floor: isNaN(formData.floor) ? formData.floor : parseInt(formData.floor),
         }),
       })
 
@@ -122,47 +168,88 @@ export default function AddLectureHallPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Hall Name */}
+            {/* Building Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Hall Name *
+                Building *
               </label>
-              <input
-                type="text"
-                name="hall_name"
-                value={formData.hall_name}
+              <select
+                name="building"
+                value={formData.building}
                 onChange={handleChange}
-                placeholder="e.g., Lecture Hall A1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
+              >
+                <option value="">-- Select Building --</option>
+                <option value="New Building">New Building</option>
+                <option value="Main Building">Main Building</option>
+              </select>
             </div>
 
-            {/* Building & Floor */}
+            {/* Block & Floor Selection */}
+            {formData.building && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Block *
+                  </label>
+                  <select
+                    name="block"
+                    value={formData.block}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">-- Select Block --</option>
+                    {buildings[formData.building]?.blocks.map(block => (
+                      <option key={block} value={block}>{block}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Floor *
+                  </label>
+                  <select
+                    name="floor"
+                    value={formData.floor}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">-- Select Floor --</option>
+                    {buildings[formData.building]?.floors.map(floor => (
+                      <option key={floor} value={floor}>{floor}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Hall Name (Auto-generated) & Hall Number */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Building
+                  Hall Name (Block + Floor + Number)
                 </label>
                 <input
                   type="text"
-                  name="building"
-                  value={formData.building}
-                  onChange={handleChange}
-                  placeholder="e.g., Engineering Block"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  name="hall_name"
+                  value={formData.hall_name}
+                  readOnly
+                  placeholder="e.g., G0505"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Floor
+                  Hall Number (will be padded to 2 digits) *
                 </label>
                 <input
-                  type="number"
-                  name="floor"
-                  value={formData.floor}
+                  type="text"
+                  name="hall_number"
+                  value={formData.hall_number}
                   onChange={handleChange}
-                  placeholder="e.g., 2"
+                  placeholder="e.g., 5"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>

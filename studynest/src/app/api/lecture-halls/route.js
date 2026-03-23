@@ -80,7 +80,9 @@ export async function POST(request) {
       data: {
         hall_name: body.hall_name,
         building: body.building || null,
+        block: body.block || null,
         floor: body.floor ? parseInt(body.floor) : null,
+        hall_number: body.hall_number || null,
         capacity: body.capacity ? parseInt(body.capacity) : null,
         hall_type: body.hall_type || 'lecture_hall',
         projector: body.projector || false,
