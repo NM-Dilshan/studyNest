@@ -164,7 +164,7 @@ export default function StudyAreaCard({ area }: { area: any }) {
           <>
             <div className="mt-4">
               <p className="text-xs text-gray-400">
-                Updated {area.occupancy?.updated_at ? new Date(area.occupancy.updated_at).toLocaleTimeString() : 'recently'}
+                Updated {area.occupancy?.[0]?.updated_at ? new Date(area.occupancy[0].updated_at).toLocaleTimeString() : 'recently'}
               </p>
             </div>
 

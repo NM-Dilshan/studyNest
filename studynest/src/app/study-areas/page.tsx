@@ -21,11 +21,20 @@ interface StudyArea {
   study_area_id: string
   area_name: string
   description?: string
+  building?: string
+  floor?: number
   capacity?: number
+  wifi?: boolean
+  charging_ports?: boolean
+  silent_zone?: boolean
+  ac?: boolean
+  cafe?: boolean
+  is_active: boolean
+  area_status?: string
   lat?: number
   lng?: number
   radius_meters?: number
-  is_active: boolean
+  created_at?: string
   occupancy?: Array<{
     current_count: number
     updated_at?: string
@@ -77,7 +86,7 @@ export default function StudyAreasPage() {
 
         // Calculate summary counts
         let lowCount = 0, mediumCount = 0, highCount = 0
-        studyAreas.forEach((area: any) => {
+        studyAreas.forEach((area: StudyArea) => {
           const count = area.occupancy?.[0]?.current_count || 0
           const percent = area.capacity ? (count / area.capacity) * 100 : 0
 
@@ -97,11 +106,6 @@ export default function StudyAreasPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    router.push('/login/signIN')
   }
 
   if (loading) {
@@ -305,7 +309,7 @@ export default function StudyAreasPage() {
             </details>
             <details className="pb-4">
               <summary className="cursor-pointer font-medium text-gray-900 hover:text-gray-700">
-                Why do I see "Low" even when it's crowded?
+                Why do I see &quot;Low&quot; even when it&apos;s crowded?
               </summary>
               <p className="text-sm text-gray-600 mt-2">
                 Crowd levels depend on actual device locations. If fewer people are sharing their location, the count will
