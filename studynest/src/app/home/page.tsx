@@ -27,36 +27,27 @@ interface User {
 
 export default function HomePage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isVolunteer, setIsVolunteer] = useState(false)
-  const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check if user is logged in
+  
+  // Initialize user from localStorage without setState in effect
+  const [user] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null
     const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/login/signIN')
-      return
-    }
-
+    if (!userData) return null
     try {
-      const parsedUser: User = JSON.parse(userData)
-      setUser(parsedUser)
-      setIsVolunteer(parsedUser.role === 'volunteer')
-    } catch (error) {
-      console.error('Failed to parse user data:', error)
-      router.push('/login/signIN')
-      return
+      return JSON.parse(userData)
+    } catch {
+      return null
     }
+  })
 
-    // Load demo recent updates
+  // Initialize recent updates without setState in effect
+  const [recentUpdates] = useState<RecentUpdate[]>(() => {
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString()
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString()
     
-    const updates: RecentUpdate[] = [
+    return [
       {
         type: 'Hall' as const,
         name: 'Lecture Hall A101',
@@ -82,10 +73,16 @@ export default function HomePage() {
         time: thirtyMinutesAgo,
       },
     ]
+  })
 
-    setRecentUpdates(updates)
-    setLoading(false)
-  }, [router])
+  const [loading] = useState(false)
+
+  useEffect(() => {
+    // Handle authentication redirect
+    if (!user) {
+      router.push('/login/signIN')
+    }
+  }, [user, router])
 
   const handleLogout = (e: React.FormEvent) => {
     e.preventDefault()
