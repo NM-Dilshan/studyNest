@@ -2,6 +2,7 @@ import { createClient, isSupabaseConfigured } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import Link from 'next/link'
 import HeaderStudentID from '@/components/HeaderStudentID'
 
 type RecentUpdate = {
@@ -198,7 +199,7 @@ export default async function HomePage() {
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Free Lecture Hall Finder */}
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">
+          <Link href="/student/halls" className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden block">
             <div className="p-6">
               <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                 <svg className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -211,10 +212,10 @@ export default async function HomePage() {
                 <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8L5.257 19.879A2 2 0 005 21H3a2 2 0 01-2-2v-2c0-.253.045-.506.13-.75L13 7z" />
                 </svg>
-                12 halls free
+                Real-time finder
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Study Area Finder */}
           <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">

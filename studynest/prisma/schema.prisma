@@ -148,6 +148,8 @@ model study_areas {
 model timetable {
   timetable_id  Int           @id @default(autoincrement())
   hall_id       String        @db.Uuid
+  academic_year Int?
+  semester      Int?
   day_of_week   String        @db.VarChar(10)
   start_time    DateTime      @db.Time(6)
   end_time      DateTime      @db.Time(6)
