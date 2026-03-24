@@ -159,8 +159,6 @@ model timetable {
   lecturer_name String?       @db.VarChar(100)
   is_reserved   Boolean?      @default(true)
   created_at    DateTime?     @default(now()) @db.Timestamp(6)
-  academic_year Int?
-  semester      Int?
   lecture_halls lecture_halls @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
 }
 

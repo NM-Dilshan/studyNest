@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function ComplaintsPage() {
-  const router = useRouter()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -78,19 +76,28 @@ export default function ComplaintsPage() {
     const studentId = localStorage.getItem('studentId')
 
     if (!storedUser || !studentId) {
-      // Not authenticated - redirect to login
-      router.push('/login/signIN')
+      setUser(null)
+      setIsAuthenticated(false)
+      setCheckingAuth(false)
+      fetchBuildings()
       return
     }
 
-    // User is authenticated
     try {
       const userData = JSON.parse(storedUser)
-      setUser(userData)
-      setIsAuthenticated(true)
+      const isValidUser = userData && typeof userData === 'object'
+
+      if (isValidUser) {
+        setUser(userData)
+        setIsAuthenticated(true)
+      } else {
+        setUser(null)
+        setIsAuthenticated(false)
+      }
     } catch (err) {
       console.error('Error parsing user data:', err)
-      router.push('/login/signIN')
+      setUser(null)
+      setIsAuthenticated(false)
     } finally {
       setCheckingAuth(false)
     }
@@ -367,9 +374,6 @@ export default function ComplaintsPage() {
         return true
       // Review step - no validation
       case 8:
-      case 6:
-        if (step === 8 && isLectureHall) return true
-        if (step === 6 && isStudyArea) return true
         return true
       default:
         return true
@@ -424,9 +428,6 @@ export default function ComplaintsPage() {
       }
 
       setSuccess(true)
-      setTimeout(() => {
-        router.push('/Naveen/my-complaints')
-      }, 2000)
     } catch (err) {
       setError(err.message || 'An error occurred')
     } finally {
@@ -446,9 +447,22 @@ export default function ComplaintsPage() {
     )
   }
 
-  // Show nothing if not authenticated (will redirect)
+  // Show sign-in prompt if not authenticated
   if (!isAuthenticated || !user) {
-    return null
+    return (
+      <div className="min-h-screen bg-[#F4F9F8] flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-md p-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in required</h2>
+          <p className="text-gray-600 mb-6">You need to sign in before submitting a complaint.</p>
+          <Link
+            href="/signin"
+            className="inline-flex items-center justify-center px-6 py-3 bg-[#2E6F95] text-white rounded-lg font-medium hover:bg-[#1f4b66] transition"
+          >
+            Go to Sign In
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   const totalSteps = getTotalSteps()
@@ -496,7 +510,7 @@ export default function ComplaintsPage() {
               <p className="text-gray-600 mb-4">
                 Thank you for helping us improve StudyNest. We will review your complaint shortly.
               </p>
-              <p className="text-sm text-gray-500">Redirecting...</p>
+              <p className="text-sm text-gray-500">Your complaint has been saved successfully.</p>
             </div>
           ) : (
             <>

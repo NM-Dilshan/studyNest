@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { AlertCircle, TrendingUp, CheckCircle, MessageSquare, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
@@ -21,31 +20,40 @@ interface HallSummary {
 }
 
 export default function AdminDashboard() {
-  const router = useRouter()
   const [stats, setStats] = useState<DashboardStat | null>(null)
   const [hallSummary, setHallSummary] = useState<HallSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [isAllowed, setIsAllowed] = useState(false)
+  const [needsSignIn, setNeedsSignIn] = useState(false)
 
   useEffect(() => {
     // Check authentication
     const storedUser = localStorage.getItem('user')
     if (!storedUser) {
-      router.push('/login/signIN')
+      setNeedsSignIn(true)
+      setIsAllowed(false)
+      setLoading(false)
       return
     }
 
     try {
       const user = JSON.parse(storedUser)
       if (user.role !== 'admin' && user.role !== 'volunteer') {
-        router.push('/home')
+        setNeedsSignIn(false)
+        setIsAllowed(false)
+        setLoading(false)
         return
       }
-    } catch {
-      router.push('/login/signIN')
-    }
 
-    fetchDashboardData()
-  }, [router])
+      setNeedsSignIn(false)
+      setIsAllowed(true)
+      fetchDashboardData()
+    } catch {
+      setNeedsSignIn(true)
+      setIsAllowed(false)
+      setLoading(false)
+    }
+  }, [])
 
   const fetchDashboardData = async () => {
     try {
@@ -74,6 +82,34 @@ export default function AdminDashboard() {
     )
   }
 
+  if (needsSignIn) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign in required</h2>
+          <p className="text-slate-600 mb-6">You need to sign in before accessing admin complaints.</p>
+          <Link
+            href="/signin"
+            className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
+          >
+            Go to Sign In
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAllowed) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-50 to-slate-100 px-4">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Access restricted</h2>
+          <p className="text-slate-600">You do not have permission to access admin complaints.</p>
+        </div>
+      </div>
+    )
+  }
+
   // Get high and normal priority halls
   const highPriorityHalls = hallSummary.filter(h => h.priority === 'High')
   const normalPriorityHalls = hallSummary.filter(h => h.priority === 'Normal')
@@ -83,52 +119,53 @@ export default function AdminDashboard() {
     <div className="space-y-8">
       {/* Notification Alert Button */}
       {totalCritical > 0 && (
-        <Link href="/admin/complaints">
-          <button className="w-full relative overflow-hidden rounded-2xl border-2 border-red-400 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 p-6 hover:shadow-lg transition-all hover:scale-102 group">
-            {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-red-200/20 to-orange-200/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-            
-            {/* Content */}
-            <div className="relative flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-red-500 rounded-full animate-pulse" />
-                  <AlertCircle className="text-red-600 relative" size={32} />
-                </div>
-                <div className="text-left">
-                  <p className="text-lg font-bold text-red-900">
-                    🚨 {totalCritical} Hall{totalCritical > 1 ? 's' : ''} Need Attention
-                  </p>
-                  <p className="text-sm text-red-700 mt-1">
-                    {stats?.highPriorityHalls || 0} High Priority + {stats?.normalPriorityHalls || 0} Normal Priority
-                  </p>
-                </div>
-              </div>
-              <ArrowRight className="text-red-600 group-hover:translate-x-2 transition-transform" size={24} />
-            </div>
+        <Link
+          href="/admin/complaints"
+          className="w-full block relative overflow-hidden rounded-2xl border-2 border-red-400 bg-gradient-to-r from-red-50 via-orange-50 to-red-50 p-6 hover:shadow-lg transition-all hover:scale-102 group"
+        >
+          {/* Animated Background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-red-200/20 to-orange-200/20 opacity-0 group-hover:opacity-100 transition-opacity" />
 
-            {/* Affected Halls */}
-            <div className="mt-4 pt-4 border-t border-red-200">
-              <p className="text-xs font-semibold text-red-700 mb-2">Affected Lecture Halls:</p>
-              <div className="flex flex-wrap gap-2">
-                {highPriorityHalls.map(hall => (
-                  <span key={hall.hall_id} className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-xs font-bold">
-                    🚨 {hall.hall_name}
-                  </span>
-                ))}
-                {normalPriorityHalls.slice(0, 3).map(hall => (
-                  <span key={hall.hall_id} className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
-                    ✓ {hall.hall_name}
-                  </span>
-                ))}
-                {normalPriorityHalls.length > 3 && (
-                  <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
-                    +{normalPriorityHalls.length - 3} more
-                  </span>
-                )}
+          {/* Content */}
+          <div className="relative flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-red-500 rounded-full animate-pulse" />
+                <AlertCircle className="text-red-600 relative" size={32} />
+              </div>
+              <div className="text-left">
+                <p className="text-lg font-bold text-red-900">
+                  🚨 {totalCritical} Hall{totalCritical > 1 ? 's' : ''} Need Attention
+                </p>
+                <p className="text-sm text-red-700 mt-1">
+                  {stats?.highPriorityHalls || 0} High Priority + {stats?.normalPriorityHalls || 0} Normal Priority
+                </p>
               </div>
             </div>
-          </button>
+            <ArrowRight className="text-red-600 group-hover:translate-x-2 transition-transform" size={24} />
+          </div>
+
+          {/* Affected Halls */}
+          <div className="mt-4 pt-4 border-t border-red-200">
+            <p className="text-xs font-semibold text-red-700 mb-2">Affected Lecture Halls:</p>
+            <div className="flex flex-wrap gap-2">
+              {highPriorityHalls.map(hall => (
+                <span key={hall.hall_id} className="px-3 py-1 bg-red-200 text-red-800 rounded-full text-xs font-bold">
+                  🚨 {hall.hall_name}
+                </span>
+              ))}
+              {normalPriorityHalls.slice(0, 3).map(hall => (
+                <span key={hall.hall_id} className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
+                  ✓ {hall.hall_name}
+                </span>
+              ))}
+              {normalPriorityHalls.length > 3 && (
+                <span className="px-3 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
+                  +{normalPriorityHalls.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
         </Link>
       )}
 

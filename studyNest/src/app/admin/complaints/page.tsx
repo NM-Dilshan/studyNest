@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle, Clock, Eye, Filter, Search, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
@@ -51,10 +50,12 @@ const statusIcons: { [key: string]: React.ReactNode } = {
 }
 
 export default function AdminComplaintsPage() {
-  const router = useRouter()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [hallSummary, setHallSummary] = useState<HallSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [isAllowed, setIsAllowed] = useState(false)
+  const [needsSignIn, setNeedsSignIn] = useState(false)
   const [updating, setUpdating] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -65,36 +66,50 @@ export default function AdminComplaintsPage() {
     // Check admin authentication
     const storedUser = localStorage.getItem('user')
     if (!storedUser) {
-      router.push('/login/signIN')
+      setNeedsSignIn(true)
+      setIsAllowed(false)
+      setLoading(false)
       return
     }
 
     try {
       const user = JSON.parse(storedUser)
       if (user.role !== 'admin' && user.role !== 'volunteer') {
-        router.push('/home')
+        setNeedsSignIn(false)
+        setIsAllowed(false)
+        setLoading(false)
         return
       }
-    } catch {
-      router.push('/login/signIN')
-    }
 
-    fetchData()
-  }, [router])
+      setNeedsSignIn(false)
+      setIsAllowed(true)
+      fetchData()
+    } catch {
+      setNeedsSignIn(true)
+      setIsAllowed(false)
+      setLoading(false)
+    }
+  }, [])
 
   const fetchData = async () => {
     try {
       setLoading(true)
+      setLoadError('')
       const [complaintsRes, summaryRes] = await Promise.all([
-        fetch('/api/admin/complaints'),
-        fetch('/api/admin/complaints/summary'),
+        fetch('/api/admin/complaints', { cache: 'no-store' }),
+        fetch('/api/admin/complaints/summary', { cache: 'no-store' }),
       ])
 
       if (complaintsRes.ok) {
         const data = await complaintsRes.json()
         if (data.success) {
           setComplaints(data.data)
+        } else {
+          setLoadError(data.error || 'Failed to load complaints data')
         }
+      } else {
+        const data = await complaintsRes.json().catch(() => ({}))
+        setLoadError(data.error || 'Failed to load complaints data')
       }
 
       if (summaryRes.ok) {
@@ -105,6 +120,7 @@ export default function AdminComplaintsPage() {
       }
     } catch (err) {
       console.error('Error fetching data:', err)
+      setLoadError('Failed to connect to the server. Please check your database configuration.')
     } finally {
       setLoading(false)
     }
@@ -166,6 +182,34 @@ export default function AdminComplaintsPage() {
     )
   }
 
+  if (needsSignIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Sign in required</h2>
+          <p className="text-slate-600 mb-6">You need to sign in before accessing admin complaints.</p>
+          <Link
+            href="/signin"
+            className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-all"
+          >
+            Go to Sign In
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAllowed) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Access restricted</h2>
+          <p className="text-slate-600">You do not have permission to access admin complaints.</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Header */}
@@ -210,6 +254,12 @@ export default function AdminComplaintsPage() {
         {/* COMPLAINTS TAB */}
         {activeTab === 'complaints' && (
           <div className="space-y-6">
+            {loadError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                {loadError}
+              </div>
+            )}
+
             {/* Filters */}
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
