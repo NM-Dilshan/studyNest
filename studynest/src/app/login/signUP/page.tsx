@@ -1,10 +1,92 @@
 'use client';
 
-import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import React, { useState, FormEvent, ChangeEvent, useEffect } from 'react';
+import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, UserCircle2 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import Image from 'next/image'; 
+import { useRouter } from 'next/navigation';
 
-export default function SignUp() {
+// Typing Animation Component
+function TypingText() {
+  const [displayedText, setDisplayedText] = useState('');
+  const fullText = "Join the StudyNest Community...";
+  
+  useEffect(() => {
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex <= fullText.length) {
+        setDisplayedText(fullText.slice(0, currentIndex));
+        currentIndex++;
+      } else if (currentIndex > fullText.length + 20) {
+        currentIndex = 0;
+        setDisplayedText('');
+      } else {
+        currentIndex++;
+      }
+    }, 150);
+    return () => clearInterval(interval);
+  }, []);
+  
+  return (
+    <h2 className="text-5xl font-extrabold text-white leading-tight tracking-tight mb-4 min-h-[120px]">
+      {displayedText}
+      <span className="animate-pulse text-[#A3D1D1]">|</span>
+    </h2>
+  );
+}
+
+// Validation Functions
+const validateFullName = (name: string): string => {
+  if (!name.trim()) return '';
+  if (/\d/.test(name)) return 'Name cannot contain numbers';
+  return '';
+};
+
+const validateEmail = (email: string): string => {
+  if (!email.trim()) return '';
+  // Format: 2 letters + 8 digits + @my.sliit.lk
+  const emailRegex = /^[a-zA-Z]{2}\d{8}@my\.sliit\.lk$/;
+  if (!emailRegex.test(email)) {
+    return 'Email must be like: it23839410@my.sliit.lk (2 letters + 8 digits + @my.sliit.lk)';
+  }
+  return '';
+};
+
+const validateMobileNumber = (mobile: string): string => {
+  if (!mobile.trim()) return '';
+  // Format: 07 followed by 8 digits (10 characters total)
+  const mobileRegex = /^07\d{8}$/;
+  if (!mobileRegex.test(mobile)) {
+    return 'Mobile number must start with 07 followed by 8 digits (e.g., 0712345678)';
+  }
+  return '';
+};
+
+const calculatePasswordStrength = (password: string): { strength: number; label: string; color: string } => {
+  let strength = 0;
+  
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[a-z]/.test(password)) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/\d/.test(password)) strength++;
+  if (/[^a-zA-Z\d]/.test(password)) strength++;
+
+  const levels = [
+    { strength: 0, label: 'Very Weak', color: '#DC2626' },
+    { strength: 1, label: 'Weak', color: '#F97316' },
+    { strength: 2, label: 'Fair', color: '#EAB308' },
+    { strength: 3, label: 'Good', color: '#84CC16' },
+    { strength: 4, label: 'Strong', color: '#22C55E' },
+    { strength: 6, label: 'Very Strong', color: '#16A34A' },
+  ];
+
+  const level = levels.reduce((prev, curr) => (curr.strength <= strength ? curr : prev));
+  return { strength: Math.min(strength, 6), label: level.label, color: level.color };
+};
+
+export default function SignUp(): React.ReactElement {
+  const router = useRouter();
   const [userRole, setUserRole] = useState<'student' | 'volunteer'>('student');
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,215 +98,343 @@ export default function SignUp() {
     confirmPassword: '',
   });
   
-  const [agreeTerms, setAgreeTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const passwordStrength = calculatePasswordStrength(formData.password);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    let { value } = e.target;
+
+    // Auto-format mobile number: only accept 8 digits (without the 07 prefix)
+    if (name === 'mobileNumber') {
+      // Remove all non-digits
+      const digitsOnly = value.replace(/\D/g, '');
+      // Keep only the first 8 digits (max)
+      value = digitsOnly.slice(0, 8);
+    }
+
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+      
+      // Auto-generate email from student ID
+      if (name === 'studentId' && value.trim()) {
+        updated.email = `${value}@my.sliit.lk`;
+      }
+      
+      return updated;
+    });
+
+    // Real-time validation
+    let errorMsg = '';
+    if (name === 'fullName') errorMsg = validateFullName(value);
+    else if (name === 'email') errorMsg = validateEmail(value);
+    else if (name === 'mobileNumber') errorMsg = validateMobileNumber('07' + value);
+
+    setFieldErrors((prev) => ({
+      ...prev,
+      [name]: errorMsg,
+    }));
   };
 
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    
+    // Validate all fields
+    const nameError = validateFullName(formData.fullName);
+    const emailError = validateEmail(formData.email);
+    const mobileError = validateMobileNumber('07' + formData.mobileNumber);
+
+    if (nameError || emailError || mobileError) {
+      setFieldErrors({
+        fullName: nameError,
+        email: emailError,
+        mobileNumber: mobileError,
+      });
+      setError('Please fix the validation errors above');
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match.');
-      setLoading(false);
       return;
     }
+
+    if (passwordStrength.strength < 3) {
+      setError('Password is too weak. Please use a stronger password.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, role: userRole }),
+        body: JSON.stringify({ ...formData, mobileNumber: '07' + formData.mobileNumber, role: userRole }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        const data = await response.json();
         setError(data.error || 'Failed to create account.');
         setLoading(false);
         return;
       }
 
       setSuccess(true);
-      setTimeout(() => {
-        window.location.href = '/login/signIN';
-      }, 2000);
-    } catch (error) {
-      console.error('Sign up error:', error);
+      setTimeout(() => { router.push('/login/signIN'); }, 2000);
+    } catch {
       setError('Network error. Please try again.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center px-4 py-12 bg-[#F0F7F6] overflow-hidden">
-      {/* Background Blobs - Reduced opacity for better readability */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#2E6F95] rounded-full blur-[120px] opacity-20 animate-blob" />
-        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-[#4FA3C7] rounded-full blur-[120px] opacity-20 animate-blob animation-delay-2000" />
-      </div>
+    <div className="min-h-screen bg-[#FBFDFD] flex items-center justify-center antialiased">
+      <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden m-4 border border-slate-100 relative">
+        
+        {/* --- LEFT SIDE (Matching Sign In) --- */}
+        <div className="relative hidden lg:flex flex-1 bg-[#2E6F95] p-16 flex-col justify-between overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#2E6F95]/60 to-[#2E6F95]/90 z-10" />
+          <Image src="/login.png" alt="Students" fill className="object-cover scale-105 opacity-80" priority />
 
-      <div className="relative z-10 w-full max-w-2xl flex flex-col items-center">
-        {/* Logo Section */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="w-14 h-14 bg-[#2E6F95] rounded-2xl flex items-center justify-center shadow-lg mb-3">
-            <CheckCircle2 className="text-white w-8 h-8" />
+          <div className="relative z-20">
+            <Link href="/" className="flex items-center gap-3 group">
+              <div className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2 overflow-hidden">
+                <Image src="/logo.jpeg" alt="Logo" width={48} height={48} className="object-contain" />
+              </div>
+              <h1 className="text-3xl font-black text-white tracking-tighter italic">StudyNest</h1>
+            </Link>
           </div>
-          <h1 className="text-3xl font-bold text-gray-800">StudyNest</h1>
+
+          <div className="relative z-20 max-w-md">
+            <TypingText />
+            <p className="text-white/90 text-lg font-medium leading-relaxed">
+              Create an account to discover, reserve, and share the best study spots on campus.
+            </p>
+          </div>
+          
+          <div className="absolute bottom-[-5%] right-[-5%] w-80 h-80 bg-[#4FA3C7] rounded-full blur-[100px] opacity-30 animate-blob" />
         </div>
 
-        {/* Main Form Card */}
-        <div className="w-full bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 border border-white">
-          <div className="mb-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-800">Create Account</h2>
-            <p className="text-gray-500 mt-1">Fill in the details to get started</p>
+        {/* --- RIGHT SIDE: SIGN UP FORM --- */}
+        <div className="flex-[1.2] flex flex-col justify-center items-center p-8 md:p-12 relative bg-white overflow-y-auto">
+          
+          {/* SMOOTH LINE BACKGROUND PATTERN */}
+          <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="line-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M0 40 L40 0" fill="transparent" stroke="#2E6F95" strokeWidth="1" />
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#line-pattern)" />
+            </svg>
           </div>
 
-          <form onSubmit={handleSignUp} className="space-y-5">
-            {/* Role & ID Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Account Type</label>
-                <select
-                  value={userRole}
-                  onChange={(e) => setUserRole(e.target.value as 'student' | 'volunteer')}
-                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2E6F95] outline-none transition-all text-sm appearance-none cursor-pointer"
-                >
-                  <option value="student">Student</option>
-                  <option value="volunteer">Volunteer</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Your ID</label>
-                <div className="relative">
-                  <User className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
-                  <input
-                    name="studentId"
-                    placeholder={userRole === 'student' ? 'e.g. ST1234' : 'e.g. VL1234'}
-                    value={formData.studentId}
-                    onChange={handleInputChange}
-                    className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2E6F95] outline-none text-sm"
-                    required
-                  />
-                </div>
-              </div>
+          <div className="w-full max-w-xl relative z-10">
+            <div className="mb-8 text-center lg:text-left">
+              <h3 className="text-4xl font-black text-slate-900 tracking-tight">Create Account</h3>
+              <div className="h-1 w-12 bg-[#2E6F95] rounded-full mt-3 mb-2 hidden lg:block"></div>
+              <p className="text-slate-500 font-medium">Join thousands of students on campus</p>
             </div>
 
-            {/* Name & Email Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Field label="Full Name" name="fullName" icon={User} type="text" placeholder="John Doe" value={formData.fullName} onChange={handleInputChange} />
-              <Field label="Email Address" name="email" icon={Mail} type="email" placeholder="john@example.com" value={formData.email} onChange={handleInputChange} />
-            </div>
+            {error && <div className="mb-6 p-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl text-xs font-bold animate-shake">{error}</div>}
+            {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-xs font-bold flex items-center gap-2"> <CheckCircle2 size={16}/> Success! Account Created.</div>}
 
-            {/* Mobile Number - Full Width */}
-            <Field label="Mobile Number" name="mobileNumber" icon={Phone} type="tel" placeholder="+94 7X XXX XXXX" value={formData.mobileNumber} onChange={handleInputChange} />
+            <form onSubmit={handleSignUp} className="space-y-4">
+              {/* Row 1: Role and ID */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="group flex-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                    Account Type
+                  </label>
+                  <div className="relative mt-1.5">
+                    {/* Icon (UserCircle2) */}
+                    <UserCircle2 className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#2E6F95] transition-colors pointer-events-none" />
+                    
+                    <select
+                      value={userRole}
+                      onChange={(e) => setUserRole(e.target.value as 'student' | 'volunteer')}
+                      className="w-full pl-12 pr-10 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/5 focus:border-[#2E6F95] outline-none transition-all text-sm font-semibold text-slate-700 appearance-none cursor-pointer"
+                    >
+                      <option value="student">Student</option>
+                      <option value="volunteer">Volunteer</option>
+                    </select>
 
-            {/* Password Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
-                  <input
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    className="w-full pl-11 pr-11 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2E6F95] outline-none text-sm"
-                    required
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-gray-400 hover:text-[#2E6F95]"
-                  >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                    {/* Dropdown Arrow (Custom Smooth Arrow) */}
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300 group-focus-within:text-[#2E6F95]">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+                <Field label="Your ID" name="studentId" icon={User} placeholder={userRole === 'student' ? 'Student ID' : 'Student ID'} value={formData.studentId} onChange={handleInputChange} />
+              </div>
+
+              {/* Row 2: Name and Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Full Name" name="fullName" icon={User} placeholder="Kamidu WA" value={formData.fullName} onChange={handleInputChange} error={fieldErrors.fullName} />
+                <div className="group flex-1 relative">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">University Email <span className="text-slate-300 text-[8px]">(auto-generated)</span></label>
+                  <div className="relative mt-1.5">
+                    <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none ${fieldErrors.email ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-[#2E6F95]'}`} />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="it12345678@my.sliit.lk"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={`w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border rounded-2xl focus:bg-white focus:ring-4 outline-none transition-all text-sm font-semibold ${
+                        fieldErrors.email 
+                          ? 'border-rose-300 focus:ring-rose-100 focus:border-rose-400 text-slate-700' 
+                          : 'border-slate-100 focus:ring-[#2E6F95]/5 focus:border-[#2E6F95] text-slate-700'
+                      }`}
+                      required
+                    />
+                  </div>
+                  {fieldErrors.email && <p className="text-xs text-rose-500 font-semibold mt-1.5 ml-1">{fieldErrors.email}</p>}
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1">Confirm Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-4 top-3.5 w-4 h-4 text-gray-400" />
+
+              {/* Row 3: Mobile */}
+              <div className="group flex-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mobile Number</label>
+                <div className="relative mt-1.5">
+                  <Phone className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none ${fieldErrors.mobileNumber ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-[#2E6F95]'}`} />
+                  
+                  {/* Static "07" Prefix */}
+                  <div className="absolute left-12 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-900 pointer-events-none">
+                    07
+                  </div>
+                  
+                  {/* Input for remaining 8 digits */}
                   <input
-                    name="confirmPassword"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={formData.confirmPassword}
+                    type="tel"
+                    name="mobileNumber"
+                    placeholder="........"
+                    maxLength={8}
+                    value={formData.mobileNumber}
                     onChange={handleInputChange}
-                    className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl focus:ring-2 outline-none text-sm transition-all ${
-                        formData.confirmPassword && formData.password !== formData.confirmPassword 
-                        ? 'border-red-400 focus:ring-red-100' 
-                        : 'border-gray-200 focus:ring-[#2E6F95]'
+                    className={`w-full pl-20 pr-4 py-3.5 bg-slate-50/50 border rounded-2xl focus:bg-white focus:ring-4 outline-none transition-all text-sm font-semibold ${
+                      fieldErrors.mobileNumber 
+                        ? 'border-rose-300 focus:ring-rose-100 focus:border-rose-400 text-slate-700' 
+                        : 'border-slate-100 focus:ring-[#2E6F95]/5 focus:border-[#2E6F95] text-slate-700'
                     }`}
                     required
                   />
                 </div>
+                {fieldErrors.mobileNumber && <p className="text-xs text-rose-500 font-semibold mt-1.5 ml-1">{fieldErrors.mobileNumber}</p>}
               </div>
-            </div>
 
-            {/* Terms */}
-            <div className="flex items-center gap-2 py-2">
-              <input
-                type="checkbox"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="w-4 h-4 accent-[#2E6F95] cursor-pointer"
-                required
-              />
-              <span className="text-xs text-gray-500">
-                I agree to the <Link href="#" className="text-[#2E6F95] font-bold">Terms</Link> and <Link href="#" className="text-[#2E6F95] font-bold">Privacy Policy</Link>
-              </span>
-            </div>
+              {/* Row 4: Passwords */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="group relative">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Password</label>
+                  <div className="relative mt-1.5">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-[#2E6F95]" />
+                    <input
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="••••••••"
+                      className="w-full pl-12 pr-12 py-3.5 bg-slate-50/50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/5 focus:border-[#2E6F95] outline-none text-sm font-semibold"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-[#2E6F95]">
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {/* Password Strength Indicator */}
+                  {formData.password && (
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold text-slate-500">Password Strength</span>
+                        <span className="text-xs font-bold" style={{ color: passwordStrength.color }}>
+                          {passwordStrength.label}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full transition-all duration-300 rounded-full"
+                          style={{
+                            width: `${(passwordStrength.strength / 6) * 100}%`,
+                            backgroundColor: passwordStrength.color,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <Field 
+                  label="Confirm" 
+                  name="confirmPassword" 
+                  type={showPassword ? 'text' : 'password'} 
+                  icon={Lock} 
+                  placeholder="••••••••" 
+                  value={formData.confirmPassword} 
+                  onChange={handleInputChange}
+                  error={formData.confirmPassword && formData.password !== formData.confirmPassword ? 'Passwords do not match' : ''}
+                />
+              </div>
 
-            {/* Alerts */}
-            {error && <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs rounded-xl font-medium animate-pulse">{error}</div>}
-            {success && <div className="p-3 bg-green-50 border border-green-100 text-green-600 text-xs rounded-xl font-medium flex items-center gap-2"><CheckCircle2 size={14}/> Account created! Redirecting...</div>}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-4 py-4 bg-[#2E6F95] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-[#2E6F95]/20 hover:shadow-[#2E6F95]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+              >
+                {loading ? 'Creating Account...' : 'Register Now'}
+                <ArrowRight size={18} />
+              </button>
+            </form>
 
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="w-full py-4 bg-[#2E6F95] text-white rounded-xl font-bold shadow-lg hover:bg-[#255a7a] transition-all transform active:scale-[0.98] disabled:opacity-50"
-            >
-              {loading ? 'Processing...' : 'Create Account'}
-            </button>
-          </form>
-
-          <p className="text-center text-sm text-gray-500 mt-8">
-            Already have an account? <Link href="/login/signIN" className="text-[#2E6F95] font-bold hover:underline">Sign in</Link>
-          </p>
+            <p className="text-center text-slate-400 text-sm mt-8 font-medium">
+              Already a member? <Link href="/login/signIN" className="text-[#2E6F95] font-black hover:underline ml-1">Log in here →</Link>
+            </p>
+          </div>
         </div>
       </div>
+      
+      <style jsx global>{`
+        @keyframes blob { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(20px, -30px) scale(1.1); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .animate-blob { animation: blob 10s infinite ease-in-out; }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+      `}</style>
     </div>
   );
 }
 
-// Reusable Field Component to keep code clean
+// Reusable Field Component Types
 interface FieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   icon: React.ComponentType<{ className: string }>;
+  error?: string;
 }
 
-function Field({ label, icon: Icon, ...props }: FieldProps) {
+// Reusable Field Component
+function Field({ label, icon: Icon, error, ...props }: FieldProps) {
   return (
-    <div className="space-y-1.5 flex-1">
-      <label className="text-xs font-bold text-gray-500 uppercase ml-1">{label}</label>
-      <div className="relative">
-        <Icon className="absolute left-4 top-3.5 w-4 h-4 text-gray-400 transition-colors" />
+    <div className="group flex-1">
+      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+      <div className="relative mt-1.5">
+        <Icon className={`absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors pointer-events-none ${error ? 'text-rose-400' : 'text-slate-300 group-focus-within:text-[#2E6F95]'}`} />
         <input
           {...props}
-          className="w-full pl-11 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#2E6F95] outline-none transition-all text-sm"
+          className={`w-full pl-12 pr-4 py-3.5 bg-slate-50/50 border rounded-2xl focus:bg-white focus:ring-4 outline-none transition-all text-sm font-semibold ${
+            error 
+              ? 'border-rose-300 focus:ring-rose-100 focus:border-rose-400 text-slate-700' 
+              : 'border-slate-100 focus:ring-[#2E6F95]/5 focus:border-[#2E6F95] text-slate-700'
+          }`}
           required
         />
       </div>
+      {error && <p className="text-xs text-rose-500 font-semibold mt-1.5 ml-1">{error}</p>}
     </div>
   );
 }

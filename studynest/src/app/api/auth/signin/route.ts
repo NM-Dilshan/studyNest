@@ -4,39 +4,70 @@ import bcrypt from 'bcryptjs';
 
 /**
  * POST /api/auth/signin
- * Sign in a user with email and password
+ * Sign in a user with email or student ID and password
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    let { email, studentId, password } = body;
 
     // Validate required fields
-    if (!email || !password) {
+    if ((!email && !studentId) || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Email/Student ID and password are required' },
         { status: 400 }
       );
     }
 
-    // Find user by email
-    const user = await prisma.users.findUnique({
-      where: { email },
-      select: {
-        user_id: true,
-        student_id: true,
-        name: true,
-        email: true,
-        password: true,
-        role: true,
-        is_active: true,
-        created_at: true,
-      },
-    });
+    // Normalize inputs (convert to uppercase for case-insensitive matching)
+    if (email) {
+      email = email.toLowerCase();
+    }
+    if (studentId) {
+      studentId = studentId.toUpperCase();
+    }
+
+    // Find user by email or student ID (case-insensitive for student ID)
+    let user;
+    if (email) {
+      user = await prisma.users.findUnique({
+        where: { email },
+        select: {
+          user_id: true,
+          student_id: true,
+          name: true,
+          email: true,
+          password: true,
+          role: true,
+          is_active: true,
+          created_at: true,
+        },
+      });
+    } else {
+      // For student ID, use findFirst with case-insensitive search
+      user = await prisma.users.findFirst({
+        where: {
+          student_id: {
+            equals: studentId,
+            mode: 'insensitive',
+          },
+        },
+        select: {
+          user_id: true,
+          student_id: true,
+          name: true,
+          email: true,
+          password: true,
+          role: true,
+          is_active: true,
+          created_at: true,
+        },
+      });
+    }
 
     if (!user) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Invalid email/ID or password' },
         { status: 401 }
       );
     }
@@ -54,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     if (!passwordMatch) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Invalid email/ID or password' },
         { status: 401 }
       );
     }

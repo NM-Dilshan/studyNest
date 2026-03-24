@@ -4,9 +4,29 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Home, Building, MapPin, AlertCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [complaintsCount, setComplaintsCount] = useState<number>(0)
+
+  useEffect(() => {
+    // Fetch complaints count
+    const fetchComplaints = async () => {
+      try {
+        const response = await fetch('/api/admin/complaints/summary')
+        const data = await response.json()
+        if (data.success && data.stats) {
+          const total = (data.stats.highPriorityHalls || 0) + (data.stats.normalPriorityHalls || 0)
+          setComplaintsCount(total)
+        }
+      } catch (err) {
+        console.error('Error fetching complaints:', err)
+      }
+    }
+
+    fetchComplaints()
+  }, [])
 
   const menuItems = [
     {
@@ -68,7 +88,7 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative ${
                     active
                       ? 'bg-[#2E6F95] text-white shadow-md'
                       : 'text-gray-700 hover:bg-gray-100'
@@ -76,6 +96,22 @@ export function Sidebar() {
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
                   <span className="font-medium">{item.label}</span>
+                  
+                  {/* Notification Badge for Complaints */}
+                  {item.label === 'Complaints' && complaintsCount > 0 && (
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                        active
+                          ? 'bg-red-400 text-white'
+                          : 'bg-red-500 text-white'
+                      }`}>
+                        {complaintsCount}
+                      </span>
+                      <div className={`w-2 h-2 rounded-full animate-pulse ${
+                        active ? 'bg-red-200' : 'bg-red-500'
+                      }`} />
+                    </div>
+                  )}
                 </Link>
               </li>
             )
