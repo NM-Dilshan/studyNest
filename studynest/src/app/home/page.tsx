@@ -1,6 +1,7 @@
 import { createClient, isSupabaseConfigured } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import HeaderStudentID from '@/components/HeaderStudentID'
 
 type RecentUpdate = {
@@ -146,7 +147,7 @@ export default async function HomePage() {
               <a href="#" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Study Areas</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              <Link href="/Naveen/my-complaints" className="text-gray-600 hover:text-gray-900">Complaints</Link>
             </nav>
 
             {/* Student ID Display */}
@@ -197,7 +198,7 @@ export default async function HomePage() {
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Free Lecture Hall Finder */}
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">
+          <Link href="/student/halls" className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden block">
             <div className="p-6">
               <div className="h-12 w-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                 <svg className="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -210,10 +211,10 @@ export default async function HomePage() {
                 <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8L5.257 19.879A2 2 0 005 21H3a2 2 0 01-2-2v-2c0-.253.045-.506.13-.75L13 7z" />
                 </svg>
-                12 halls free
+                Real-time finder
               </div>
             </div>
-          </div>
+          </Link>
 
           {/* Study Area Finder */}
           <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">
@@ -235,23 +236,25 @@ export default async function HomePage() {
           </div>
 
           {/* Submit Complaint */}
-          <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden">
-            <div className="p-6">
-              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Complaint</h3>
-              <p className="text-gray-600 mb-4">Report issues with facilities or study spaces</p>
-              <div className="flex items-center text-sm text-blue-600 font-medium">
-                <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                </svg>
-                2-3 days response
+          <Link href="/Naveen/complaints">
+            <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden cursor-pointer">
+              <div className="p-6">
+                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Complaint</h3>
+                <p className="text-gray-600 mb-4">Report issues with facilities or study spaces</p>
+                <div className="flex items-center text-sm text-blue-600 font-medium">
+                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+                  </svg>
+                  2-3 days response
+                </div>
               </div>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Recent Updates */}
