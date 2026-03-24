@@ -12,7 +12,17 @@
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
+<<<<<<< HEAD:studyNest/package.json
     "@supabase/supabase-js": "^2.100.0",
+=======
+<<<<<<<<< Temporary merge branch 1
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.99.3",
+    "@types/mapbox-gl": "^3.4.1",
+=========
+    "@supabase/supabase-js": "^2.100.0",
+>>>>>>>>> Temporary merge branch 2
+>>>>>>> d574ae564db284153e8e6c744a986581e017e371:studynest/package.json
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.38.0",
     "lucide-react": "^0.577.0",
