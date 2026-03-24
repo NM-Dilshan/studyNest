@@ -131,14 +131,8 @@ model study_areas {
   is_active                    Boolean?                       @default(true)
   area_status                  String?                        @default("available") @db.VarChar(20)
   created_at                   DateTime?                      @default(now()) @db.Timestamp(6)
-  cafe                         Boolean?                       @default(false)
-  lat                          Float?
-  lng                          Float?
-  radius_meters                Int?
-  area_occupancy               area_occupancy?
   complaints                   complaints[]
   favorite_study_areas         favorite_study_areas[]
-  live_locations               live_locations[]
   study_area_usage_logs        study_area_usage_logs[]
   update_request_pings         update_request_pings[]
   volunteer_study_area_updates volunteer_study_area_updates[]

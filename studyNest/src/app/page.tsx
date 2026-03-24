@@ -32,7 +32,7 @@ export default async function LandingPage() {
           </div>
           <nav className="hidden md:flex items-center space-x-8">
             <Link href="#features" className="text-gray-600 hover:text-gray-900 font-medium">Features</Link>
-            <Link href="#" className="text-gray-600 hover:text-gray-900 font-medium">About</Link>
+            <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
             <Link href="/login/signIN" className="text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
             <Link
               href="/login"

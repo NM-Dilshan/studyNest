@@ -12,6 +12,7 @@ export default function ComplaintsPage() {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   // Building configuration
   const buildingConfig = {
@@ -71,36 +72,16 @@ export default function ComplaintsPage() {
 
   // Fetch buildings on mount
   useEffect(() => {
-    // Check authentication
-    const storedUser = localStorage.getItem('user')
+    // Get student ID if available
     const studentId = localStorage.getItem('studentId')
-
-    if (!storedUser || !studentId) {
-      setUser(null)
-      setIsAuthenticated(false)
-      setCheckingAuth(false)
-      fetchBuildings()
-      return
+    if (studentId) {
+      setUser({ studentId })
+      setIsAuthenticated(true)
     }
-
-    try {
-      const userData = JSON.parse(storedUser)
-      const isValidUser = userData && typeof userData === 'object'
-
-      if (isValidUser) {
-        setUser(userData)
-        setIsAuthenticated(true)
-      } else {
-        setUser(null)
-        setIsAuthenticated(false)
-      }
-    } catch (err) {
-      console.error('Error parsing user data:', err)
-      setUser(null)
-      setIsAuthenticated(false)
-    } finally {
-      setCheckingAuth(false)
-    }
+    
+    // Always allow page to load - no auth required
+    setCheckingAuth(false)
+    setMounted(true)
 
     fetchBuildings()
   }, [])
@@ -299,15 +280,6 @@ export default function ComplaintsPage() {
 
   const validateStep = () => {
     setError('')
-    
-    // For final submission, validate that studentId exists
-    if ((step === 8 && formData.complaintType === 'lecture_hall') || (step === 6 && formData.complaintType === 'study_area')) {
-      const studentId = localStorage.getItem('studentId')
-      if (!studentId) {
-        setError('You must be logged in to submit a complaint. Please sign in first.')
-        return false
-      }
-    }
 
     const isLectureHall = formData.complaintType === 'lecture_hall'
     const isStudyArea = formData.complaintType === 'study_area'
@@ -394,12 +366,8 @@ export default function ComplaintsPage() {
   const handleSubmit = async () => {
     setError('')
 
-    // Get studentId from localStorage
-    const studentId = localStorage.getItem('studentId')
-    if (!studentId) {
-      setError('You must be logged in to submit a complaint. Please sign in first.')
-      return
-    }
+    // Get studentId from localStorage (optional - for tracking)
+    const studentId = localStorage.getItem('studentId') || 'anonymous'
 
     setLoading(true)
     try {
@@ -435,31 +403,13 @@ export default function ComplaintsPage() {
     }
   }
 
-  // Show loading while checking authentication
-  if (checkingAuth) {
+  // Show nothing if not mounted
+  if (!mounted) {
     return (
       <div className="min-h-screen bg-[#F4F9F8] flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#2E6F95] mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Show sign-in prompt if not authenticated
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-h-screen bg-[#F4F9F8] flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-md p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Sign in required</h2>
-          <p className="text-gray-600 mb-6">You need to sign in before submitting a complaint.</p>
-          <Link
-            href="/signin"
-            className="inline-flex items-center justify-center px-6 py-3 bg-[#2E6F95] text-white rounded-lg font-medium hover:bg-[#1f4b66] transition"
-          >
-            Go to Sign In
-          </Link>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )

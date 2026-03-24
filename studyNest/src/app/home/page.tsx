@@ -121,6 +121,17 @@ export default async function HomePage() {
     ]
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
+  const profile = user ? { name: user.name } : null
+  const isVolunteer = user?.role === 'volunteer'
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Modern Header */}
@@ -145,11 +156,15 @@ export default async function HomePage() {
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
 <<<<<<< HEAD:studyNest/src/app/home/page.tsx
+<<<<<<< HEAD:studyNest/src/app/home/page.tsx
 =======
 <<<<<<<<< Temporary merge branch 1
+=======
+>>>>>>> e2f55e2235aff83655e1a9d09395348caf8384eb:studynest/src/app/home/page.tsx
               <a href="/home" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
               <a href="/lecture-halls" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
               <a href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</a>
+              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/complaints" className="text-gray-600 hover:text-gray-900">Complaints</a>
               {/* Show Volunteer button ONLY for volunteers */}
               {isVolunteer && (
@@ -157,6 +172,7 @@ export default async function HomePage() {
                   Volunteer
                 </a>
               )}
+<<<<<<< HEAD:studyNest/src/app/home/page.tsx
 =========
 >>>>>>> d574ae564db284153e8e6c744a986581e017e371:studynest/src/app/home/page.tsx
               <a href="#" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
@@ -167,6 +183,8 @@ export default async function HomePage() {
 =======
 >>>>>>>>> Temporary merge branch 2
 >>>>>>> d574ae564db284153e8e6c744a986581e017e371:studynest/src/app/home/page.tsx
+=======
+>>>>>>> e2f55e2235aff83655e1a9d09395348caf8384eb:studynest/src/app/home/page.tsx
             </nav>
 
             {/* Student ID Display */}
