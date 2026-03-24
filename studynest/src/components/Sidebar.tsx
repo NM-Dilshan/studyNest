@@ -3,12 +3,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-<<<<<<< HEAD
-import { Home, Building, MapPin, AlertCircle } from 'lucide-react'
+import { Home, Building, MapPin, AlertCircle, Calendar, AlertTriangle } from 'lucide-react'
 import { useState, useEffect } from 'react'
-=======
-import { Home, Building, MapPin, AlertCircle, Calendar, ShieldAlert } from 'lucide-react'
->>>>>>> 8da7400037c6e69256edb6440f19c18bf6c3170d
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -60,7 +56,7 @@ export function Sidebar() {
     },
     {
       label: 'Conflict Overrides',
-      icon: ShieldAlert,
+      icon: AlertTriangle,
       href: '/admin/conflicts',
     },
   ]
