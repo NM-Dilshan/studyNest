@@ -107,6 +107,7 @@ export default function HomePage() {
   }
 
   const profile = user ? { name: user.name } : null
+  const isVolunteer = user?.role === 'volunteer'
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
@@ -131,10 +132,10 @@ export default function HomePage() {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-<<<<<<<<< Temporary merge branch 1
               <a href="/home" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
               <a href="/lecture-halls" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
               <a href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</a>
+              <a href="/about" className="text-gray-600 hover:text-gray-900">About</a>
               <a href="/complaints" className="text-gray-600 hover:text-gray-900">Complaints</a>
               {/* Show Volunteer button ONLY for volunteers */}
               {isVolunteer && (
@@ -142,12 +143,6 @@ export default function HomePage() {
                   Volunteer
                 </a>
               )}
-=========
-              <a href="#" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Study Areas</a>
-              <Link href="/Naveen/my-complaints" className="text-gray-600 hover:text-gray-900">Complaints</Link>
->>>>>>>>> Temporary merge branch 2
             </nav>
 
             {/* Student ID Display */}

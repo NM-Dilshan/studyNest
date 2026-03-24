@@ -135,19 +135,11 @@ model study_areas {
   radius_meters                Int?                           // radius in meters for circular area
   cafe                         Boolean?                       @default(false)
   created_at                   DateTime?                      @default(now()) @db.Timestamp(6)
-  cafe                         Boolean?                       @default(false)
-  lat                          Float?
-  lng                          Float?
-  radius_meters                Int?
-  area_occupancy               area_occupancy?
   complaints                   complaints[]
   favorite_study_areas         favorite_study_areas[]
-  live_locations               live_locations[]
   study_area_usage_logs        study_area_usage_logs[]
   update_request_pings         update_request_pings[]
   volunteer_study_area_updates volunteer_study_area_updates[]
-  area_occupancy               area_occupancy?
-  live_locations               live_locations[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -165,8 +157,6 @@ model timetable {
   lecturer_name String?       @db.VarChar(100)
   is_reserved   Boolean?      @default(true)
   created_at    DateTime?     @default(now()) @db.Timestamp(6)
-  academic_year Int?
-  semester      Int?
   lecture_halls lecture_halls @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
 }
 

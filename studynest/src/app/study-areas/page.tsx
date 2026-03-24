@@ -171,6 +171,9 @@ export default function StudyAreasPage() {
               <Link href="/study-areas" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-600">
                 Study Areas
               </Link>
+              <Link href="/about" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                About
+              </Link>
             </div>
             <div className="flex items-center space-x-4">
               <button className="relative p-1 text-gray-400 hover:text-gray-500">
@@ -271,17 +274,32 @@ export default function StudyAreasPage() {
 
         {/* Privacy & Location Sharing */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-          <div className="flex justify-between items-start gap-6">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div>
               <h3 className="text-lg font-semibold text-blue-900">🔒 Privacy-First Real-Time Tracking</h3>
               <p className="text-sm text-gray-800 mt-2">
                 Your exact location is never stored. We only count how many people are in each study area, anonymously.
                 Location data expires after 5 minutes. You can stop sharing anytime.
               </p>
+              <div className="mt-6">
+                <ClientLocationToggle userId={userId} />
+              </div>
             </div>
-            <div className="ml-4 flex-shrink-0">
-              <ClientLocationToggle userId={userId} />
-            </div>
+            
+            {/* Google Maps showing study area locations */}
+            {areas.length > 0 && (
+              <div className="bg-white rounded-lg overflow-hidden shadow-sm h-96">
+                <iframe
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${areas[0]?.area_name || 'Study Areas'}`}
+                  title="Study Areas Map"
+                />
+              </div>
+            )}
           </div>
         </div>
 

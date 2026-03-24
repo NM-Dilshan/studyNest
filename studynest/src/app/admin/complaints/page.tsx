@@ -62,23 +62,7 @@ export default function AdminComplaintsPage() {
   const [activeTab, setActiveTab] = useState<'complaints' | 'summary'>('complaints')
 
   useEffect(() => {
-    // Check admin authentication
-    const storedUser = localStorage.getItem('user')
-    if (!storedUser) {
-      router.push('/login/signIN')
-      return
-    }
-
-    try {
-      const user = JSON.parse(storedUser)
-      if (user.role !== 'admin' && user.role !== 'volunteer') {
-        router.push('/home')
-        return
-      }
-    } catch {
-      router.push('/login/signIN')
-    }
-
+    // Load admin complaints directly without authentication block
     fetchData()
   }, [router])
 

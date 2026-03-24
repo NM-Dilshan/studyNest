@@ -14,6 +14,7 @@ export default function ComplaintsPage() {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   // Building configuration
   const buildingConfig = {
@@ -73,27 +74,16 @@ export default function ComplaintsPage() {
 
   // Fetch buildings on mount
   useEffect(() => {
-    // Check authentication
-    const storedUser = localStorage.getItem('user')
+    // Get student ID if available
     const studentId = localStorage.getItem('studentId')
-
-    if (!storedUser || !studentId) {
-      // Not authenticated - redirect to login
-      router.push('/login/signIN')
-      return
-    }
-
-    // User is authenticated
-    try {
-      const userData = JSON.parse(storedUser)
-      setUser(userData)
+    if (studentId) {
+      setUser({ studentId })
       setIsAuthenticated(true)
-    } catch (err) {
-      console.error('Error parsing user data:', err)
-      router.push('/login/signIN')
-    } finally {
-      setCheckingAuth(false)
     }
+    
+    // Always allow page to load - no auth required
+    setCheckingAuth(false)
+    setMounted(true)
 
     fetchBuildings()
   }, [])
@@ -292,15 +282,6 @@ export default function ComplaintsPage() {
 
   const validateStep = () => {
     setError('')
-    
-    // For final submission, validate that studentId exists
-    if ((step === 8 && formData.complaintType === 'lecture_hall') || (step === 6 && formData.complaintType === 'study_area')) {
-      const studentId = localStorage.getItem('studentId')
-      if (!studentId) {
-        setError('You must be logged in to submit a complaint. Please sign in first.')
-        return false
-      }
-    }
 
     const isLectureHall = formData.complaintType === 'lecture_hall'
     const isStudyArea = formData.complaintType === 'study_area'
@@ -390,12 +371,8 @@ export default function ComplaintsPage() {
   const handleSubmit = async () => {
     setError('')
 
-    // Get studentId from localStorage
-    const studentId = localStorage.getItem('studentId')
-    if (!studentId) {
-      setError('You must be logged in to submit a complaint. Please sign in first.')
-      return
-    }
+    // Get studentId from localStorage (optional - for tracking)
+    const studentId = localStorage.getItem('studentId') || 'anonymous'
 
     setLoading(true)
     try {
@@ -434,21 +411,16 @@ export default function ComplaintsPage() {
     }
   }
 
-  // Show loading while checking authentication
-  if (checkingAuth) {
+  // Show nothing if not mounted
+  if (!mounted) {
     return (
       <div className="min-h-screen bg-[#F4F9F8] flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#2E6F95] mb-4"></div>
-          <p className="text-gray-600">Checking authentication...</p>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     )
-  }
-
-  // Show nothing if not authenticated (will redirect)
-  if (!isAuthenticated || !user) {
-    return null
   }
 
   const totalSteps = getTotalSteps()
