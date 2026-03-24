@@ -6,21 +6,19 @@ import {
   validateVolunteerHallUpdate,
 } from '@/lib/validations/volunteerHallUpdate'
 
-interface RouteParams {
-  params: {
-    id: string
-  }
-}
-
 /**
  * PUT /api/volunteer/hall-updates/[id]
  * Update an existing volunteer hall submission
  * Can only update non-expired submissions
  * Can only update own submissions
  */
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const submissionId = params.id
+    const { id } = await params
+    const submissionId = id
     const body = await request.json()
     const {
       volunteerId,
@@ -142,9 +140,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  * Delete a volunteer hall submission
  * Can only delete own submissions
  */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const submissionId = params.id
+    const { id } = await params
+    const submissionId = id
     const { searchParams } = new URL(request.url)
     const volunteerId = searchParams.get('volunteerId')
 
