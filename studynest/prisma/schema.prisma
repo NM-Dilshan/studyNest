@@ -140,6 +140,7 @@ model study_areas {
   study_area_usage_logs        study_area_usage_logs[]
   update_request_pings         update_request_pings[]
   volunteer_study_area_updates volunteer_study_area_updates[]
+  area_occupancy               area_occupancy?
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -248,6 +249,33 @@ model volunteer_scores {
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// Area occupancy tracking for study areas
+model area_occupancy {
+  occupancy_id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  study_area_id       String      @db.Uuid
+  current_count       Int         @default(0)
+  available_seats     Int         @default(0)
+  occupancy_percentage Int        @default(0)
+  crowd_status        String      @db.VarChar(20) // 'Low Crowd', 'Medium Crowd', 'High Crowd'
+  updated_at          DateTime    @updatedAt
+  study_areas         study_areas @relation(fields: [study_area_id], references: [study_area_id], onDelete: Cascade)
+
+  @@unique([study_area_id])
+}
+
+/// Location permission tracking for GDPR compliance
+model location_permissions {
+  permission_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String    @db.Uuid
+  permission_status String   @db.VarChar(20) // 'granted', 'denied', 'revoked'
+  granted_at       DateTime?
+  last_used_at     DateTime?
+  revoked_at       DateTime?
+  created_at       DateTime  @default(now())
+
+  @@unique([user_id])
+}
+
 model volunteer_study_area_updates {
   area_update_id    Int                 @id @default(autoincrement())
   volunteer_id      String              @db.Uuid

@@ -2,6 +2,7 @@
 
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   Bell,
   LogOut,
@@ -13,7 +14,8 @@ import {
   Award,
   Clock,
 } from 'lucide-react'
-import VolunteerSubmitForm from '@/components/VolunteerSubmitForm'
+import VolunteerHallForm from '@/components/volunteer/VolunteerHallForm'
+import VolunteerSubmissionList from '@/components/volunteer/VolunteerSubmissionList'
 
 // ------------------------------------------------------------
 // Types
@@ -26,8 +28,6 @@ interface ScoreData {
   inaccurate_count: number
   score: number
 }
-
-
 
 interface HistoryItemRaw {
   id: number
@@ -57,6 +57,32 @@ interface LeaderboardEntry {
   isCurrentUser?: boolean
 }
 
+interface UserProfile {
+  user_id: string
+  name: string
+  role: string
+  email: string
+}
+
+interface Submission {
+  hall_update_id: number
+  volunteer_id: string
+  hall_id: string
+  availability_status: string
+  occupancy_level?: string
+  available_seats?: number
+  note?: string
+  created_at: string
+  expires_at: string
+  isExpired: boolean
+  lecture_halls: {
+    hall_id: string
+    hall_name: string
+    building?: string
+    floor?: number
+  }
+}
+
 // ------------------------------------------------------------
 // Helper function to get status color
 // ------------------------------------------------------------
@@ -83,18 +109,46 @@ const getStatusColor = (status: string | null | undefined) => {
 // Main Page Component (Client Component)
 // ------------------------------------------------------------
 export default function VolunteerPage() {
+  const router = useRouter()
+  const [user, setUser] = useState<UserProfile | null>(null)
   const [scoreData, setScoreData] = useState<ScoreData | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+  const [isHydrated, setIsHydrated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [editingSubmission, setEditingSubmission] = useState<Submission | null>(null)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Get current user ID from localStorage
-  const currentUserId = typeof window !== 'undefined' 
+  // Get current user from localStorage
+  const currentUserId = typeof window !== 'undefined'
     ? JSON.parse(localStorage.getItem('user') || '{}')?.user_id || '550e8400-e29b-41d4-a716-446655440000'
     : '550e8400-e29b-41d4-a716-446655440000'
 
   useEffect(() => {
-    // Fetch volunteer data
+    setIsHydrated(true)
+
+    if (typeof window !== 'undefined') {
+      const userJson = localStorage.getItem('user')
+      if (userJson) {
+        try {
+          const userData = JSON.parse(userJson)
+          setUser(userData as UserProfile)
+        } catch (error) {
+          console.error('Error parsing user data:', error)
+        }
+      }
+    }
+  }, [])
+
+  // Redirect to login if not a volunteer
+  useEffect(() => {
+    if (isHydrated && (!user || user.role !== 'volunteer')) {
+      router.push('/login/signIN')
+    }
+  }, [isHydrated, user, router])
+
+  // Fetch volunteer data
+  useEffect(() => {
     const fetchVolunteerData = async () => {
       try {
         const response = await fetch('/api/volunteer/data?userId=' + currentUserId)
@@ -117,12 +171,14 @@ export default function VolunteerPage() {
     fetchVolunteerData()
   }, [currentUserId])
 
-  // Handle form submission success - add new item to history and update score
-  const handleSubmitSuccess = (newItem: HistoryItem) => {
-    setHistory([newItem, ...history.slice(0, 4)])
-    
+  const handleSubmitSuccess = (newItem?: HistoryItem) => {
+    // Refresh the submissions list
+    setRefreshTrigger((prev) => prev + 1)
+    setEditingSubmission(null)
+
     // Update score display
-    if (scoreData) {
+    if (newItem && scoreData) {
+      setHistory([newItem, ...history.slice(0, 4)])
       setScoreData({
         ...scoreData,
         total_updates: scoreData.total_updates + 1,
@@ -131,16 +187,31 @@ export default function VolunteerPage() {
     }
   }
 
-  if (loading) {
+  const handleEditSubmission = (submission: Submission) => {
+    setEditingSubmission(submission)
+    // Scroll to form
+    setTimeout(() => {
+      const formElement = document.getElementById('submission-form')
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }, 100)
+  }
+
+  const handleEditCancel = () => {
+    setEditingSubmission(null)
+  }
+
+  if (!isHydrated || loading) {
     return (
       <div className="min-h-screen bg-gray-100">
         <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
-                <Image 
-                  src="/logo.jpeg" 
-                  alt="StudyNest Logo" 
+                <Image
+                  src="/logo.jpeg"
+                  alt="StudyNest Logo"
                   width={40}
                   height={40}
                   className="rounded-lg shadow-md"
@@ -163,6 +234,10 @@ export default function VolunteerPage() {
     )
   }
 
+  if (!user || user.role !== 'volunteer') {
+    return null // Will redirect via useEffect
+  }
+
   // -------------------------------------------------------
   // Render
   // -------------------------------------------------------
@@ -173,19 +248,19 @@ export default function VolunteerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
-             <div className="flex items-center space-x-3">
-                          <Image 
-                            src="/logo.jpeg" 
-                            alt="StudyNest Logo" 
-                            width={40}
-                            height={40}
-                            className="rounded-lg shadow-md"
-                          />
-                          <div>
-                            <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
-                            <p className="text-xs text-gray-500">Campus Free Space Finder</p>
-                          </div>
-                        </div>
+            <div className="flex items-center space-x-3">
+              <Image
+                src="/logo.jpeg"
+                alt="StudyNest Logo"
+                width={40}
+                height={40}
+                className="rounded-lg shadow-md"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
+                <p className="text-xs text-gray-500">Campus Free Space Finder</p>
+              </div>
+            </div>
 
             {/* Center Nav */}
             <div className="hidden md:flex space-x-4">
@@ -199,7 +274,7 @@ export default function VolunteerPage() {
                 Study Areas
               </a>
               <a href="/Sunera/volunteer" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-600">
-                Volunteer
+                Dashboard
               </a>
             </div>
 
@@ -228,70 +303,68 @@ export default function VolunteerPage() {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Volunteer Panel</h1>
-          <p className="text-gray-600">Help keep space information up-to-date</p>
+          <p className="text-gray-600 mt-1">Manage your submissions and track your contribution</p>
         </div>
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column (2/3 width on large screens) */}
+        {/* Three Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Left Column (2/4 width) - Form Area */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Submit Update Card - Using Client Component */}
-            <VolunteerSubmitForm 
-              volunteerId={currentUserId} 
-              onSubmitSuccess={handleSubmitSuccess}
-            />
+            {/* Submission Form Card */}
+            <div id="submission-form">
+              <VolunteerHallForm
+                volunteerId={user.user_id}
+                onSubmitSuccess={handleSubmitSuccess}
+                editingSubmission={editingSubmission}
+                onEditCancel={handleEditCancel}
+              />
+            </div>
 
-            {/* Your Update History Card */}
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <h2 className="text-xl font-semibold text-gray-900">Your Update History</h2>
-              <p className="text-sm text-gray-500 mt-1">Recent contributions</p>
+            {/* Tips Card */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Tips for Accurate Updates</h3>
+              <ul className="space-y-3 text-sm text-gray-600">
+                <li className="flex gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Submit updates only when you're in or have just left the hall</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Be honest about occupancy levels for accurate information</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Set appropriate expiry times (30 min to 2 hours)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span>Add notes for special situations (maintenance, events, etc.)</span>
+                </li>
+              </ul>
+            </div>
 
-              <div className="mt-4 space-y-3">
-                {history.length === 0 ? (
-                  <p className="text-gray-500 text-sm">No updates yet.</p>
-                ) : (
-                  history.map(item => (
-                    <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm">
-                          {item.type === 'hall' ? (
-                            <Building2 className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <MapPin className="h-4 w-4 text-green-500" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{item.name}</p>
-                          <div className="flex items-center space-x-2 text-xs">
-                            <span className={`px-2 py-0.5 rounded-full ${getStatusColor(item.status)}`}>
-                              {item.status}
-                            </span>
-                            <span className="text-gray-400 flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
-                                Math.floor((Date.now() - item.time.getTime()) / (1000 * 60)),
-                                'minute'
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center text-yellow-500">
-                          <Star className="h-3 w-3 fill-current mr-1" />
-                          <span className="font-medium">+{item.points}</span>
-                        </div>
-                        <div className="text-xs text-gray-400">{item.confidence}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
+            {/* Availability Status Help */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Status Guide</h3>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <p className="font-medium text-gray-900">Free</p>
+                  <p className="text-gray-600">Hall is completely available</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Partially Busy</p>
+                  <p className="text-gray-600">Some classes running, some seats free</p>
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Busy</p>
+                  <p className="text-gray-600">Hall is fully occupied</p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column (1/3 width) */}
-          <div className="space-y-6">
+          {/* Right Column (2/4 width) - Stats */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Your Score Card (Gradient) */}
             <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow-sm p-6 text-white">
               <div className="flex items-center justify-between">
@@ -390,6 +463,64 @@ export default function VolunteerPage() {
               <p className="text-sm text-gray-500 mt-1">You submitted 10 accurate updates this week.</p>
             </div>
           </div>
+        </div>
+
+        {/* Your Update History Card */}
+        <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-xl font-semibold text-gray-900">Your Update History</h2>
+          <p className="text-sm text-gray-500 mt-1">Recent contributions</p>
+
+          <div className="mt-4 space-y-3">
+            {history.length === 0 ? (
+              <p className="text-gray-500 text-sm">No updates yet.</p>
+            ) : (
+              history.map(item => (
+                <div key={item.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-white rounded-lg shadow-sm">
+                      {item.type === 'hall' ? (
+                        <Building2 className="h-4 w-4 text-blue-500" />
+                      ) : (
+                        <MapPin className="h-4 w-4 text-green-500" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{item.name}</p>
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className={`px-2 py-0.5 rounded-full ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                        <span className="text-gray-400 flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {new Intl.RelativeTimeFormat('en', { numeric: 'auto' }).format(
+                            Math.floor((Date.now() - item.time.getTime()) / (1000 * 60)),
+                            'minute'
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center text-yellow-500">
+                      <Star className="h-3 w-3 fill-current mr-1" />
+                      <span className="font-medium">+{item.points}</span>
+                    </div>
+                    <div className="text-xs text-gray-400">{item.confidence}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Submissions List - Full Width */}
+        <div className="mt-8">
+          <VolunteerSubmissionList
+            volunteerId={user.user_id}
+            onEdit={handleEditSubmission}
+            onDelete={() => setRefreshTrigger((prev) => prev + 1)}
+            refreshTrigger={refreshTrigger}
+          />
         </div>
       </main>
     </div>

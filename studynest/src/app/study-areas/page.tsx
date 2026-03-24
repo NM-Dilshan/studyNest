@@ -1,342 +1,317 @@
-'use client'
+/**
+ * Study Area Finder Page
+ * Uses polling for occupancy updates instead of Supabase Realtime
+ * 
+ * Features:
+ * - Location permission request
+ * - Polling-based occupancy updates
+ * - Privacy-safe aggregated data only
+ */
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
-import Link from 'next/link'
-import StudyAreaCard from '@/components/StudyAreaCard'
-import StudyAreaMap from '@/components/StudyAreaMap'
-import ClientLocationToggle from '@/components/ClientLocationToggle'
-import { Bell, LogOut, TrendingUp } from 'lucide-react'
+'use client';
 
-interface User {
-  user_id: string
-  student_id: string
-  name: string
-  email: string
-  role: 'student' | 'volunteer' | 'admin'
+import { useEffect, useState, useCallback } from 'react';
+import Header from '@/components/Header';
+import { useLocationTracking } from '@/hooks/useLocationTracking';
+import { LocationPermissionBanner } from '@/components/study-areas/LocationPermissionBanner';
+import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard';
+import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary';
+import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap';
+import { getCrowdStatus, CrowdStatus } from '@/lib/geofence';
+import { Loader, AlertCircle } from 'lucide-react';
+
+interface StudyAreaData {
+  study_area_id: string;
+  area_name: string;
+  building: string | null;
+  capacity: number;
+  lat: number;
+  lng: number;
+  radius_meters: number;
+  wifi: boolean;
+  charging_ports: boolean;
+  silent_zone: boolean;
+  ac: boolean;
+  cafe: boolean;
 }
 
-interface StudyArea {
-  study_area_id: string
-  area_name: string
-  description?: string
-  building?: string
-  floor?: number
-  capacity?: number
-  wifi?: boolean
-  charging_ports?: boolean
-  silent_zone?: boolean
-  ac?: boolean
-  cafe?: boolean
-  is_active: boolean
-  area_status?: string
-  lat?: number
-  lng?: number
-  radius_meters?: number
-  created_at?: string
-  occupancy?: Array<{
-    current_count: number
-    updated_at?: string
-  }>
+interface OccupancyData {
+  occupancy_id: string;
+  study_area_id: string;
+  current_count: number;
+  available_seats: number;
+  occupancy_percentage: number;
+  crowd_status: CrowdStatus;
+  updated_at: string;
 }
 
-export default function StudyAreasPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [userId, setUserId] = useState('')
-  const [areas, setAreas] = useState<StudyArea[]>([])
-  const [counts, setCounts] = useState({ low: 0, medium: 0, high: 0 })
-  const [loading, setLoading] = useState(true)
-  const [mapboxToken, setMapboxToken] = useState('')
+interface StudyAreaStats {
+  lowCrowdAreas: number;
+  mediumCrowdAreas: number;
+  highCrowdAreas: number;
+  totalStudentsInside: number;
+  totalAvailableSeats: number;
+  totalCapacity: number;
+}
 
+export default function StudyAreaFinderPage() {
+  const [userId, setUserId] = useState<string | null>(null);
+  const [studyAreas, setStudyAreas] = useState<StudyAreaData[]>([]);
+  const [occupancyData, setOccupancyData] = useState<Map<string, OccupancyData>>(new Map());
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<StudyAreaStats | null>(null);
+  const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
+
+  // Location tracking
+  const location = useLocationTracking(userId, true);
+
+  // Get authenticated user from localStorage (set by signin)
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/login/signIN')
-      return
-    }
-
     try {
-      const parsedUser: User = JSON.parse(userData)
-      setUser(parsedUser)
-      setUserId(parsedUser.user_id)
-      
-      // Fetch study areas
-      fetchStudyAreas()
-    } catch (error) {
-      console.error('Failed to parse user data:', error)
-      router.push('/login/signIN')
-    }
-  }, [router])
-
-  const fetchStudyAreas = async () => {
-    try {
-      // Call API endpoint that uses Prisma to fetch study areas
-      const response = await fetch('/api/study-areas')
-      
-      if (!response.ok) throw new Error('Failed to fetch study areas')
-      
-      const data = await response.json()
-      const studyAreas = data.areas || []
-
-      if (Array.isArray(studyAreas)) {
-        setAreas(studyAreas as StudyArea[])
-
-        // Calculate summary counts
-        let lowCount = 0, mediumCount = 0, highCount = 0
-        studyAreas.forEach((area: StudyArea) => {
-          const count = area.occupancy?.[0]?.current_count || 0
-          const percent = area.capacity ? (count / area.capacity) * 100 : 0
-
-          if (percent <= 30) lowCount++
-          else if (percent <= 70) mediumCount++
-          else highCount++
-        })
-        
-        setCounts({ low: lowCount, medium: mediumCount, high: highCount })
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        setUserId(user.user_id);
+      } else {
+        setError('Please log in to use the Study Area Finder');
+        setIsLoading(false);
       }
-
-      // Get mapbox token from environment
-      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
-      setMapboxToken(token)
-    } catch (error) {
-      console.error('Error fetching study areas:', error)
-    } finally {
-      setLoading(false)
+    } catch (err) {
+      console.error('Error getting user:', err);
+      setError('Failed to authenticate');
+      setIsLoading(false);
     }
-  }
+  }, []);
 
-  if (loading) {
+  // Fetch study areas and occupancy data
+  const fetchData = useCallback(async () => {
+    try {
+      const response = await fetch('/api/study-areas');
+      if (!response.ok) throw new Error('Failed to fetch');
+      
+      const data = await response.json();
+      const areas = data.areas || [];
+      
+      setStudyAreas(areas);
+
+      // Build occupancy map
+      const occupancyMap = new Map<string, OccupancyData>();
+      const occupancyList: OccupancyData[] = [];
+      
+      areas.forEach((area: any) => {
+        if (area.area_occupancy) {
+          const occupancy: OccupancyData = {
+            occupancy_id: area.area_occupancy.occupancy_id,
+            study_area_id: area.area_occupancy.study_area_id,
+            current_count: area.area_occupancy.current_count,
+            available_seats: area.area_occupancy.available_seats,
+            occupancy_percentage: area.area_occupancy.occupancy_percentage,
+            crowd_status: area.area_occupancy.crowd_status as CrowdStatus,
+            updated_at: area.area_occupancy.updated_at,
+          };
+          occupancyMap.set(occupancy.study_area_id, occupancy);
+          occupancyList.push(occupancy);
+        }
+      });
+      
+      setOccupancyData(occupancyMap);
+
+      // Calculate stats
+      const lowCrowd = occupancyList.filter((o) => o.crowd_status === 'Low Crowd').length || 0;
+      const mediumCrowd = occupancyList.filter((o) => o.crowd_status === 'Medium Crowd').length || 0;
+      const highCrowd = occupancyList.filter((o) => o.crowd_status === 'High Crowd').length || 0;
+      const totalStudents = occupancyList.reduce((sum, o) => sum + o.current_count, 0) || 0;
+      const totalAvailable = occupancyList.reduce((sum, o) => sum + o.available_seats, 0) || 0;
+      const totalCapacity = areas.reduce((sum: number, a: StudyAreaData) => sum + (a.capacity || 0), 0);
+
+      setStats({
+        lowCrowdAreas: lowCrowd,
+        mediumCrowdAreas: mediumCrowd,
+        highCrowdAreas: highCrowd,
+        totalStudentsInside: totalStudents,
+        totalAvailableSeats: totalAvailable,
+        totalCapacity: totalCapacity,
+      });
+
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load study areas');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Initial fetch
+  useEffect(() => {
+    if (userId) {
+      fetchData();
+    }
+  }, [userId, fetchData]);
+
+  // Polling for occupancy updates (every 30 seconds instead of real-time)
+  useEffect(() => {
+    if (!userId) return;
+
+    const interval = setInterval(() => {
+      fetchData();
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [userId, fetchData]);
+
+  // Auto-start tracking after permission granted
+  useEffect(() => {
+    if (location.permissionStatus === 'granted' && !location.isTracking) {
+      location.startTracking();
+    }
+  }, [location.permissionStatus, location.isTracking, location]);
+
+  if (!userId) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading study areas...</p>
+      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <AlertCircle className="mx-auto text-amber-600 mb-4" size={48} />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Please Log In</h1>
+            <p className="text-gray-600 mb-6">
+              You need to log in to the StudyNest app to use the Study Area Finder.
+            </p>
+            <a
+              href="/login/signIN"
+              className="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700"
+            >
+              Go to Login
+            </a>
+          </div>
         </div>
       </div>
-    )
+    );
   }
-
-  if (!user) {
-    return null
-  }
-
-  // Prepare map data
-  const mapAreas = areas
-    .filter((a): a is StudyArea & { lat: number; lng: number; radius_meters: number } => 
-      a.lat !== undefined && a.lng !== undefined && a.radius_meters !== undefined
-    )
-    .map((a) => ({
-      id: a.study_area_id,
-      name: a.area_name,
-      lat: a.lat,
-      lng: a.lng,
-      radius_meters: a.radius_meters,
-    }))
-
-  // Current occupancy for map
-  const occupancyMap: Record<string, number> = {}
-  areas.forEach((area) => {
-    occupancyMap[area.study_area_id] = area.occupancy?.[0]?.current_count || 0
-  })
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navbar */}
-      <nav className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <Link href="/home" className="flex items-center space-x-3">
-              <Image 
-                src="/logo.jpeg" 
-                alt="StudyNest Logo" 
-                width={40}
-                height={40}
-                className="rounded-lg shadow-md"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
-                <p className="text-xs text-gray-500">Campus Free Space Finder</p>
-              </div>
-            </Link>
-            <div className="hidden md:flex space-x-4">
-              <Link href="/home" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                Home
-              </Link>
-              <Link href="/lecture-halls" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                Lecture Halls
-              </Link>
-              <Link href="/study-areas" className="px-3 py-2 rounded-md text-sm font-medium bg-blue-50 text-blue-600">
-                Study Areas
-              </Link>
-              <Link href="/about" className="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
-                About
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="relative p-1 text-gray-400 hover:text-gray-500">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-              </button>
-              <form action="/api/auth/signout" method="post">
-                <button className="flex items-center space-x-1 text-gray-500 hover:text-gray-700">
-                  <LogOut className="h-4 w-4" />
-                  <span className="text-sm">Logout</span>
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Header Component */}
+      <Header currentPage="student-area" />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Page Header */}
+      {/* Study Area Header Section */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Study Area Finder</h1>
+          <p className="text-gray-600">
+            Check real-time crowd levels and find your perfect study space
+          </p>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+        {/* Location permission banner */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Study Area Finder</h1>
-          <p className="text-gray-600">Check real-time crowd levels and available seats powered by anonymous location sharing</p>
+          <LocationPermissionBanner
+            permissionStatus={location.permissionStatus}
+            isTracking={location.isTracking}
+            error={location.error}
+            onRequestPermission={location.requestPermission}
+            onRevoke={location.revokePermission}
+          />
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 flex justify-between items-center">
+        {/* Error message */}
+        {error && (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
             <div>
-              <p className="text-sm text-gray-500">Low Crowd</p>
-              <p className="text-3xl font-bold text-green-600">{counts.low}</p>
+              <h3 className="font-semibold text-red-900 mb-1">Error Loading Data</h3>
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
-            <TrendingUp className="h-6 w-6 text-green-600 rotate-180" />
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6 flex justify-between items-center">
-            <div>
-              <p className="text-sm text-gray-500">Medium Crowd</p>
-              <p className="text-3xl font-bold text-yellow-600">{counts.medium}</p>
-            </div>
-            <TrendingUp className="h-6 w-6 text-yellow-600" />
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6 flex justify-between items-center">
-            <div>
-              <p className="text-sm text-gray-500">High Crowd</p>
-              <p className="text-3xl font-bold text-red-600">{counts.high}</p>
-            </div>
-            <TrendingUp className="h-6 w-6 text-red-600" />
-          </div>
-        </div>
-
-        {/* Map */}
-        {mapboxToken && mapAreas.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Real-time Occupancy Map</h2>
-            <StudyAreaMap areas={mapAreas} token={mapboxToken} occupancy={occupancyMap} />
-            <p className="text-xs text-gray-400 mt-2 text-center">
-              Circles show area boundaries. Hover over circles to see current occupancy.
-            </p>
           </div>
         )}
 
-        {/* Study Area Cards Grid */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Study Areas</h2>
-          {areas.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
-              <p className="text-gray-500">No study areas found.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {areas.map((area) => (
-                <StudyAreaCard key={area.study_area_id} area={area} />
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader className="text-blue-600 animate-spin mr-3" size={24} />
+            <span className="text-gray-600 font-medium">Loading study areas...</span>
+          </div>
+        )}
 
-        {/* Tips Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900">🌙 Least Crowded Times</h3>
-            <ul className="mt-3 space-y-2 text-gray-600 text-sm">
-              <li>• Early mornings (7AM – 9AM)</li>
-              <li>• Late afternoons (4PM – 6PM)</li>
-              <li>• Weekends before 10AM</li>
-              <li>• Between lectures (unless exam season)</li>
-            </ul>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-semibold text-gray-900">⚠️ Peak Hours (Avoid)</h3>
-            <ul className="mt-3 space-y-2 text-gray-600 text-sm">
-              <li>• Mid-morning (10AM – 12PM)</li>
-              <li>• After lunch (1PM – 3PM)</li>
-              <li>• Evening study hours (7PM – 10PM)</li>
-              <li>• The week before exams</li>
-            </ul>
-          </div>
-        </div>
+        {/* Summary cards and tips */}
+        {!isLoading && <StudyAreaSummary stats={stats} />}
 
-        {/* Privacy & Location Sharing */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-semibold text-blue-900">🔒 Privacy-First Real-Time Tracking</h3>
-              <p className="text-sm text-gray-800 mt-2">
-                Your exact location is never stored. We only count how many people are in each study area, anonymously.
-                Location data expires after 5 minutes. You can stop sharing anytime.
-              </p>
-              <div className="mt-6">
-                <ClientLocationToggle userId={userId} />
-              </div>
+        {/* Study areas grid */}
+        {!isLoading && (
+          <>
+            <h2 className="text-xl font-bold text-gray-900 mb-6">All Study Areas</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {studyAreas.map((area) => {
+                const occupancy = occupancyData.get(area.study_area_id);
+                const crowdStatus: CrowdStatus = occupancy?.crowd_status || 'Low Crowd';
+
+                return (
+                  <div
+                    key={area.study_area_id}
+                    onMouseEnter={() => setHoveredAreaId(area.study_area_id)}
+                    onMouseLeave={() => setHoveredAreaId(null)}
+                  >
+                    <StudyAreaCard
+                      id={area.study_area_id}
+                      name={area.area_name}
+                      currentCount={occupancy?.current_count || 0}
+                      availableSeats={occupancy?.available_seats || area.capacity}
+                      occupancyPercentage={occupancy?.occupancy_percentage || 0}
+                      crowdStatus={crowdStatus}
+                      lastUpdated={new Date(occupancy?.updated_at || new Date())}
+                      capacity={area.capacity}
+                      features={{
+                        wifi: area.wifi,
+                        quietZone: area.silent_zone,
+                        café: area.cafe,
+                        chargingPorts: area.charging_ports,
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
-            
-            {/* Google Maps showing study area locations */}
-            {areas.length > 0 && (
-              <div className="bg-white rounded-lg overflow-hidden shadow-sm h-96">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${areas[0]?.area_name || 'Study Areas'}`}
-                  title="Study Areas Map"
-                />
-              </div>
-            )}
-          </div>
-        </div>
+          </>
+        )}
 
-        {/* FAQ */}
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">❓ Frequently Asked Questions</h3>
-          <div className="space-y-4">
-            <details className="border-b border-gray-200 pb-4">
-              <summary className="cursor-pointer font-medium text-gray-900 hover:text-gray-700">
-                How is crowd data collected?
-              </summary>
-              <p className="text-sm text-gray-600 mt-2">
-                Mobile devices share their GPS location with our servers. We analyze if the location falls within a study
-                area and increment the count. No personal data is stored.
-              </p>
-            </details>
-            <details className="border-b border-gray-200 pb-4">
-              <summary className="cursor-pointer font-medium text-gray-900 hover:text-gray-700">
-                Is my location data private?
-              </summary>
-              <p className="text-sm text-gray-600 mt-2">
-                Yes. Your exact latitude/longitude is processed instantly and discarded. Only the occupancy count is
-                stored, updated every minute. You can revoke permission anytime.
-              </p>
-            </details>
-            <details className="pb-4">
-              <summary className="cursor-pointer font-medium text-gray-900 hover:text-gray-700">
-                Why do I see &quot;Low&quot; even when it&apos;s crowded?
-              </summary>
-              <p className="text-sm text-gray-600 mt-2">
-                Crowd levels depend on actual device locations. If fewer people are sharing their location, the count will
-                be lower. The more people opt-in, the more accurate the data.
-              </p>
-            </details>
+        {/* Map section */}
+        {!isLoading && (
+          <div className="mb-8">
+            <StudyAreaMap
+              areas={studyAreas.map((area) => {
+                const occupancy = occupancyData.get(area.study_area_id);
+                return {
+                  id: area.study_area_id,
+                  name: area.area_name,
+                  latitude: area.lat,
+                  longitude: area.lng,
+                  radiusMeters: area.radius_meters,
+                  crowdStatus: occupancy?.crowd_status || 'Low Crowd',
+                  currentCount: occupancy?.current_count || 0,
+                  capacity: area.capacity,
+                };
+              })}
+              hoveredAreaId={hoveredAreaId}
+            />
           </div>
+        )}
+
+        {/* Privacy statement */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <p className="text-sm text-blue-900 mb-2">
+            <strong>🔒 Your Privacy is Protected</strong>
+          </p>
+          <p className="text-sm text-blue-700">
+            StudyNest only tracks aggregated occupancy counts. Your exact location is never stored
+            permanently, displayed to other users, or shared. Location data automatically expires every 5
+            minutes. You can revoke location access at any time.
+          </p>
         </div>
       </main>
     </div>
-  )
+  );
 }

@@ -2,10 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
 import { useSearch } from '@/contexts/SearchContext'
 import { HighlightText } from '@/components/HighlightText'
 
 export default function StudyAreaListPage() {
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+  const [isHydrated, setIsHydrated] = useState(false)
   const { searchValue } = useSearch()
   const [studyAreas, setStudyAreas] = useState([])
   const [loading, setLoading] = useState(true)
@@ -14,8 +19,29 @@ export default function StudyAreaListPage() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    fetchStudyAreas()
+    // Initialize user from localStorage
+    const userData = localStorage.getItem('user')
+    if (userData) {
+      try {
+        setUser(JSON.parse(userData))
+      } catch (err) {
+        console.error('Error parsing user data:', err)
+      }
+    }
+    setIsHydrated(true)
   }, [])
+
+  const handleLogout = (e) => {
+    e.preventDefault()
+    localStorage.removeItem('user')
+    router.push('/login/signIN')
+  }
+
+  useEffect(() => {
+    if (isHydrated) {
+      fetchStudyAreas()
+    }
+  }, [isHydrated])
 
   const fetchStudyAreas = async () => {
     try {
@@ -109,6 +135,10 @@ export default function StudyAreaListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Header Component */}
+      <Header currentPage="home" />
+
+      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Title & Add Button */}
         <div className="flex justify-between items-center mb-8">

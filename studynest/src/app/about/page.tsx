@@ -1,7 +1,8 @@
 'use client';
 
-import Image from 'next/image'
+import Header from '@/components/Header'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -38,59 +39,8 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            {/* Logo */}
-            <Link href={user ? '/home' : '/'} className="flex items-center space-x-3">
-              <Image 
-                src="/logo.jpeg" 
-                alt="StudyNest Logo" 
-                width={40}
-                height={40}
-                className="rounded-lg shadow-md"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
-                <p className="text-xs text-gray-500">Campus Free Space Finder</p>
-              </div>
-            </Link>
-
-            {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
-              {user ? (
-                <>
-                  <Link href="/home" className="text-gray-600 hover:text-gray-900">Home</Link>
-                  <Link href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</Link>
-                  <Link href="/about" className="text-indigo-600 font-medium hover:text-indigo-700">About</Link>
-                </>
-              ) : (
-                <>
-                  <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
-                  <a href="#about" className="text-indigo-600 font-medium hover:text-indigo-700">About</a>
-                  <Link href="/login/signIN" className="text-gray-600 hover:text-gray-900">Sign In</Link>
-                </>
-              )}
-            </nav>
-
-            {/* Right Actions */}
-            <div className="flex items-center space-x-4">
-              {user ? (
-                <form onSubmit={handleLogout}>
-                  <button type="submit" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition">
-                    Logout
-                  </button>
-                </form>
-              ) : (
-                <Link href="/login/signIN" className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">
-                  Get Started
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      {/* Header Component */}
+      <Header currentPage="about" />
 
       <main>
         {/* Hero Section */}

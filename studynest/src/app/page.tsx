@@ -1,19 +1,7 @@
 // app/page.tsx
 import Link from 'next/link'
-import { createClient, isSupabaseConfigured } from '../lib/supabase/server'
-import { redirect } from 'next/navigation'
 
-export default async function LandingPage() {
-  if (isSupabaseConfigured) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    // If user is already logged in, redirect to dashboard
-    if (user) {
-      redirect('/dashboard')
-    }
-  }
-
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
       {/* Modern Header */}

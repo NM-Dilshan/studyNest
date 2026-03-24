@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Header from '@/components/Header'
 import { ChevronRight, ChevronLeft, Upload, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -428,6 +429,9 @@ export default function ComplaintsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Header Component */}
+      <Header currentPage="complaints" />
+
       {/* Main Content */}
       <div className="py-8 px-4">
       <div className="max-w-2xl mx-auto">
