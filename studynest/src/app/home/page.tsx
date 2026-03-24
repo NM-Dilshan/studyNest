@@ -27,36 +27,27 @@ interface User {
 
 export default function HomePage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isVolunteer, setIsVolunteer] = useState(false)
-  const [recentUpdates, setRecentUpdates] = useState<RecentUpdate[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Check if user is logged in
+  
+  // Initialize user from localStorage without setState in effect
+  const [user] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null
     const userData = localStorage.getItem('user')
-    if (!userData) {
-      router.push('/login/signIN')
-      return
-    }
-
+    if (!userData) return null
     try {
-      const parsedUser: User = JSON.parse(userData)
-      setUser(parsedUser)
-      setIsVolunteer(parsedUser.role === 'volunteer')
-    } catch (error) {
-      console.error('Failed to parse user data:', error)
-      router.push('/login/signIN')
-      return
+      return JSON.parse(userData)
+    } catch {
+      return null
     }
+  })
 
-    // Load demo recent updates
+  // Initialize recent updates without setState in effect
+  const [recentUpdates] = useState<RecentUpdate[]>(() => {
     const now = new Date()
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString()
     const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString()
     
-    const updates: RecentUpdate[] = [
+    return [
       {
         type: 'Hall' as const,
         name: 'Lecture Hall A101',
@@ -82,10 +73,24 @@ export default function HomePage() {
         time: thirtyMinutesAgo,
       },
     ]
+  })
 
-    setRecentUpdates(updates)
-    setLoading(false)
-  }, [router])
+  const [loading] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    // Mark hydration complete after component mounts (defer to avoid cascading renders)
+    const timer = setTimeout(() => {
+      setIsHydrated(true)
+    }, 0)
+    
+    // Handle authentication redirect
+    if (!user) {
+      router.push('/login/signIN')
+    }
+    
+    return () => clearTimeout(timer)
+  }, [user, router])
 
   const handleLogout = (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,10 +131,23 @@ export default function HomePage() {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
+<<<<<<<<< Temporary merge branch 1
+              <a href="/home" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
+              <a href="/lecture-halls" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
+              <a href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</a>
+              <a href="/complaints" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              {/* Show Volunteer button ONLY for volunteers */}
+              {isVolunteer && (
+                <a href="/Sunera/volunteer" className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition">
+                  Volunteer
+                </a>
+              )}
+=========
               <a href="#" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
               <a href="#" className="text-gray-600 hover:text-gray-900">Study Areas</a>
-              <a href="#" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              <Link href="/Naveen/my-complaints" className="text-gray-600 hover:text-gray-900">Complaints</Link>
+>>>>>>>>> Temporary merge branch 2
             </nav>
 
             {/* Student ID Display */}

@@ -20,7 +20,22 @@ export async function GET() {
 
     // Transform the data to match the expected format
     const transformedAreas = areas.map((area) => ({
-      ...area,
+      study_area_id: area.study_area_id,
+      area_name: area.area_name,
+      building: area.building,
+      floor: area.floor,
+      capacity: area.capacity,
+      wifi: area.wifi,
+      charging_ports: area.charging_ports,
+      silent_zone: area.silent_zone,
+      ac: area.ac,
+      cafe: area.cafe,
+      is_active: area.is_active,
+      area_status: area.area_status,
+      lat: area.lat,
+      lng: area.lng,
+      radius_meters: area.radius_meters,
+      created_at: area.created_at,
       occupancy: area.area_occupancy ? [area.area_occupancy] : [],
     }))
 

@@ -3,7 +3,6 @@
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import {
-  Home,
   Bell,
   LogOut,
   Trophy,
@@ -12,22 +11,13 @@ import {
   Building2,
   MapPin,
   Award,
-  CheckCircle,
   Clock,
-  ChevronRight,
 } from 'lucide-react'
 import VolunteerSubmitForm from '@/components/VolunteerSubmitForm'
 
 // ------------------------------------------------------------
 // Types
 // ------------------------------------------------------------
-interface User {
-  user_id: string
-  name: string
-  role: string
-  reputation_score?: number
-}
-
 interface ScoreData {
   total_updates: number
   total_reviews: number
@@ -35,6 +25,18 @@ interface ScoreData {
   accurate_count: number
   inaccurate_count: number
   score: number
+}
+
+
+
+interface HistoryItemRaw {
+  id: number
+  type: 'hall' | 'area'
+  name: string
+  status: string
+  time: string
+  points: number
+  confidence: string
 }
 
 interface HistoryItem {
@@ -81,7 +83,6 @@ const getStatusColor = (status: string | null | undefined) => {
 // Main Page Component (Client Component)
 // ------------------------------------------------------------
 export default function VolunteerPage() {
-  const [user, setUser] = useState<User | null>(null)
   const [scoreData, setScoreData] = useState<ScoreData | null>(null)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
@@ -92,30 +93,29 @@ export default function VolunteerPage() {
     ? JSON.parse(localStorage.getItem('user') || '{}')?.user_id || '550e8400-e29b-41d4-a716-446655440000'
     : '550e8400-e29b-41d4-a716-446655440000'
 
-  // Fetch volunteer data
-  const fetchVolunteerData = async () => {
-    try {
-      const response = await fetch('/api/volunteer/data?userId=' + currentUserId)
-      if (response.ok) {
-        const data = await response.json()
-        setUser(data.user)
-        setScoreData(data.scoreData)
-        setHistory(data.history.map((item: any) => ({
-          ...item,
-          time: new Date(item.time),
-        })))
-        setLeaderboard(data.leaderboard)
-      }
-    } catch (error) {
-      console.error('Error fetching volunteer data:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
+    // Fetch volunteer data
+    const fetchVolunteerData = async () => {
+      try {
+        const response = await fetch('/api/volunteer/data?userId=' + currentUserId)
+        if (response.ok) {
+          const data = await response.json()
+          setScoreData(data.scoreData)
+          setHistory(data.history.map((item: HistoryItemRaw) => ({
+            ...item,
+            time: new Date(item.time),
+          })))
+          setLeaderboard(data.leaderboard)
+        }
+      } catch (error) {
+        console.error('Error fetching volunteer data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchVolunteerData()
-  }, [])
+  }, [currentUserId])
 
   // Handle form submission success - add new item to history and update score
   const handleSubmitSuccess = (newItem: HistoryItem) => {
@@ -129,11 +129,6 @@ export default function VolunteerPage() {
         score: scoreData.score + newItem.points,
       })
     }
-
-    // Refresh full data after a delay
-    setTimeout(() => {
-      fetchVolunteerData()
-    }, 1000)
   }
 
   if (loading) {
