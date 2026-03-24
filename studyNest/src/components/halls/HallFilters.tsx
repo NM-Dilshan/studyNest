@@ -18,7 +18,7 @@ interface HallFiltersProps {
 
 export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, isLocationLoading, onOpenPreferences }: HallFiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-white/40 dark:border-white/10 p-3 rounded-2xl shadow-sm">
+    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full rounded-[24px] border border-slate-200 border-l-4 border-l-[#2E6F95] bg-[#F8FBFD] p-4 shadow-sm shadow-slate-100/60">
       
       {/* Search Input */}
       <div className="relative flex-1">
@@ -28,7 +28,7 @@ export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, i
           placeholder="Search by building, hall, or property..."
           value={filters.searchQuery}
           onChange={(e) => onChange({ ...filters, searchQuery: e.target.value })}
-          className="w-full bg-white/60 dark:bg-neutral-800/60 border-none rounded-xl pl-10 pr-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none text-neutral-900 dark:text-white placeholder-neutral-400"
+          className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#2E6F95]/20 focus:border-[#2E6F95] outline-none placeholder:text-slate-400"
         />
       </div>
 
@@ -37,7 +37,7 @@ export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, i
         <select 
           value={filters.minCapacity}
           onChange={(e) => onChange({ ...filters, minCapacity: Number(e.target.value) })}
-          className="bg-white/60 dark:bg-neutral-800/60 border-none rounded-xl px-3 py-2.5 text-sm outline-none text-neutral-700 dark:text-neutral-300"
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
         >
           <option value={0}>Any Size</option>
           <option value={10}>10+ Seats</option>
@@ -56,7 +56,7 @@ export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, i
         {/* Preferences Toggle */}
         <button 
           onClick={onOpenPreferences}
-          className="p-2.5 bg-white/60 dark:bg-neutral-800/60 rounded-xl hover:bg-white dark:hover:bg-neutral-800 transition-colors text-neutral-700 dark:text-neutral-300 shadow-sm"
+          className="p-2.5 bg-white rounded-xl hover:bg-slate-50 transition-colors text-slate-700 shadow-sm border border-slate-200"
           title="Advanced Preferences"
         >
           <SlidersHorizontal className="w-5 h-5" />

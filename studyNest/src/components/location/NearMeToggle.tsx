@@ -12,10 +12,10 @@ export function NearMeToggle({ isActive, onToggle, isLoading }: NearMeToggleProp
     <button
       onClick={() => onToggle(!isActive)}
       disabled={isLoading}
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all
+      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all
         ${isActive 
-          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/25' 
-          : 'bg-white/60 dark:bg-neutral-800/60 text-neutral-600 dark:text-neutral-400 hover:bg-white dark:hover:bg-neutral-800'
+          ? 'bg-[#2E6F95] border-[#2E6F95] text-white shadow-md shadow-[#2E6F95]/25' 
+          : 'bg-[#F8FBFD] border-slate-200 text-[#2E6F95] hover:bg-[#EEF6FA] hover:border-[#2E6F95]/40'
         } ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
     >
       <Navigation className={`w-4 h-4 ${isActive ? 'fill-current' : ''} ${isLoading ? 'animate-pulse' : ''}`} />

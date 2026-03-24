@@ -14,6 +14,8 @@ import { useSuitabilityScores } from '../../../hooks/useSuitabilityScores';
 import { useUserPreferences } from '../../../hooks/useUserPreferences';
 import { useGeolocation } from '../../../hooks/useGeolocation';
 import { favouriteService } from '../../../services/favouriteService';
+import MainHeader from '@/components/MainHeader';
+import { FreeHallResult, UserPreferences } from '../../../types/halls';
 
 export default function FreeHallFinder() {
   // In a real app, get from auth context. Using a placeholder for now.
@@ -30,7 +32,7 @@ export default function FreeHallFinder() {
   const [nearMeActive, setNearMeActive] = useState(false);
   const [showOnlyFavourites, setShowOnlyFavourites] = useState(false);
   
-  const [scoredHalls, setScoredHalls] = useState<any[]>([]);
+  const [scoredHalls, setScoredHalls] = useState<FreeHallResult[]>([]);
 
   useEffect(() => {
     async function processHalls() {
@@ -42,7 +44,7 @@ export default function FreeHallFinder() {
       // Compute scores, passing halls data for client-side scoring
       const scores = await computeScores(
         halls.map(h => h.id), 
-        preferences as any,
+        preferences as Partial<UserPreferences>,
         halls
       );
       
@@ -118,19 +120,29 @@ export default function FreeHallFinder() {
   }, [scoredHalls, filters, showOnlyFavourites, favourites, nearMeActive]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-neutral-900 p-4 md:p-8 relative overflow-hidden">
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
-      <div className="absolute top-[-10%] right-[-10%] w-96 h-96 bg-amber-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
-      <div className="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-emerald-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000" />
+    <div className="min-h-screen bg-[#FBFDFD] text-slate-900 relative overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
+        <svg width="100%" height="100%" aria-hidden="true">
+          <pattern id="hall-grid" width="36" height="36" patternUnits="userSpaceOnUse">
+            <path d="M0 36 L36 0" fill="transparent" stroke="#2E6F95" strokeWidth="1" />
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#hall-grid)" />
+        </svg>
+      </div>
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <MainHeader />
+
+      <div className="max-w-7xl mx-auto relative z-10 p-4 md:p-8">
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
           <div>
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-neutral-900 to-neutral-500">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#2E6F95]">
+              StudyNest Spaces
+            </p>
+            <h1 className="mt-2 text-4xl md:text-5xl font-black tracking-tight text-slate-900">
               Find a Study Space
             </h1>
-            <p className="text-neutral-500 mt-2 text-lg font-medium">
+            <p className="text-slate-500 mt-2 text-lg font-medium">
               Discover free lecture halls instantly based on your preferences.
             </p>
           </div>
@@ -153,12 +165,12 @@ export default function FreeHallFinder() {
           />
         </div>
 
-        {geoError && <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">{geoError}</div>}
-        {hallsError && <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium border border-red-100">{hallsError}</div>}
+        {geoError && <div className="mb-6 p-4 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">{geoError}</div>}
+        {hallsError && <div className="mb-6 p-4 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">{hallsError}</div>}
 
         {hallsLoading || scoringLoading ? (
           <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-[#2E6F95]/20 border-t-[#2E6F95] rounded-full animate-spin"></div>
           </div>
         ) : displayHalls.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -179,12 +191,12 @@ export default function FreeHallFinder() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white/40 backdrop-blur-xl border border-white/40 rounded-3xl shadow-sm">
-            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-20 bg-[#F8FBFD] border border-slate-200 rounded-[28px] shadow-sm shadow-slate-100/60">
+            <div className="w-20 h-20 bg-[#2E6F95]/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl">🪹</span>
             </div>
-            <h3 className="text-xl font-bold text-neutral-900 mb-2">No halls available</h3>
-            <p className="text-neutral-500 max-w-sm mx-auto">
+            <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">No halls available</h3>
+            <p className="text-slate-500 max-w-sm mx-auto">
               We couldn&apos;t find any free halls matching your current filters. Try relaxing your capacity requirements or changing your preferences.
             </p>
             <button 
@@ -193,7 +205,7 @@ export default function FreeHallFinder() {
                 setShowOnlyFavourites(false);
                 setNearMeActive(false);
               }}
-              className="mt-6 px-6 py-2.5 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors"
+              className="mt-6 px-6 py-2.5 bg-[#2E6F95] text-white rounded-xl font-semibold hover:bg-[#255B79] transition-colors"
             >
               Clear Filters
             </button>

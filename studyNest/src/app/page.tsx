@@ -36,7 +36,7 @@ export default async function LandingPage() {
             <Link href="/login/signIN" className="text-gray-600 hover:text-gray-900 font-medium">Sign in</Link>
             <Link
               href="/login"
-              className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-4 py-2 rounded-lg hover:shadow-lg transition font-medium"
+              className="bg-gradient-to-r from-[#2E6F95] to-[#255B79] text-white px-4 py-2 rounded-lg hover:shadow-lg transition font-medium"
             >
               Get Started
             </Link>
@@ -51,7 +51,7 @@ export default async function LandingPage() {
             <div>
               <h1 className="text-5xl sm:text-6xl font-extrabold text-gray-900 leading-tight">
                 Find Your Perfect
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-indigo-700"> Study Space</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2E6F95] to-[#255B79]"> Study Space</span>
               </h1>
               <p className="mt-6 text-xl text-gray-600 leading-relaxed">
                 Stop wandering around campus. Get live availability of lecture halls and study areas, updated in real-time by volunteers.
@@ -59,7 +59,7 @@ export default async function LandingPage() {
               <div className="mt-10 flex flex-col sm:flex-row gap-4">
                 <Link
                   href="/login"
-                  className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-bold hover:shadow-xl transition inline-flex items-center justify-center"
+                  className="bg-gradient-to-r from-[#2E6F95] to-[#255B79] text-white px-8 py-4 rounded-lg text-lg font-bold hover:shadow-xl transition inline-flex items-center justify-center"
                 >
                   Get Started
                   <svg className="ml-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -91,18 +91,18 @@ export default async function LandingPage() {
             
             {/* Hero Image / Illustration */}
             <div className="relative">
-              <div className="absolute top-0 right-0 w-72 h-72 bg-indigo-100 rounded-full opacity-50 blur-3xl"></div>
-              <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-100 rounded-full opacity-50 blur-3xl"></div>
+              <div className="absolute top-0 right-0 w-72 h-72 bg-[#eaf4fa] rounded-full opacity-60 blur-3xl"></div>
+              <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#d7ecf7] rounded-full opacity-60 blur-3xl"></div>
               <div className="relative bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
                 <div className="space-y-4">
-                  <div className="h-4 bg-gradient-to-r from-indigo-600 to-indigo-400 rounded w-3/4"></div>
+                  <div className="h-4 bg-gradient-to-r from-[#2E6F95] to-[#4FA3C7] rounded w-3/4"></div>
                   <div className="h-3 bg-gray-200 rounded w-full"></div>
                   <div className="h-3 bg-gray-200 rounded w-5/6"></div>
                   <div className="pt-4 border-t border-gray-200">
                     <div className="flex gap-4 mt-4">
-                      <div className="flex-1 bg-gradient-to-br from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-200">
-                        <div className="h-3 bg-indigo-600 rounded w-2/3 mb-2"></div>
-                        <div className="h-2 bg-indigo-200 rounded"></div>
+                      <div className="flex-1 bg-gradient-to-br from-[#f4fafd] to-[#eaf4fa] rounded-lg p-4 border border-[#bfdced]">
+                        <div className="h-3 bg-[#2E6F95] rounded w-2/3 mb-2"></div>
+                        <div className="h-2 bg-[#bfdced] rounded"></div>
                       </div>
                       <div className="flex-1 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
                         <div className="h-3 bg-green-600 rounded w-2/3 mb-2"></div>
@@ -128,9 +128,9 @@ export default async function LandingPage() {
 
             <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {/* Feature 1 */}
-              <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-8 border border-indigo-200 hover:shadow-lg transition">
+              <div className="bg-gradient-to-br from-[#f4fafd] to-[#eaf4fa] rounded-xl p-8 border border-[#bfdced] hover:shadow-lg transition">
                 <div className="flex justify-center mb-6">
-                  <div className="h-16 w-16 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="h-16 w-16 bg-[#2E6F95] rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -158,9 +158,9 @@ export default async function LandingPage() {
               </div>
 
               {/* Feature 3 */}
-              <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-8 border border-purple-200 hover:shadow-lg transition">
+              <div className="bg-gradient-to-br from-[#f4fafd] to-[#eaf4fa] rounded-xl p-8 border border-[#bfdced] hover:shadow-lg transition">
                 <div className="flex justify-center mb-6">
-                  <div className="h-16 w-16 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <div className="h-16 w-16 bg-[#2E6F95] rounded-xl flex items-center justify-center shadow-lg">
                     <svg className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
@@ -176,20 +176,20 @@ export default async function LandingPage() {
         </div>
 
         {/* Stats Section */}
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 py-16">
+        <div className="bg-gradient-to-r from-[#2E6F95] to-[#255B79] py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
               <div>
                 <div className="text-5xl font-bold text-white mb-2">500+</div>
-                <p className="text-indigo-100 text-lg">Active Users</p>
+                <p className="text-[#d7ecf7] text-lg">Active Users</p>
               </div>
               <div>
                 <div className="text-5xl font-bold text-white mb-2">50+</div>
-                <p className="text-indigo-100 text-lg">Study Spaces</p>
+                <p className="text-[#d7ecf7] text-lg">Study Spaces</p>
               </div>
               <div>
                 <div className="text-5xl font-bold text-white mb-2">1000+</div>
-                <p className="text-indigo-100 text-lg">Updates Daily</p>
+                <p className="text-[#d7ecf7] text-lg">Updates Daily</p>
               </div>
             </div>
           </div>
@@ -205,13 +205,13 @@ export default async function LandingPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 href="/login"
-                className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white px-8 py-4 rounded-lg text-lg font-bold hover:shadow-xl transition inline-flex items-center justify-center"
+                className="bg-gradient-to-r from-[#2E6F95] to-[#255B79] text-white px-8 py-4 rounded-lg text-lg font-bold hover:shadow-xl transition inline-flex items-center justify-center"
               >
                 Create Your Account
               </Link>
               <Link
                 href="/login"
-                className="border-2 border-indigo-600 text-indigo-600 px-8 py-4 rounded-lg text-lg font-bold hover:bg-indigo-50 transition inline-flex items-center justify-center"
+                className="border-2 border-[#2E6F95] text-[#2E6F95] px-8 py-4 rounded-lg text-lg font-bold hover:bg-[#eaf4fa] transition inline-flex items-center justify-center"
               >
                 Sign In
               </Link>

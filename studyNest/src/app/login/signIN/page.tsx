@@ -5,6 +5,7 @@ import { Mail, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; 
 import { useRouter } from 'next/navigation';
+import MainHeader from '@/components/MainHeader';
 
 interface SignInResponse {
   user?: {
@@ -121,13 +122,15 @@ export default function SignIn(): React.ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFDFD] flex items-center justify-center antialiased">
-      <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden m-4 border border-slate-100 relative">
+    <div className="min-h-screen bg-[#FBFDFD] antialiased">
+      <MainHeader />
+      <div className="flex items-center justify-center px-4 py-6 md:py-8">
+        <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
         
         {/* --- LEFT SIDE --- */}
-        <div className="relative hidden lg:flex flex-1 bg-[#2E6F95] p-16 flex-col justify-between overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#2E6F95]/60 to-[#2E6F95]/90 z-10" />
-          <Image src="/login.png" alt="Students" fill className="object-cover scale-105 opacity-80" priority />
+        <div className="relative hidden lg:flex flex-1 bg-slate-900 p-16 flex-col justify-between overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/35 z-10" />
+          <Image src="/login.png" alt="Students" fill className="object-cover" priority />
 
           <div className="relative z-20">
             <Link href="/" className="flex items-center gap-3 group">
@@ -145,7 +148,7 @@ export default function SignIn(): React.ReactElement {
             </p>
           </div>
           
-          <div className="absolute bottom-[-5%] right-[-5%] w-80 h-80 bg-[#4FA3C7] rounded-full blur-[100px] opacity-30 animate-blob" />
+          <div className="absolute bottom-[-5%] right-[-5%] w-80 h-80 bg-white rounded-full blur-[100px] opacity-15 animate-blob" />
         </div>
 
         {/* --- RIGHT SIDE: FORM WITH SMOOTH LINES --- */}
@@ -234,6 +237,7 @@ export default function SignIn(): React.ReactElement {
             </div>
 
           </div>
+        </div>
         </div>
       </div>
       

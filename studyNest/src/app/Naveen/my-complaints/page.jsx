@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { LogOut, ChevronLeft, Plus, Filter, Search, Trash2, Edit2, Eye } from 'lucide-react'
+import { Plus, Filter, Search, Trash2, Eye } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
-import { StatusProgression } from '@/components/StatusProgression'
+import MainHeader from '@/components/MainHeader'
 
 export default function MyComplaintsPage() {
   const router = useRouter()
   const [complaints, setComplaints] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [deleting, setDeleting] = useState(null)
 
   useEffect(() => {
@@ -44,10 +44,26 @@ export default function MyComplaintsPage() {
     fetchComplaints()
   }, [router])
 
+  const getStatusBadgeClass = (status) => {
+    const value = (status || '').toLowerCase()
+
+    if (value.includes('resolve')) {
+      return 'bg-emerald-50 text-emerald-700 border-emerald-200'
+    }
+    if (value.includes('progress')) {
+      return 'bg-blue-50 text-blue-700 border-blue-200'
+    }
+    if (value.includes('pending') || value.includes('viewed') || value.includes('submit')) {
+      return 'bg-amber-50 text-amber-700 border-amber-200'
+    }
+
+    return 'bg-slate-100 text-slate-700 border-slate-200'
+  }
+
   // Filter complaints based on search query
-  const filteredComplaints = complaints.filter(complaint => {
+  const filteredComplaints = complaints.filter((complaint) => {
     const searchLower = searchQuery.toLowerCase()
-    return (
+    const matchesSearch = (
       complaint.issue_category?.toLowerCase().includes(searchLower) ||
       complaint.description?.toLowerCase().includes(searchLower) ||
       complaint.lecture_halls?.hall_name?.toLowerCase().includes(searchLower) ||
@@ -55,11 +71,12 @@ export default function MyComplaintsPage() {
       complaint.complaint_id?.toString().includes(searchLower) ||
       complaint.status?.toLowerCase().includes(searchLower)
     )
-  })
 
-  const handleEdit = (complaintId) => {
-    router.push(`/Naveen/my-complaints/edit/${complaintId}`)
-  }
+    const matchesStatus =
+      !statusFilter || (complaint.status || '').toLowerCase() === statusFilter.toLowerCase()
+
+    return matchesSearch && matchesStatus
+  })
 
   const handleDelete = async (complaintId) => {
     if (!window.confirm('Are you sure you want to delete this complaint?')) {
@@ -88,131 +105,144 @@ export default function MyComplaintsPage() {
   }
 
   return (
-    <div className={`min-h-screen bg-[#F4F9F8] text-slate-900 font-sans`}>
-      {/* HEADER */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-[#2E6F95] flex items-center justify-center shadow-lg shadow-[#2E6F95]/20">
-               <span className="text-white font-bold text-xl">S</span>
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-[#2E6F95]">StudyNest</h1>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <nav className="hidden md:flex gap-6 text-sm font-bold text-slate-500">
-              <Link href="/home" className="hover:text-[#2E6F95] transition-colors">HOME</Link>
-              <Link href="#" className="text-[#2E6F95]">MY COMPLAINTS</Link>
-            </nav>
-            <button className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all">
-              <LogOut size={20} />
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[var(--bg-main)] text-slate-900 font-sans relative overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
+        <svg width="100%" height="100%" aria-hidden="true">
+          <pattern id="complaints-grid" width="38" height="38" patternUnits="userSpaceOnUse">
+            <path d="M0 38 L38 0" fill="transparent" stroke="#2E6F95" strokeWidth="1" />
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#complaints-grid)" />
+        </svg>
+      </div>
+      <div className="pointer-events-none absolute -top-28 -left-24 h-72 w-72 rounded-full bg-[#2E6F95]/10 blur-3xl" />
+      <div className="pointer-events-none absolute top-[30%] -right-24 h-80 w-80 rounded-full bg-[#4FA3C7]/10 blur-3xl" />
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <MainHeader />
+
+      <main className="relative z-10 max-w-6xl mx-auto px-6 py-10">
         {/* TITLE & ACTION BAR */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
           <div>
-            <h2 className="text-4xl font-black text-slate-800 tracking-tight">My Complaints</h2>
+            <h2 className="text-4xl font-black text-slate-900 tracking-tight">My Complaints</h2>
             <p className="text-slate-500 font-medium mt-1">Track and manage your submitted reports</p>
           </div>
-          <Link 
+          <Link
             href="/Naveen/complaints"
-            className="flex items-center justify-center gap-2 px-8 py-4 bg-[#2E6F95] text-white rounded-2xl font-bold hover:bg-[#4FA3C7] transition-all hover:shadow-xl hover:shadow-[#2E6F95]/20 active:scale-95"
+            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-[#2E6F95] text-white font-bold shadow-lg shadow-[#2E6F95]/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#2E6F95]/30 transition-all active:scale-95"
           >
             <Plus size={20} strokeWidth={3} /> File New Complaint
           </Link>
         </div>
 
         {/* SEARCH & FILTER BAR */}
-        <div className="flex gap-4 mb-8">
-          <div className="relative flex-1 group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#2E6F95] transition-colors" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search complaints..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-[#2E6F95]/20 focus:border-[#2E6F95] transition-all shadow-sm"
-            />
+        <div className="mb-8 rounded-[28px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-4 shadow-[0_16px_40px_rgba(30,41,59,0.08)]">
+          <div className="flex gap-4 flex-col sm:flex-row">
+            <div className="relative flex-1 group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#2E6F95] transition-colors" size={18} />
+              <input
+                type="text"
+                placeholder="Search complaints..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[var(--bg-card)] border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95] transition-all shadow-sm"
+              />
+            </div>
+            <div className="relative sm:min-w-[210px]">
+              <Filter size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2E6F95]" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full bg-[var(--bg-card)] border border-slate-200 pl-10 pr-4 py-4 rounded-2xl hover:bg-[var(--bg-soft)] transition-colors shadow-sm font-semibold text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95]"
+              >
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Viewed">Viewed</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+              </select>
+            </div>
           </div>
-          <button className="bg-white border border-slate-200 p-4 rounded-2xl hover:bg-slate-50 transition-colors shadow-sm">
-            <Filter size={20} className="text-[#2E6F95]" />
-          </button>
         </div>
 
         {/* COMPLAINTS LIST */}
         <div className="space-y-6">
           <AnimatePresence>
             {loading ? (
-              [1, 2].map(i => <SkeletonCard key={i} />)
+              [1, 2, 3].map((i) => <SkeletonCard key={i} />)
             ) : filteredComplaints.length > 0 ? (
               filteredComplaints.map((item, idx) => (
-                <motion.div
+                <motion.article
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
+                  transition={{ delay: idx * 0.07 }}
                   key={item.complaint_id}
-                  className="bg-white rounded-[16px] border border-slate-100 p-5 shadow-sm hover:shadow-md transition-all group"
+                  className="rounded-[30px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-6 shadow-[0_18px_45px_rgba(30,41,59,0.09)] hover:shadow-[0_22px_50px_rgba(30,41,59,0.12)] transition-all"
                 >
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
                     {/* Left - Complaint Info */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <span className="px-3 py-1 bg-[#F4F9F8] text-[#2E6F95] text-[9px] font-bold uppercase rounded-full border border-[#2E6F95]/10">
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        <span
+                          className={`px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-[0.14em] ${getStatusBadgeClass(item.status)}`}
+                        >
                           {item.status}
                         </span>
-                        <span className="text-xs text-slate-400 font-bold">{item.complaint_id}</span>
+                        <span className="text-xs text-slate-500 font-bold tracking-wide">
+                          Reference #{item.complaint_id}
+                        </span>
                       </div>
 
-                      <h3 className="text-lg font-bold text-slate-800 mb-1 truncate group-hover:text-[#2E6F95] transition-colors">
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
                         {item.issue_category}
                       </h3>
 
-                      <p className="text-xs text-slate-500 mb-3">
-                        <span className="font-bold text-[#4FA3C7]">{item.lecture_halls?.hall_name || item.study_areas?.area_name}</span>
-                        <span className="mx-2">•</span>
-                        <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                      <p className="text-sm text-slate-600 mb-3 font-medium">
+                        <span className="font-bold text-[#2E6F95]">
+                          {item.lecture_halls?.hall_name || item.study_areas?.area_name || 'Unknown Location'}
+                        </span>
+                        <span className="mx-2 text-slate-300">•</span>
+                        <span>
+                          {new Date(item.created_at).toLocaleDateString('en-US', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
                       </p>
 
-                      <p className="text-sm text-slate-600 line-clamp-2">
+                      <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
                         {item.description}
                       </p>
                     </div>
 
                     {/* Right - Action Buttons */}
-                    <div className="flex gap-2 flex-shrink-0">
-                      <Link href={`/Naveen/my-complaints/${item.complaint_id}`}>
-                        <button className="px-4 py-2 bg-[#2E6F95] text-white rounded-lg text-xs font-bold hover:bg-[#4FA3C7] transition-all flex items-center gap-1 whitespace-nowrap">
-                          <Eye size={14} /> View
-                        </button>
-                      </Link>
-                      <button 
-                        onClick={() => handleEdit(item.complaint_id)}
-                        className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-all flex items-center gap-1"
+                    <div className="flex gap-3 flex-wrap lg:flex-col lg:min-w-[180px]">
+                      <Link
+                        href={`/Naveen/my-complaints/${item.complaint_id}`}
+                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#2E6F95] text-white text-sm font-bold shadow-md shadow-[#2E6F95]/25 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2E6F95]/30 transition-all"
                       >
-                        <Edit2 size={14} />
-                      </button>
-                      <button 
+                        <Eye size={15} />
+                        View Details
+                      </Link>
+                      <button
                         onClick={() => handleDelete(item.complaint_id)}
                         disabled={deleting === item.complaint_id}
-                        className="px-3 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-red-50 hover:text-red-600 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-rose-300 bg-transparent text-rose-600 text-sm font-bold hover:bg-rose-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={15} />
+                        {deleting === item.complaint_id ? 'Removing...' : 'Remove'}
                       </button>
                     </div>
                   </div>
-                </motion.div>
+                </motion.article>
               ))
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center py-12"
+                className="text-center py-16 rounded-[28px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md shadow-[0_16px_40px_rgba(30,41,59,0.08)]"
               >
-                <p className="text-slate-400 font-medium">No complaints found matching your search</p>
+                <p className="text-slate-500 font-semibold">No complaints found matching your search</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -224,11 +254,11 @@ export default function MyComplaintsPage() {
 
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-[24px] p-8 animate-pulse border border-slate-100">
-      <div className="h-6 w-32 bg-slate-100 rounded-full mb-6" />
-      <div className="h-8 w-2/3 bg-slate-100 rounded-xl mb-4" />
-      <div className="h-4 w-1/2 bg-slate-50 rounded-lg mb-8" />
-      <div className="h-24 w-full bg-slate-50 rounded-2xl" />
+    <div className="rounded-[30px] border border-white/70 bg-[var(--bg-glass)] p-8 animate-pulse shadow-[0_18px_45px_rgba(30,41,59,0.09)]">
+      <div className="h-6 w-40 bg-slate-200 rounded-full mb-6" />
+      <div className="h-8 w-2/3 bg-slate-200 rounded-xl mb-4" />
+      <div className="h-4 w-1/2 bg-slate-100 rounded-lg mb-8" />
+      <div className="h-20 w-full bg-slate-100 rounded-2xl" />
     </div>
   )
 }
