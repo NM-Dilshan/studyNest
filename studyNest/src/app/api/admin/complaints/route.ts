@@ -18,6 +18,12 @@ export async function GET(request: Request) {
             hall_id: true,
           },
         },
+        study_areas: {
+          select: {
+            area_name: true,
+            study_area_id: true,
+          },
+        },
       },
     })
 

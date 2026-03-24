@@ -435,12 +435,37 @@ export default function ComplaintsPage() {
     setError('')
     const studentId = localStorage.getItem('studentId') || 'anonymous'
 
+    const selectedLectureHall =
+      formData.complaintType === 'lecture_hall'
+        ? lectureHallsData.find(
+            (hall) =>
+              hall.hall_id === formData.locationId ||
+              hall.hall_name === formData.locationId ||
+              hall.hall_name === formData.locationName
+          )
+        : null
+
+    const selectedStudyArea =
+      formData.complaintType === 'study_area'
+        ? studyAreasData.find(
+            (area) =>
+              area.study_area_id === formData.locationId ||
+              area.area_name === formData.locationId ||
+              area.area_name === formData.locationName
+          )
+        : null
+
+    const normalizedLocationId =
+      formData.complaintType === 'lecture_hall'
+        ? selectedLectureHall?.hall_id || formData.locationId
+        : selectedStudyArea?.study_area_id || formData.locationId
+
     setLoading(true)
     try {
       const payload = {
         student_id: studentId,
         [formData.complaintType === 'lecture_hall' ? 'hall_id' : 'study_area_id']:
-          formData.locationId,
+          normalizedLocationId,
         issue_category: formData.issueCategory,
         description: formData.description,
         photo_url: formData.photoUrl || null,

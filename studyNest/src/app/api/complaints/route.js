@@ -51,6 +51,95 @@ export async function POST(request) {
   try {
     const body = await request.json()
 
+    const isUuid = (value) =>
+      typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+
+    let normalizedHallId = body.hall_id || null
+    let normalizedStudyAreaId = body.study_area_id || null
+
+    if (normalizedHallId) {
+      if (!isUuid(normalizedHallId)) {
+        const hallByName = await prisma.lecture_halls.findFirst({
+          where: {
+            hall_name: {
+              equals: String(normalizedHallId),
+              mode: 'insensitive',
+            },
+          },
+          select: { hall_id: true },
+        })
+
+        if (!hallByName) {
+          return Response.json(
+            {
+              success: false,
+              error: 'Selected lecture hall is invalid',
+            },
+            { status: 400 }
+          )
+        }
+
+        normalizedHallId = hallByName.hall_id
+      } else {
+        const hallById = await prisma.lecture_halls.findUnique({
+          where: { hall_id: normalizedHallId },
+          select: { hall_id: true },
+        })
+
+        if (!hallById) {
+          return Response.json(
+            {
+              success: false,
+              error: 'Selected lecture hall was not found',
+            },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
+    if (normalizedStudyAreaId) {
+      if (!isUuid(normalizedStudyAreaId)) {
+        const areaByName = await prisma.study_areas.findFirst({
+          where: {
+            area_name: {
+              equals: String(normalizedStudyAreaId),
+              mode: 'insensitive',
+            },
+          },
+          select: { study_area_id: true },
+        })
+
+        if (!areaByName) {
+          return Response.json(
+            {
+              success: false,
+              error: 'Selected study area is invalid',
+            },
+            { status: 400 }
+          )
+        }
+
+        normalizedStudyAreaId = areaByName.study_area_id
+      } else {
+        const areaById = await prisma.study_areas.findUnique({
+          where: { study_area_id: normalizedStudyAreaId },
+          select: { study_area_id: true },
+        })
+
+        if (!areaById) {
+          return Response.json(
+            {
+              success: false,
+              error: 'Selected study area was not found',
+            },
+            { status: 400 }
+          )
+        }
+      }
+    }
+
     // Validation
     if (!body.student_id) {
       return Response.json(
@@ -82,7 +171,7 @@ export async function POST(request) {
       )
     }
 
-    if (!body.hall_id && !body.study_area_id) {
+    if (!normalizedHallId && !normalizedStudyAreaId) {
       return Response.json(
         {
           success: false,
@@ -96,8 +185,8 @@ export async function POST(request) {
     const newComplaint = await prisma.complaints.create({
       data: {
         student_id: body.student_id,
-        hall_id: body.hall_id || null,
-        study_area_id: body.study_area_id || null,
+        hall_id: normalizedHallId,
+        study_area_id: normalizedStudyAreaId,
         issue_category: body.issue_category,
         description: body.description,
         photo_url: body.photo_url || null,

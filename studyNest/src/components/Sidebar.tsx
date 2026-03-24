@@ -109,17 +109,12 @@ export function Sidebar() {
                   
                   {/* Notification Badge for Complaints */}
                   {item.label === 'Complaints' && complaintsCount > 0 && (
-                    <div className="ml-auto flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                        active
-                          ? 'bg-red-400 text-white'
-                          : 'bg-red-500 text-white'
-                      }`}>
-                        {complaintsCount}
-                      </span>
-                      <div className={`w-2 h-2 rounded-full animate-pulse ${
-                        active ? 'bg-red-200' : 'bg-red-500'
-                      }`} />
+                    <div className="ml-auto">
+                      <span
+                        className={`inline-block h-2.5 w-2.5 rounded-full animate-pulse ${
+                          active ? 'bg-red-200' : 'bg-red-500'
+                        }`}
+                      />
                     </div>
                   )}
                 </Link>

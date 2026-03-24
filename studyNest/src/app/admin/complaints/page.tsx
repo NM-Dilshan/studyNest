@@ -16,7 +16,8 @@ import Link from 'next/link'
 interface Complaint {
   complaint_id: number
   student_id: string
-  hall_id: string
+  hall_id: string | null
+  study_area_id?: string | null
   issue_category: string
   description: string
   photo_url?: string | null
@@ -24,6 +25,9 @@ interface Complaint {
   created_at: string
   lecture_halls?: {
     hall_name: string
+  }
+  study_areas?: {
+    area_name: string
   }
   users?: {
     name: string
@@ -61,6 +65,7 @@ export default function AdminComplaintsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [hallFilter, setHallFilter] = useState('')
+  const [studyAreaFilter, setStudyAreaFilter] = useState('')
   const [activeTab, setActiveTab] = useState<'complaints' | 'summary'>('complaints')
   const [summaryPriorityFilter, setSummaryPriorityFilter] = useState<'all' | 'high' | 'medium' | 'normal'>('all')
   const [viewComplaint, setViewComplaint] = useState<Complaint | null>(null)
@@ -111,6 +116,17 @@ export default function AdminComplaintsPage() {
 
   const getPriorityClass = (priority: string) =>
     priorityBadgeStyles[priority] || 'bg-slate-100 text-slate-700 border-slate-200'
+
+  const getLocationName = (complaint: Complaint) =>
+    complaint.lecture_halls?.hall_name || complaint.study_areas?.area_name || 'N/A'
+
+  const studyAreaOptions = Array.from(
+    new Map(
+      complaints
+        .filter((c) => c.study_area_id && c.study_areas?.area_name)
+        .map((c) => [c.study_area_id as string, c.study_areas?.area_name as string])
+    ).entries()
+  ).map(([id, name]) => ({ id, name }))
 
   const runWithdraw = async (complaintId: number) => {
     try {
@@ -178,12 +194,14 @@ export default function AdminComplaintsPage() {
       complaint.complaint_id?.toString().includes(q) ||
       complaint.issue_category?.toLowerCase().includes(q) ||
       complaint.users?.name?.toLowerCase().includes(q) ||
-      complaint.lecture_halls?.hall_name?.toLowerCase().includes(q)
+      complaint.lecture_halls?.hall_name?.toLowerCase().includes(q) ||
+      complaint.study_areas?.area_name?.toLowerCase().includes(q)
 
     const matchesStatus = !statusFilter || complaint.status === statusFilter
     const matchesHall = !hallFilter || complaint.hall_id === hallFilter
+    const matchesStudyArea = !studyAreaFilter || complaint.study_area_id === studyAreaFilter
 
-    return matchesSearch && matchesStatus && matchesHall
+    return matchesSearch && matchesStatus && matchesHall && matchesStudyArea
   })
 
   const stats = {
@@ -192,6 +210,10 @@ export default function AdminComplaintsPage() {
     inProgress: complaints.filter((c) => c.status === 'In Progress').length,
     resolved: complaints.filter((c) => c.status === 'Resolved').length,
   }
+
+  const hasImmediateComplaints = complaints.some(
+    (c) => (c.priority || getPriority(c.complaint_count || 0)) === 'High'
+  )
 
   if (loading) {
     return (
@@ -239,7 +261,13 @@ export default function AdminComplaintsPage() {
                 : 'bg-[var(--bg-glass)] border-slate-200 text-slate-700 hover:bg-[var(--bg-soft)]'
             }`}
           >
-            All Complaints ({complaints.length})
+            All Complaints
+            {hasImmediateComplaints && (
+              <span className="relative inline-flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-70" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab('summary')}
@@ -257,7 +285,7 @@ export default function AdminComplaintsPage() {
           <>
             {/* Filter Bar */}
             <section className="rounded-[22px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md shadow-[0_12px_32px_rgba(30,41,59,0.07)] p-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-3">
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input
@@ -293,6 +321,19 @@ export default function AdminComplaintsPage() {
                   {hallSummary.map((hall) => (
                     <option key={hall.hall_id} value={hall.hall_id}>
                       {hall.hall_name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={studyAreaFilter}
+                  onChange={(e) => setStudyAreaFilter(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-[var(--bg-card)] px-4 py-3.5 text-sm font-medium text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95] cursor-pointer"
+                >
+                  <option value="">All Study Areas</option>
+                  {studyAreaOptions.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.name}
                     </option>
                   ))}
                 </select>
@@ -337,7 +378,7 @@ export default function AdminComplaintsPage() {
                         <div className="space-y-1 text-sm">
                           <p>
                             <span className="font-bold text-slate-800">Hall:</span>{' '}
-                            <span className="font-medium text-slate-700">{complaint.lecture_halls?.hall_name || 'N/A'}</span>
+                            <span className="font-medium text-slate-700">{getLocationName(complaint)}</span>
                           </p>
                           <p>
                             <span className="font-bold text-slate-800">Date:</span>{' '}
@@ -605,7 +646,7 @@ export default function AdminComplaintsPage() {
             <div className="grid grid-cols-1 gap-4 mb-5">
               <div className="rounded-2xl border border-slate-200 bg-[var(--bg-soft)] p-4">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Lecture Hall</p>
-                <p className="text-sm font-semibold text-slate-800 mt-1">{viewComplaint.lecture_halls?.hall_name || 'N/A'}</p>
+                <p className="text-sm font-semibold text-slate-800 mt-1">{getLocationName(viewComplaint)}</p>
               </div>
             </div>
 
