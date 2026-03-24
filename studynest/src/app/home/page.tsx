@@ -134,7 +134,7 @@ export default function HomePage() {
               <a href="/home" className="text-indigo-600 font-medium hover:text-indigo-700">Home</a>
               <a href="/lecture-halls" className="text-gray-600 hover:text-gray-900">Lecture Halls</a>
               <a href="/study-areas" className="text-gray-600 hover:text-gray-900">Study Areas</a>
-              <a href="/complaints" className="text-gray-600 hover:text-gray-900">Complaints</a>
+              <Link href="/Naveen/my-complaints" className="text-gray-600 hover:text-gray-900">Complaints</Link>
               {/* Show Volunteer button ONLY for volunteers after hydration */}
               {isHydrated && user?.role === 'volunteer' && (
                 <a href="/Sunera/volunteer" className="px-4 py-2 bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700 transition">

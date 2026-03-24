@@ -172,6 +172,57 @@ export async function DELETE(request, { params }) {
       )
     }
 
+    // Delete related records first (cascade delete)
+    // Delete volunteer hall updates and their reviews
+    const volunteerUpdates = await prisma.volunteer_hall_updates.findMany({
+      where: { hall_id: id },
+    })
+    
+    for (const update of volunteerUpdates) {
+      await prisma.volunteer_reviews.deleteMany({
+        where: { hall_update_id: update.hall_update_id },
+      })
+    }
+    
+    await prisma.volunteer_hall_updates.deleteMany({
+      where: { hall_id: id },
+    })
+
+    // Delete complaints and their updates
+    const complaints = await prisma.complaints.findMany({
+      where: { hall_id: id },
+    })
+
+    for (const complaint of complaints) {
+      await prisma.complaint_updates.deleteMany({
+        where: { complaint_id: complaint.complaint_id },
+      })
+    }
+
+    await prisma.complaints.deleteMany({
+      where: { hall_id: id },
+    })
+
+    // Delete favorite halls
+    await prisma.favorite_halls.deleteMany({
+      where: { hall_id: id },
+    })
+
+    // Delete hall usage logs
+    await prisma.hall_usage_logs.deleteMany({
+      where: { hall_id: id },
+    })
+
+    // Delete timetable entries
+    await prisma.timetable.deleteMany({
+      where: { hall_id: id },
+    })
+
+    // Delete update request pings
+    await prisma.update_request_pings.deleteMany({
+      where: { hall_id: id },
+    })
+
     // Delete lecture hall
     await prisma.lecture_halls.delete({
       where: { hall_id: id },

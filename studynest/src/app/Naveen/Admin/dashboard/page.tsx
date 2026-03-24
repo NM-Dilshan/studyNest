@@ -251,9 +251,9 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">Recent Complaints</h2>
               <p className="text-sm text-gray-500">Latest issues reported by students</p>
             </div>
-            <button className="text-sm font-semibold text-[#2E6F95] hover:text-[#1f4b66] transition-colors">
+            <Link href="/admin/complaints" className="text-sm font-semibold text-[#2E6F95] hover:text-[#1f4b66] transition-colors">
               View All
-            </button>
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -280,9 +280,9 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.time}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                      <Link href="/admin/complaints" className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                         <Eye className="w-4 h-4 mr-1" /> View
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

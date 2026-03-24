@@ -27,7 +27,7 @@ export default function LectureHallListPage() {
         try {
           const data = await response.json()
           errorMessage = data.error || errorMessage
-        } catch (parseError) {
+        } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
         setError(errorMessage)
@@ -55,14 +55,14 @@ export default function LectureHallListPage() {
         try {
           const data = await response.json()
           errorMessage = data.error || errorMessage
-        } catch (parseError) {
+        } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
         setError(errorMessage)
         return
       }
 
-      const data = await response.json()
+      await response.json()
       setHalls(halls.filter(hall => hall.hall_id !== id))
       setDeleteConfirm(null)
     } catch (err) {
@@ -159,7 +159,7 @@ export default function LectureHallListPage() {
           </div>
         ) : filteredHalls.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-500 text-lg">No results found for "{searchValue}"</p>
+            <p className="text-gray-500 text-lg">No results found for &quot;{searchValue}&quot;</p>
             <p className="text-gray-400 text-sm mt-2">Try adjusting your search terms</p>
           </div>
         ) : (
