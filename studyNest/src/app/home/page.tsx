@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link'
 import MainHeader from '@/components/MainHeader'
+import { SearchBar } from '@/components/SearchBar'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -26,9 +27,20 @@ interface User {
 
 export default function HomePage() {
   const router = useRouter()
-
-  // Keep initial render identical on server and client to avoid hydration mismatch.
-  const [user, setUser] = useState<User | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  // Initialize user from localStorage without setState in effect
+  const [user] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null
+    const userData = localStorage.getItem('user')
+    if (!userData) return null
+    try {
+      return JSON.parse(userData)
+    } catch {
+      return null
+    }
+  })
 
   // Initialize recent updates without setState in effect
   const [recentUpdates] = useState<RecentUpdate[]>(() => {
@@ -66,32 +78,22 @@ export default function HomePage() {
   })
 
   const [loading] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
 
   useEffect(() => {
-    let parsedUser: User | null = null
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        parsedUser = JSON.parse(userData)
-      } catch {
-        localStorage.removeItem('user')
-      }
-    }
-
-    const timer = setTimeout(() => {
-      setUser(parsedUser)
-      setIsHydrated(true)
-    }, 0)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  useEffect(() => {
-    if (isHydrated && !user) {
+    // Mark hydration complete after component mounts
+    setIsHydrated(true)
+    
+    // Handle authentication redirect
+    if (!user) {
       router.push('/login/signIN')
     }
-  }, [isHydrated, user, router])
+  }, [user, router])
+
+  const handleLogout = (e: React.FormEvent) => {
+    e.preventDefault()
+    localStorage.removeItem('user')
+    router.push('/login/signIN')
+  }
 
   if (loading) {
     return (
@@ -112,30 +114,23 @@ export default function HomePage() {
   const profile = user ? { name: user.name } : null
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FBFDFD] to-slate-100">
-      {/* Modern Header */}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      {/* Header Component */}
       <MainHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
         <div className="mb-12">
           <div className="flex items-center space-x-3 mb-4">
-            <h2 className="text-4xl font-bold text-gray-900">Welcome, {profile?.name?.split(' ')[0] || 'Student'}!</h2>
+            <h2 className="text-4xl font-bold text-gray-900">
+              Welcome, {isHydrated ? (profile?.name?.split(' ')[0] || 'Student') : 'Student'}!
+            </h2>
             <span className="text-4xl">👋</span>
           </div>
           <p className="text-lg text-gray-600 mb-6">Find your perfect study space on campus</p>
 
-          {/* Search Bar */}
-          <div className="relative">
-            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search for lecture halls, study areas..."
-              className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#2E6F95] text-gray-900 placeholder-gray-500"
-            />
-          </div>
+          {/* Search Bar with Autocomplete */}
+          <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search study areas or halls..." />
         </div>
 
         {/* Feature Cards */}

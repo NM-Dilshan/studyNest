@@ -23,12 +23,16 @@ export default function AddStudyAreaPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   const [formData, setFormData] = useState({
     area_name: '',
     building: '',
     floor: '',
     capacity: '',
+    latitude: '',
+    longitude: '',
+    radius_meters: '20',
     wifi: false,
     charging_ports: false,
     silent_zone: false,
@@ -55,19 +59,43 @@ export default function AddStudyAreaPage() {
     e.preventDefault()
     setError('')
     setMessage('')
+    setFieldErrors({})
+
+    // Validate all fields
+    const newFieldErrors: Record<string, string> = {}
 
     if (!formData.area_name.trim()) {
-      setError('Area name is required')
-      return
+      newFieldErrors.area_name = 'Area name is required'
+    }
+
+    if (!formData.latitude.trim()) {
+      newFieldErrors.latitude = 'Latitude is required'
+    } else if (isNaN(parseFloat(formData.latitude)) || parseFloat(formData.latitude) < -90 || parseFloat(formData.latitude) > 90) {
+      newFieldErrors.latitude = 'Latitude must be between -90 and 90'
+    }
+
+    if (!formData.longitude.trim()) {
+      newFieldErrors.longitude = 'Longitude is required'
+    } else if (isNaN(parseFloat(formData.longitude)) || parseFloat(formData.longitude) < -180 || parseFloat(formData.longitude) > 180) {
+      newFieldErrors.longitude = 'Longitude must be between -180 and 180'
     }
 
     if (formData.capacity && isNaN(parseInt(formData.capacity, 10))) {
-      setError('Capacity must be a number')
-      return
+      newFieldErrors.capacity = 'Capacity must be a number'
     }
 
     if (formData.floor && isNaN(parseInt(formData.floor, 10))) {
-      setError('Floor must be a number')
+      newFieldErrors.floor = 'Floor must be a number'
+    }
+
+    if (formData.radius_meters && (isNaN(parseInt(formData.radius_meters, 10)) || parseInt(formData.radius_meters, 10) < 1)) {
+      newFieldErrors.radius_meters = 'Radius must be a positive number'
+    }
+
+    // If there are validation errors, display them
+    if (Object.keys(newFieldErrors).length > 0) {
+      setFieldErrors(newFieldErrors)
+      setError('Please fix the validation errors below')
       return
     }
 
@@ -80,9 +108,19 @@ export default function AddStudyAreaPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...formData,
-          capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
+          name: formData.area_name,
+          building: formData.building,
           floor: formData.floor ? parseInt(formData.floor, 10) : null,
+          capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
+          latitude: parseFloat(formData.latitude),
+          longitude: parseFloat(formData.longitude),
+          radiusMeters: formData.radius_meters ? parseInt(formData.radius_meters, 10) : 20,
+          facilities: {
+            wifi: formData.wifi,
+            chargingPorts: formData.charging_ports,
+            silentZone: formData.silent_zone,
+            ac: formData.ac,
+          },
         }),
       })
 
@@ -90,7 +128,12 @@ export default function AddStudyAreaPage() {
         let errorMessage = 'Failed to create study area'
         try {
           const data = await response.json()
-          errorMessage = data.error || errorMessage
+          if (data.errors) {
+            setFieldErrors(data.errors)
+            errorMessage = data.error || 'Please fix the validation errors below'
+          } else {
+            errorMessage = data.error || errorMessage
+          }
         } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
@@ -186,8 +229,11 @@ export default function AddStudyAreaPage() {
                   value={formData.area_name}
                   onChange={handleChange}
                   placeholder="e.g., Library Zone A"
-                  className={inputClass}
+                  className={`${inputClass} ${fieldErrors.area_name ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
+                {fieldErrors.area_name && (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.area_name}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -217,8 +263,11 @@ export default function AddStudyAreaPage() {
                     value={formData.floor}
                     onChange={handleChange}
                     placeholder="e.g., 2"
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.floor ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
+                  {fieldErrors.floor && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.floor}</p>
+                  )}
                 </div>
               </div>
 
@@ -234,8 +283,11 @@ export default function AddStudyAreaPage() {
                     value={formData.capacity}
                     onChange={handleChange}
                     placeholder="e.g., 50"
-                    className={inputClass}
+                    className={`${inputClass} ${fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
+                  {fieldErrors.capacity && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.capacity}</p>
+                  )}
                 </div>
 
                 <div>
@@ -254,6 +306,91 @@ export default function AddStudyAreaPage() {
                     <option value="crowded">Crowded</option>
                   </select>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Location & GPS */}
+          <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                  <circle cx="12" cy="10" r="3"></circle>
+                </svg>
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Location & Geofence</h3>
+            </div>
+
+            <div className="space-y-6">
+              <p className="text-sm font-medium text-slate-500">
+                Enter GPS coordinates for the study area. These are used for geofencing and location tracking.
+              </p>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Latitude *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="-90"
+                    max="90"
+                    name="latitude"
+                    value={formData.latitude}
+                    onChange={handleChange}
+                    placeholder="e.g., 40.7128"
+                    className={`${inputClass} ${fieldErrors.latitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                  />
+                  {fieldErrors.latitude ? (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.latitude}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-slate-400">Range: -90° to 90°</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Longitude *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    min="-180"
+                    max="180"
+                    name="longitude"
+                    value={formData.longitude}
+                    onChange={handleChange}
+                    placeholder="e.g., -74.0060"
+                    className={`${inputClass} ${fieldErrors.longitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                  />
+                  {fieldErrors.longitude ? (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.longitude}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-slate-400">Range: -180° to 180°</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  Geofence Radius (meters)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  name="radius_meters"
+                  value={formData.radius_meters}
+                  onChange={handleChange}
+                  placeholder="e.g., 20"
+                  className={`${inputClass} ${fieldErrors.radius_meters ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                />
+                {fieldErrors.radius_meters ? (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.radius_meters}</p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-400">Minimum distance from the location in meters (default: 20m)</p>
+                )}
               </div>
             </div>
           </div>

@@ -124,6 +124,9 @@ model study_areas {
   building                     String?                        @db.VarChar(50)
   floor                        Int?
   capacity                     Int?
+  latitude                     Float?
+  longitude                    Float?
+  radius_meters                Int?                           @default(20)
   wifi                         Boolean?                       @default(false)
   charging_ports               Boolean?                       @default(false)
   silent_zone                  Boolean?                       @default(false)
@@ -136,6 +139,8 @@ model study_areas {
   study_area_usage_logs        study_area_usage_logs[]
   update_request_pings         update_request_pings[]
   volunteer_study_area_updates volunteer_study_area_updates[]
+  area_occupancy               area_occupancy?
+  live_locations               live_locations[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
