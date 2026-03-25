@@ -171,6 +171,21 @@ export async function DELETE(request, { params }) {
       )
     }
 
+    // Prevent delete when linked complaints exist.
+    const linkedComplaints = await prisma.complaints.count({
+      where: { study_area_id: id },
+    })
+
+    if (linkedComplaints > 0) {
+      return Response.json(
+        {
+          success: false,
+          error: `Cannot delete this study area because ${linkedComplaints} complaint(s) are linked to it`,
+        },
+        { status: 409 }
+      )
+    }
+
     // Delete study area
     await prisma.study_areas.delete({
       where: { study_area_id: id },
@@ -182,6 +197,17 @@ export async function DELETE(request, { params }) {
     })
   } catch (error) {
     console.error('Error deleting study area:', error)
+
+    if (error?.code === 'P2003') {
+      return Response.json(
+        {
+          success: false,
+          error: 'Cannot delete this study area because related records still exist',
+        },
+        { status: 409 }
+      )
+    }
+
     return Response.json(
       {
         success: false,

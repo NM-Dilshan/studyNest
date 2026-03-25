@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   ChevronRight,
   ChevronLeft,
   Upload,
+  X,
   CheckCircle,
   AlertCircle,
   MapPin,
@@ -17,6 +18,7 @@ import MainHeader from '@/components/MainHeader'
 
 export default function ComplaintsPage() {
   const router = useRouter()
+  const photoInputRef = useRef<HTMLInputElement | null>(null)
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -111,6 +113,26 @@ export default function ComplaintsPage() {
 
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2E6F95] focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/10'
+
+  const validateDescription = (description: string) => {
+    const cleaned = description.trim()
+
+    if (!cleaned) {
+      return 'Please enter a description'
+    }
+
+    // Allow only letters, numbers, and spaces.
+    if (!/^[A-Za-z0-9\s]+$/.test(cleaned)) {
+      return 'Description can contain only letters and numbers'
+    }
+
+    // Block descriptions that are numbers-only.
+    if (!/[A-Za-z]/.test(cleaned)) {
+      return 'Description cannot be numbers only'
+    }
+
+    return ''
+  }
 
   const getTotalSteps = () => {
     if (!formData.complaintType) return 3
@@ -343,6 +365,20 @@ export default function ComplaintsPage() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload a valid image file')
+        e.target.value = ''
+        return
+      }
+
+      const maxSizeInBytes = 15 * 1024 * 1024
+      if (file.size > maxSizeInBytes) {
+        setError('Photo size must be 15MB or less')
+        e.target.value = ''
+        return
+      }
+
+      setError('')
       const reader = new FileReader()
       reader.onloadend = () => {
         setFormData((prev) => ({
@@ -351,6 +387,17 @@ export default function ComplaintsPage() {
         }))
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemovePhoto = () => {
+    setFormData((prev) => ({
+      ...prev,
+      photoUrl: '',
+    }))
+
+    if (photoInputRef.current) {
+      photoInputRef.current.value = ''
     }
   }
 
@@ -398,9 +445,12 @@ export default function ComplaintsPage() {
           setError('Please select a lecture hall')
           return false
         }
-        if (isStudyArea && !formData.description.trim()) {
-          setError('Please enter a description')
-          return false
+        if (isStudyArea) {
+          const descriptionError = validateDescription(formData.description)
+          if (descriptionError) {
+            setError(descriptionError)
+            return false
+          }
         }
         return true
       case 6:
@@ -410,9 +460,12 @@ export default function ComplaintsPage() {
         }
         return true
       case 7:
-        if (isLectureHall && !formData.description.trim()) {
-          setError('Please enter a description')
-          return false
+        if (isLectureHall) {
+          const descriptionError = validateDescription(formData.description)
+          if (descriptionError) {
+            setError(descriptionError)
+            return false
+          }
         }
         return true
       default:
@@ -433,6 +486,18 @@ export default function ComplaintsPage() {
 
   const handleSubmit = async () => {
     setError('')
+
+    const descriptionError = validateDescription(formData.description)
+    if (descriptionError) {
+      setError(descriptionError)
+      return
+    }
+
+    if (formData.photoUrl && !String(formData.photoUrl).startsWith('data:image/')) {
+      setError('Invalid photo format. Please upload a valid image.')
+      return
+    }
+
     const studentId = localStorage.getItem('studentId') || 'anonymous'
 
     const selectedLectureHall =
@@ -873,7 +938,7 @@ export default function ComplaintsPage() {
                           rows={5}
                         />
                         <p className="mt-2 text-xs text-slate-500">
-                          {formData.description.length} / 1000 characters
+                          Use letters or letters with numbers. Numbers-only text is not allowed. ({formData.description.length} / 1000)
                         </p>
                       </div>
 
@@ -885,22 +950,33 @@ export default function ComplaintsPage() {
                           <div className="flex items-center gap-2 text-slate-600">
                             <Upload className="h-5 w-5" />
                             <span className="text-sm font-semibold">
-                              Click to upload
+                              Click to upload (image only, max 15MB)
                             </span>
                           </div>
                           <input
                             type="file"
                             accept="image/*"
                             onChange={handlePhotoUpload}
+                            ref={photoInputRef}
                             className="hidden"
                           />
                         </label>
 
                         {formData.photoUrl && (
                           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                            <p className="mb-3 text-sm font-semibold text-emerald-700">
-                              Photo uploaded successfully
-                            </p>
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <p className="text-sm font-semibold text-emerald-700">
+                                Photo uploaded successfully
+                              </p>
+                              <button
+                                type="button"
+                                onClick={handleRemovePhoto}
+                                className="inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-white px-3 py-1.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                Remove
+                              </button>
+                            </div>
                             <img
                               src={formData.photoUrl}
                               alt="Complaint preview"
