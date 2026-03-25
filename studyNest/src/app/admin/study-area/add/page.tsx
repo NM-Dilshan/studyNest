@@ -17,139 +17,190 @@ import {
   AlertCircle,
   Plus,
 } from 'lucide-react'
+import {
+  validateFormData,
+  formDataToPayload,
+  STUDY_AREA_VALIDATION,
+  validateAreaName,
+  validateBuilding,
+  validateFloor,
+  validateCapacity,
+  validateLatitude,
+  validateLongitude,
+  validateRadiusMeters,
+  validateStatus,
+  type StudyAreaFormData,
+  type ValidationErrors,
+} from '@/lib/validation/studyAreaValidation'
 
 export default function AddStudyAreaPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StudyAreaFormData>({
     area_name: '',
     building: '',
     floor: '',
     capacity: '',
     latitude: '',
     longitude: '',
-    radius_meters: '20',
+    radius_meters: STUDY_AREA_VALIDATION.RADIUS_METERS.DEFAULT.toString(),
+    area_status: 'available',
     wifi: false,
     charging_ports: false,
     silent_zone: false,
     ac: false,
-    area_status: 'available',
   })
 
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2E6F95] focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/10'
+
+  // Real-time field validation
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'area_name':
+        return validateAreaName(value as string)
+      case 'building':
+        return validateBuilding(value as string)
+      case 'floor':
+        return validateFloor(value as string)
+      case 'capacity':
+        return validateCapacity(value as string)
+      case 'latitude':
+        return validateLatitude(value as string)
+      case 'longitude':
+        return validateLongitude(value as string)
+      case 'radius_meters':
+        return validateRadiusMeters(value as string)
+      case 'area_status':
+        return validateStatus(value as string)
+      default:
+        return null
+    }
+  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
+    const newValue = type === 'checkbox' ? checked : value
 
+    // Update form data
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: newValue,
     }))
+
+    // Real-time validation - only if field has been touched
+    if (touchedFields[name]) {
+      const error = validateField(name, newValue)
+      setFieldErrors((prev) => {
+        const updated = { ...prev }
+        if (error) {
+          updated[name] = error
+        } else {
+          delete updated[name]
+        }
+        return updated
+      })
+    }
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+
+    // Mark field as touched
+    setTouchedFields((prev) => ({
+      ...prev,
+      [name]: true,
+    }))
+
+    // Validate on blur
+    const error = validateField(name, value)
+    setFieldErrors((prev) => {
+      const updated = { ...prev }
+      if (error) {
+        updated[name] = error
+      } else {
+        delete updated[name]
+      }
+      return updated
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
     setMessage('')
-    setFieldErrors({})
 
-    // Validate all fields
-    const newFieldErrors: Record<string, string> = {}
+    // Mark all fields as touched
+    setTouchedFields({
+      area_name: true,
+      building: true,
+      floor: true,
+      capacity: true,
+      latitude: true,
+      longitude: true,
+      radius_meters: true,
+      area_status: true,
+    })
 
-    if (!formData.area_name.trim()) {
-      newFieldErrors.area_name = 'Area name is required'
-    }
+    // Validate form data
+    const validationResult = validateFormData(formData)
 
-    if (!formData.latitude.trim()) {
-      newFieldErrors.latitude = 'Latitude is required'
-    } else if (isNaN(parseFloat(formData.latitude)) || parseFloat(formData.latitude) < -90 || parseFloat(formData.latitude) > 90) {
-      newFieldErrors.latitude = 'Latitude must be between -90 and 90'
-    }
-
-    if (!formData.longitude.trim()) {
-      newFieldErrors.longitude = 'Longitude is required'
-    } else if (isNaN(parseFloat(formData.longitude)) || parseFloat(formData.longitude) < -180 || parseFloat(formData.longitude) > 180) {
-      newFieldErrors.longitude = 'Longitude must be between -180 and 180'
-    }
-
-    if (formData.capacity && isNaN(parseInt(formData.capacity, 10))) {
-      newFieldErrors.capacity = 'Capacity must be a number'
-    }
-
-    if (formData.floor && isNaN(parseInt(formData.floor, 10))) {
-      newFieldErrors.floor = 'Floor must be a number'
-    }
-
-    if (formData.radius_meters && (isNaN(parseInt(formData.radius_meters, 10)) || parseInt(formData.radius_meters, 10) < 1)) {
-      newFieldErrors.radius_meters = 'Radius must be a positive number'
-    }
-
-    // If there are validation errors, display them
-    if (Object.keys(newFieldErrors).length > 0) {
-      setFieldErrors(newFieldErrors)
-      setError('Please fix the validation errors below')
+    if (!validationResult.isValid) {
+      setFieldErrors(validationResult.errors)
+      setError(
+        Object.keys(validationResult.errors).length === 1
+          ? Object.values(validationResult.errors)[0]
+          : 'Please fix all validation errors before submitting'
+      )
       return
     }
 
+    setFieldErrors({})
+
     try {
       setLoading(true)
+
+      // Convert form data to API payload
+      const payload = formDataToPayload(formData)
 
       const response = await fetch('/api/study-areas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: formData.area_name,
-          building: formData.building,
-          floor: formData.floor ? parseInt(formData.floor, 10) : null,
-          capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
-          latitude: parseFloat(formData.latitude),
-          longitude: parseFloat(formData.longitude),
-          radiusMeters: formData.radius_meters ? parseInt(formData.radius_meters, 10) : 20,
-          facilities: {
-            wifi: formData.wifi,
-            chargingPorts: formData.charging_ports,
-            silentZone: formData.silent_zone,
-            ac: formData.ac,
-          },
-        }),
+        body: JSON.stringify(payload),
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        let errorMessage = 'Failed to create study area'
-        try {
-          const data = await response.json()
-          if (data.errors) {
-            setFieldErrors(data.errors)
-            errorMessage = data.error || 'Please fix the validation errors below'
-          } else {
-            errorMessage = data.error || errorMessage
-          }
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`
+        // Handle server validation errors
+        if (responseData.errors) {
+          setFieldErrors(responseData.errors)
+          setError(responseData.error || 'Please fix the validation errors below')
+        } else {
+          setError(responseData.error || 'Failed to create study area. Please try again.')
         }
-        setError(errorMessage)
         return
       }
 
-      await response.json()
-      setMessage('Study area created successfully!')
+      setMessage('✓ Study area created successfully!')
+      setFieldErrors({})
 
       setTimeout(() => {
         router.push('/admin/study-area')
       }, 1500)
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : 'An error occurred'
+        err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -228,11 +279,17 @@ export default function AddStudyAreaPage() {
                   name="area_name"
                   value={formData.area_name}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="e.g., Library Zone A"
-                  className={`${inputClass} ${fieldErrors.area_name ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                  maxLength={STUDY_AREA_VALIDATION.AREA_NAME.MAX_LENGTH}
+                  className={`${inputClass} ${touchedFields.area_name && fieldErrors.area_name ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
-                {fieldErrors.area_name && (
+                {touchedFields.area_name && fieldErrors.area_name ? (
                   <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.area_name}</p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {formData.area_name.length}/{STUDY_AREA_VALIDATION.AREA_NAME.MAX_LENGTH}
+                  </p>
                 )}
               </div>
 
@@ -247,9 +304,13 @@ export default function AddStudyAreaPage() {
                     name="building"
                     value={formData.building}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g., Building A"
-                    className={inputClass}
+                    className={`${inputClass} ${touchedFields.building && fieldErrors.building ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
+                  {touchedFields.building && fieldErrors.building && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.building}</p>
+                  )}
                 </div>
 
                 <div>
@@ -262,11 +323,14 @@ export default function AddStudyAreaPage() {
                     name="floor"
                     value={formData.floor}
                     onChange={handleChange}
-                    placeholder="e.g., 2"
-                    className={`${inputClass} ${fieldErrors.floor ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                    onBlur={handleBlur}
+                    placeholder="e.g., 2 or -1 for basement"
+                    className={`${inputClass} ${touchedFields.floor && fieldErrors.floor ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
-                  {fieldErrors.floor && (
+                  {touchedFields.floor && fieldErrors.floor ? (
                     <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.floor}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-slate-400">Supports basement floors (e.g., -2, -1)</p>
                   )}
                 </div>
               </div>
@@ -275,36 +339,45 @@ export default function AddStudyAreaPage() {
                 <div>
                   <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <Users size={14} />
-                    Capacity
+                    Capacity *
                   </label>
                   <input
                     type="number"
                     name="capacity"
                     value={formData.capacity}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g., 50"
-                    className={`${inputClass} ${fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                    className={`${inputClass} ${touchedFields.capacity && fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
-                  {fieldErrors.capacity && (
+                  {touchedFields.capacity && fieldErrors.capacity ? (
                     <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.capacity}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-slate-400">Max: 2000</p>
                   )}
                 </div>
 
                 <div>
                   <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Status
+                    Status *
                   </label>
                   <select
                     name="area_status"
                     value={formData.area_status}
                     onChange={handleChange}
-                    className={inputClass}
+                    onBlur={handleBlur}
+                    className={`${inputClass} ${touchedFields.area_status && fieldErrors.area_status ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   >
-                    <option value="available">Available</option>
-                    <option value="under_maintenance">Under Maintenance</option>
-                    <option value="closed">Closed</option>
-                    <option value="crowded">Crowded</option>
+                    <option value="">Select a status</option>
+                    {STUDY_AREA_VALIDATION.STATUS.DISPLAY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
+                  {touchedFields.area_status && fieldErrors.area_status && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.area_status}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -327,6 +400,13 @@ export default function AddStudyAreaPage() {
                 Enter GPS coordinates for the study area. These are used for geofencing and location tracking.
               </p>
 
+              {fieldErrors._cross && (
+                <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
+                  <span>{fieldErrors._cross}</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div>
                   <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
@@ -340,10 +420,11 @@ export default function AddStudyAreaPage() {
                     name="latitude"
                     value={formData.latitude}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g., 40.7128"
-                    className={`${inputClass} ${fieldErrors.latitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                    className={`${inputClass} ${touchedFields.latitude && fieldErrors.latitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
-                  {fieldErrors.latitude ? (
+                  {touchedFields.latitude && fieldErrors.latitude ? (
                     <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.latitude}</p>
                   ) : (
                     <p className="mt-1 text-[11px] text-slate-400">Range: -90° to 90°</p>
@@ -362,10 +443,11 @@ export default function AddStudyAreaPage() {
                     name="longitude"
                     value={formData.longitude}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g., -74.0060"
-                    className={`${inputClass} ${fieldErrors.longitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                    className={`${inputClass} ${touchedFields.longitude && fieldErrors.longitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
-                  {fieldErrors.longitude ? (
+                  {touchedFields.longitude && fieldErrors.longitude ? (
                     <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.longitude}</p>
                   ) : (
                     <p className="mt-1 text-[11px] text-slate-400">Range: -180° to 180°</p>
@@ -375,7 +457,7 @@ export default function AddStudyAreaPage() {
 
               <div>
                 <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Geofence Radius (meters)
+                  Geofence Radius (meters) *
                 </label>
                 <input
                   type="number"
@@ -383,13 +465,16 @@ export default function AddStudyAreaPage() {
                   name="radius_meters"
                   value={formData.radius_meters}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="e.g., 20"
-                  className={`${inputClass} ${fieldErrors.radius_meters ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                  className={`${inputClass} ${touchedFields.radius_meters && fieldErrors.radius_meters ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
-                {fieldErrors.radius_meters ? (
+                {touchedFields.radius_meters && fieldErrors.radius_meters ? (
                   <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.radius_meters}</p>
                 ) : (
-                  <p className="mt-1 text-[11px] text-slate-400">Minimum distance from the location in meters (default: 20m)</p>
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    Recommended range: {STUDY_AREA_VALIDATION.RADIUS_METERS.MIN}-{STUDY_AREA_VALIDATION.RADIUS_METERS.MAX} meters
+                  </p>
                 )}
               </div>
             </div>
@@ -438,14 +523,25 @@ export default function AddStudyAreaPage() {
 
           {/* Alerts */}
           {error && (
-            <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 shadow-sm">
+            <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-bold text-rose-700 shadow-sm">
               <AlertCircle size={18} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <div>
+                <p>{error}</p>
+                {Object.keys(fieldErrors).length > 1 && (
+                  <ul className="mt-2 ml-2 space-y-1 text-[11px]">
+                    {Object.entries(fieldErrors).map(([field, msg]) => (
+                      <li key={field} className="list-disc">
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
 
           {message && (
-            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
+            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-bold text-emerald-700 shadow-sm">
               <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
               <span>{message}</span>
             </div>
