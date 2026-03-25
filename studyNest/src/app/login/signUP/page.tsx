@@ -43,6 +43,35 @@ const validateFullName = (name: string): string => {
   return '';
 };
 
+const validateStudentId = (studentId: string, strict = false): string => {
+  const value = studentId.trim();
+  if (!value) return '';
+
+  if (!/^[a-zA-Z0-9]+$/.test(value)) {
+    return 'Student ID can contain only letters and numbers';
+  }
+
+  // Must start with exactly 2 letters.
+  if (value.length >= 3 && /^[a-zA-Z]{3}/.test(value)) {
+    return 'Student ID must start with only 2 letters';
+  }
+
+  if (!/^[a-zA-Z]{0,2}\d*$/.test(value)) {
+    return 'After first 2 letters, only numbers are allowed';
+  }
+
+  const digitPart = value.replace(/^[a-zA-Z]{0,2}/, '');
+  if (digitPart.length > 8) {
+    return 'Only 8 numbers are allowed after first 2 letters';
+  }
+
+  if (strict && !/^[a-zA-Z]{2}\d{8}$/.test(value)) {
+    return 'Student ID must be 2 letters followed by 8 numbers (e.g., IT12345678)';
+  }
+
+  return '';
+};
+
 const validateEmail = (email: string): string => {
   if (!email.trim()) return '';
   // Format: 2 letters + 8 digits + @my.sliit.lk
@@ -117,12 +146,16 @@ export default function SignUp(): React.ReactElement {
       value = digitsOnly.slice(0, 8);
     }
 
+    if (name === 'studentId') {
+      value = value.replace(/\s/g, '');
+    }
+
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
       
       // Auto-generate email from student ID
       if (name === 'studentId' && value.trim()) {
-        updated.email = `${value}@my.sliit.lk`;
+        updated.email = `${value.toLowerCase()}@my.sliit.lk`;
       }
       
       return updated;
@@ -130,7 +163,8 @@ export default function SignUp(): React.ReactElement {
 
     // Real-time validation
     let errorMsg = '';
-    if (name === 'fullName') errorMsg = validateFullName(value);
+    if (name === 'studentId') errorMsg = validateStudentId(value);
+    else if (name === 'fullName') errorMsg = validateFullName(value);
     else if (name === 'email') errorMsg = validateEmail(value);
     else if (name === 'mobileNumber') errorMsg = validateMobileNumber('07' + value);
 
@@ -145,12 +179,14 @@ export default function SignUp(): React.ReactElement {
     setError('');
     
     // Validate all fields
+    const studentIdError = validateStudentId(formData.studentId, true);
     const nameError = validateFullName(formData.fullName);
     const emailError = validateEmail(formData.email);
     const mobileError = validateMobileNumber('07' + formData.mobileNumber);
 
-    if (nameError || emailError || mobileError) {
+    if (studentIdError || nameError || emailError || mobileError) {
       setFieldErrors({
+        studentId: studentIdError,
         fullName: nameError,
         email: emailError,
         mobileNumber: mobileError,
@@ -273,7 +309,15 @@ export default function SignUp(): React.ReactElement {
                     </div>
                   </div>
                 </div>
-                <Field label="Your ID" name="studentId" icon={User} placeholder={userRole === 'student' ? 'Student ID' : 'Student ID'} value={formData.studentId} onChange={handleInputChange} />
+                <Field
+                  label="Your ID"
+                  name="studentId"
+                  icon={User}
+                  placeholder="e.g., IT12345678"
+                  value={formData.studentId}
+                  onChange={handleInputChange}
+                  error={fieldErrors.studentId}
+                />
               </div>
 
               {/* Row 2: Name and Email */}
