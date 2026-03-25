@@ -43,6 +43,13 @@ interface HallSummary {
   priority: string
 }
 
+interface StudyAreaSummary {
+  study_area_id: string
+  area_name: string
+  complaint_count: number
+  priority: string
+}
+
 const statusBadgeStyles: Record<string, string> = {
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
   Viewed: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -215,6 +222,31 @@ export default function AdminComplaintsPage() {
     (c) => (c.priority || getPriority(c.complaint_count || 0)) === 'High'
   )
 
+  const studyAreaSummary: StudyAreaSummary[] = Object.values(
+    complaints.reduce((acc, complaint) => {
+      const studyAreaId = complaint.study_area_id
+      const areaName = complaint.study_areas?.area_name
+
+      if (!studyAreaId || !areaName) {
+        return acc
+      }
+
+      if (!acc[studyAreaId]) {
+        acc[studyAreaId] = {
+          study_area_id: studyAreaId,
+          area_name: areaName,
+          complaint_count: 0,
+          priority: 'Normal',
+        }
+      }
+
+      acc[studyAreaId].complaint_count += 1
+      acc[studyAreaId].priority = getPriority(acc[studyAreaId].complaint_count)
+
+      return acc
+    }, {} as Record<string, StudyAreaSummary>)
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center">
@@ -360,11 +392,14 @@ export default function AdminComplaintsPage() {
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
-                          <h3 className="text-3xl font-black tracking-tight text-slate-900">
-                            {complaint.issue_category}
+                          <h3 className="text-3xl font-black tracking-tight text-emerald-600">
+                            {getLocationName(complaint)}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
                             Complaint ID: <span className="font-semibold">#{complaint.complaint_id}</span>
+                          </p>
+                          <p className="text-sm font-semibold text-slate-700 mt-1">
+                            {complaint.issue_category}
                           </p>
                         </div>
                         <span
@@ -377,8 +412,10 @@ export default function AdminComplaintsPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1 text-sm">
                           <p>
-                            <span className="font-bold text-slate-800">Hall:</span>{' '}
-                            <span className="font-medium text-slate-700">{getLocationName(complaint)}</span>
+                            <span className="font-bold text-slate-800">Status:</span>{' '}
+                            <span className={`inline-flex px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wide ${getStatusClass(complaint.status)}`}>
+                              {statusUpdating === complaint.complaint_id ? 'Updating...' : complaint.status}
+                            </span>
                           </p>
                           <p>
                             <span className="font-bold text-slate-800">Date:</span>{' '}
@@ -432,8 +469,8 @@ export default function AdminComplaintsPage() {
                             <option value="Resolved">Resolved</option>
                           </select>
 
-                          <span className={`px-4 py-2 rounded-full border text-xs font-black uppercase tracking-wide ${getStatusClass(complaint.status)}`}>
-                            {statusUpdating === complaint.complaint_id ? 'Updating...' : complaint.status}
+                          <span className="px-4 py-2 rounded-full border text-xs font-black tracking-wide bg-emerald-50 text-emerald-600 border-emerald-100">
+                            {getLocationName(complaint)}
                           </span>
                         </div>
                       </div>
@@ -616,6 +653,93 @@ export default function AdminComplaintsPage() {
             ) : (
               <p className="text-slate-500 font-medium">No hall summary data available.</p>
             )}
+
+            <div className="mt-10">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Study Area Summary</h3>
+
+              {studyAreaSummary.length > 0 ? (
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
+                            Study Area (ID)
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
+                            Complaint Count
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
+                            Priority Level
+                          </th>
+                          <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {studyAreaSummary
+                          .slice()
+                          .sort((a, b) => b.complaint_count - a.complaint_count)
+                          .filter((area) => {
+                            const p = getPriority(area.complaint_count)
+                            if (summaryPriorityFilter === 'high') return p === 'High'
+                            if (summaryPriorityFilter === 'medium') return p === 'Medium'
+                            if (summaryPriorityFilter === 'normal') return p === 'Normal'
+                            return true
+                          })
+                          .map((area, idx, arr) => {
+                            const priority = getPriority(area.complaint_count)
+                            const status =
+                              priority === 'High'
+                                ? 'Immediately Fix'
+                                : priority === 'Medium'
+                                  ? 'Medium Priority'
+                                  : 'Normal'
+
+                            const statusClass =
+                              status === 'Immediately Fix'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                : status === 'Medium Priority'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+
+                            return (
+                              <tr
+                                key={area.study_area_id}
+                                className={`${idx !== arr.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50`}
+                              >
+                                <td className="px-5 py-4">
+                                  <p className="text-sm font-semibold text-gray-900">{area.area_name}</p>
+                                  <p className="text-xs text-gray-500 mt-0.5">{area.study_area_id}</p>
+                                </td>
+                                <td className="px-5 py-4">
+                                  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                                    {area.complaint_count}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4">
+                                  <span className={`px-3 py-1 rounded-full border text-xs font-bold ${getPriorityClass(priority)}`}>
+                                    {priority}
+                                  </span>
+                                </td>
+                                <td className="px-5 py-4">
+                                  <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold ${statusClass}`}>
+                                    {status === 'Immediately Fix' ? '⛔' : status === 'Medium Priority' ? '⚠️' : '✅'}
+                                    {status}
+                                  </span>
+                                </td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-500 font-medium">No study area summary data available.</p>
+              )}
+            </div>
           </section>
         )}
       </main>

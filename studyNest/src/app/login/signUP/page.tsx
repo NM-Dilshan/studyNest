@@ -200,20 +200,11 @@ export default function SignUp(): React.ReactElement {
         <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
         
         {/* --- LEFT SIDE (Matching Sign In) --- */}
-        <div className="relative hidden lg:flex flex-1 bg-slate-900 p-16 flex-col justify-between overflow-hidden">
+        <div className="relative hidden lg:flex flex-1 bg-slate-900 p-16 flex-col overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/35 z-10" />
           <Image src="/login.png" alt="Students" fill className="object-cover" priority />
 
-          <div className="relative z-20">
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg p-2 overflow-hidden">
-                <Image src="/logo.jpeg" alt="Logo" width={48} height={48} className="object-contain" />
-              </div>
-              <h1 className="text-3xl font-black text-white tracking-tighter italic">StudyNest</h1>
-            </Link>
-          </div>
-
-          <div className="relative z-20 max-w-md">
+          <div className="relative z-20 max-w-md mt-auto pb-6">
             <TypingText />
             <p className="text-white/90 text-lg font-medium leading-relaxed">
               Create an account to discover, reserve, and share the best study spots on campus.
@@ -240,6 +231,12 @@ export default function SignUp(): React.ReactElement {
 
           <div className="w-full max-w-xl relative z-10">
             <div className="mb-8 text-center lg:text-left">
+              <Link href="/" className="inline-flex items-center gap-3 mb-6">
+                <div className="relative w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md p-1.5 overflow-hidden border border-slate-100">
+                  <Image src="/logo.jpeg" alt="StudyNest Logo" width={40} height={40} className="object-contain" />
+                </div>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">StudyNest</h1>
+              </Link>
               <h3 className="text-4xl font-black text-slate-900 tracking-tight">Create Account</h3>
               <div className="h-1 w-12 bg-[#2E6F95] rounded-full mt-3 mb-2 hidden lg:block"></div>
               <p className="text-slate-500 font-medium">Join thousands of students on campus</p>

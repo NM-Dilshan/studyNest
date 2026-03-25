@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import AdminHeader from "@/components/AdminHeader";
 import {
   BarChart,
   Bar,
@@ -174,9 +173,6 @@ const ChartCard = ({
 export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#F4F9F8]">
-      {/* Header */}
-      <AdminHeader />
-
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
 
