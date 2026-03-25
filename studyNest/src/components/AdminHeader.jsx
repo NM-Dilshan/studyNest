@@ -1,8 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
 import { Bell, ChevronDown } from 'lucide-react'
 
 export default function AdminHeader() {
@@ -25,20 +23,7 @@ export default function AdminHeader() {
   return (
     <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <Link href="/Naveen/Admin/dashboard" className="flex items-center gap-3">
-            <Image
-              src="/logo.jpeg"
-              alt="StudyNest Logo"
-              width={40}
-              height={40}
-              className="rounded-lg object-cover"
-            />
-            <div>
-              <p className="text-lg font-bold text-gray-900 leading-tight">StudyNest</p>
-              <p className="text-xs text-gray-500">Admin Panel</p>
-            </div>
-          </Link>
+        <div className="flex items-center justify-end gap-4">
 
           {/* Right Section - Notifications, Profile & Date */}
           <div className="flex items-center gap-6">

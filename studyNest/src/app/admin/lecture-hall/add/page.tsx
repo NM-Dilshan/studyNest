@@ -69,9 +69,13 @@ export default function AddLectureHallPage() {
         return !value ? 'Floor is required' : '';
       case 'hall_number': {
         if (!value) return 'Hall number is required';
-        const num = parseInt(String(value), 10);
-        if (isNaN(num) || num < 1 || num > 99) {
-          return 'Hall number must be between 1 and 99';
+        const hallNumber = String(value).trim();
+        if (!/^\d+$/.test(hallNumber)) {
+          return 'Hall number must contain digits only';
+        }
+        const num = parseInt(hallNumber, 10);
+        if (isNaN(num) || num < 1 || num > 10) {
+          return 'Hall number must be between 1 and 10';
         }
         return '';
       }
@@ -124,7 +128,15 @@ export default function AddLectureHallPage() {
     }
 
     if (name === 'hall_number') {
-      updatedData.hall_number = value.replace(/[^0-9]/g, '').slice(0, 2);
+      const numericOnly = value.replace(/\D/g, '').slice(0, 2);
+      if (!numericOnly) {
+        updatedData.hall_number = '';
+      } else {
+        const parsed = parseInt(numericOnly, 10);
+        if (!isNaN(parsed) && parsed <= 10) {
+          updatedData.hall_number = String(parsed);
+        }
+      }
     }
 
     if (name === 'block' || name === 'floor' || name === 'hall_number' || name === 'building') {
@@ -309,20 +321,22 @@ export default function AddLectureHallPage() {
 
             <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
               <FormGroup
-                label="Hall Number (01-99)"
+                label="Hall Number"
                 error={errors.hall_number}
-                tooltip="Enter a number between 1 and 99. The value is auto-formatted to two digits in the hall ID."
+                tooltip="Enter digits only. Allowed range is 1 to 10."
               >
                 <div className="relative">
                   <Hash className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300" />
                   <input
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     name="hall_number"
                     value={formData.hall_number}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="e.g. 5"
+                    maxLength={2}
+                    placeholder="e.g. 10"
                     className={`${baseInput} pl-12 ${errors.hall_number ? errorInput : normalInput}`}
                   />
                 </div>
