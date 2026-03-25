@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Loader2, X, Info } from 'lucide-react'
+import {
+  isValidHallCode,
+  isValidPartialHallCode,
+  validateHallCode,
+  getFormatHelpText,
+  shouldTriggerSearch,
+  isCompleteHallCode,
+  type ValidationResult,
+} from '@/lib/validations/hallCodeValidation'
 
 interface LectureHall {
   hall_id: string
@@ -46,12 +55,18 @@ export default function VolunteerHallForm({
 
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [searchQuery, setSearchQuery] = useState('')
+  const [hallCodeValidation, setHallCodeValidation] = useState<ValidationResult>({
+    isValid: false,
+    error: '',
+  })
+  const [resolvedHall, setResolvedHall] = useState<LectureHall | null>(null)
+  const [resolving, setResolving] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [highlightedIndex, setHighlightedIndex] = useState(-1)
 
   // Search lecture halls using the search API
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    if (!searchQuery.trim() || !shouldTriggerSearch(searchQuery)) {
       setFilteredHalls([])
       setHighlightedIndex(-1)
       return
@@ -135,15 +150,33 @@ export default function VolunteerHallForm({
   }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
+    let value = e.target.value
+
+    // Allow free typing - just convert to uppercase for consistency
+    value = value.toUpperCase()
+
     setSearchQuery(value)
     setHighlightedIndex(-1)
-    // Show dropdown only if there's a search query
-    if (value.trim()) {
+
+    // Validate the input and update validation feedback
+    const validation = validateHallCode(value)
+    setHallCodeValidation(validation)
+
+    // Reset resolved hall when input changes
+    setResolvedHall(null)
+
+    // Show dropdown only if there's a valid partial code
+    if (value && isValidPartialHallCode(value)) {
       setShowDropdown(true)
     } else {
       setShowDropdown(false)
     }
+
+    // If code is complete and valid, try to resolve it
+    if (value && validation.isValid && value.length === 5) {
+      resolveHallCode(value)
+    }
+
     // Clear hallId error if user is searching
     if (errors.hallId) {
       setErrors((prev) => {
@@ -151,6 +184,45 @@ export default function VolunteerHallForm({
         delete newErrors.hallId
         return newErrors
       })
+    }
+  }
+
+  const resolveHallCode = async (code: string) => {
+    try {
+      setResolving(true)
+      const response = await fetch(
+        `/api/lecture-halls/resolve?code=${encodeURIComponent(code)}`
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.hall) {
+          // Automatically treat the resolved hall as selected
+          setResolvedHall(data.hall)
+          setFormData((prev) => ({
+            ...prev,
+            hallId: data.hall.hall_id,
+            hallName: data.hall.hall_name,
+          }))
+        } else {
+          // Hall code format is valid but doesn't exist in database
+          setHallCodeValidation({
+            isValid: false,
+            error: data.message || 'Lecture hall code not found',
+          })
+        }
+      } else {
+        const data = await response.json()
+        setHallCodeValidation({
+          isValid: false,
+          error: data.message || 'Lecture hall code not found',
+        })
+      }
+    } catch (error) {
+      console.error('Error resolving hall code:', error)
+      // Don't set validation error here - just log the network error
+    } finally {
+      setResolving(false)
     }
   }
 
@@ -194,20 +266,64 @@ export default function VolunteerHallForm({
   }
 
   const handleHallSelect = (hall: LectureHall) => {
+    // Update form data with selected hall
     setFormData((prev) => ({
       ...prev,
       hallId: hall.hall_id,
       hallName: hall.hall_name,
     }))
+    
+    // Update input field to show selected hall name
     setSearchQuery(hall.hall_name)
+    
+    // Mark hall as resolved since it came from the database
+    setResolvedHall(hall)
+    
+    // Close dropdown and reset highlighting
     setShowDropdown(false)
+    setHighlightedIndex(-1)
+    
+    // Update validation state to mark as valid
+    setHallCodeValidation({
+      isValid: true,
+      error: '',
+    })
+    
+    // Clear any existing validation errors for the hall field
+    setErrors((prev) => {
+      const newErrors = { ...prev }
+      delete newErrors.hallId
+      return newErrors
+    })
+  }
+
+  const handleSelectButtonClick = (e: React.MouseEvent, hall: LectureHall) => {
+    // Prevent any default behavior and stop propagation
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Handle the selection
+    handleHallSelect(hall)
   }
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.hallId) {
-      newErrors.hallId = 'Lecture hall is required'
+    // Check if lecture hall is provided and valid
+    // Allow either:
+    // 1. Selected from dropdown (hallId is set)
+    // 2. Typed valid code that was resolved and found in database (resolvedHall is set)
+    const hasValidHall = formData.hallId || (resolvedHall && hallCodeValidation.isValid)
+    
+    if (!hasValidHall) {
+      // Show specific error based on what went wrong
+      if (!searchQuery) {
+        newErrors.hallId = 'Lecture hall is required'
+      } else if (!hallCodeValidation.isValid) {
+        newErrors.hallId = hallCodeValidation.error || 'Invalid lecture hall code'
+      } else {
+        newErrors.hallId = 'Lecture hall could not be resolved'
+      }
     }
 
     if (!formData.availabilityStatus) {
@@ -384,33 +500,76 @@ export default function VolunteerHallForm({
           <label htmlFor="hallSearch" className="block text-sm font-medium text-gray-700 mb-1.5">
             Lecture Hall <span className="text-red-500">*</span>
           </label>
+          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            <Info className="h-3.5 w-3.5" />
+            <span>{getFormatHelpText()}</span>
+          </div>
           <div className="relative">
             <input
               id="hallSearch"
               type="text"
               autoComplete="off"
-              placeholder="Search lecture hall (e.g., G, 06, F12, G0610)"
+              placeholder="Enter lecture hall code (e.g., A0103, G1210)"
               value={searchQuery}
               onChange={handleSearchChange}
               onKeyDown={handleKeyDown}
-              onFocus={() => searchQuery && setShowDropdown(true)}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-text pr-10 ${
+              onFocus={() => searchQuery && isValidPartialHallCode(searchQuery) && setShowDropdown(true)}
+              maxLength={20}
+              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-text pr-10 uppercase ${
                 errors.hallId
                   ? 'border-red-500 bg-red-50'
+                  : searchQuery && !hallCodeValidation.isValid && hallCodeValidation.error !== 'Lecture hall code is required'
+                  ? 'border-orange-300 bg-orange-50'
+                  : searchQuery && hallCodeValidation.isValid && resolvedHall
+                  ? 'border-green-300 bg-green-50'
                   : 'border-gray-300'
               }`}
             />
             
-            {/* Loading indicator while searching */}
-            {searchLoading && (
+            {/* Loading indicator while searching or resolving */}
+            {(searchLoading || resolving) && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
               </div>
             )}
+
+            {/* Valid indicator - only show when code is resolved */}
+            {searchQuery && hallCodeValidation.isValid && resolvedHall && !searchLoading && !resolving && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              </div>
+            )}
+
+            {/* Warning indicator for invalid/incomplete input */}
+            {searchQuery && !hallCodeValidation.isValid && !searchLoading && !resolving && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <AlertCircle className="h-4 w-4 text-orange-500" />
+              </div>
+            )}
           </div>
           
+          {/* Live validation error message */}
+          {searchQuery && hallCodeValidation.error && (
+            <p className={`text-xs mt-2 ${hallCodeValidation.isValid ? 'text-green-600' : 'text-orange-600'}`}>
+              {hallCodeValidation.error}
+            </p>
+          )}
+
+          {/* Resolved hall confirmation */}
+          {resolvedHall && hallCodeValidation.isValid && (
+            <p className="text-xs mt-2 text-green-600 flex items-center gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>
+                Found: {resolvedHall.hall_name}
+                {resolvedHall.building && ` (${resolvedHall.building}`}
+                {resolvedHall.floor && `, Floor ${resolvedHall.floor}`}
+                {resolvedHall.building && ')'})
+              </span>
+            </p>
+          )}
+          
           {/* Dropdown Results */}
-          {showDropdown && searchQuery && (
+          {showDropdown && searchQuery && isValidPartialHallCode(searchQuery) && (
             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
               {searchLoading ? (
                 <div className="p-4 text-center">
@@ -422,7 +581,7 @@ export default function VolunteerHallForm({
                   <button
                     key={hall.hall_id}
                     type="button"
-                    onClick={() => handleHallSelect(hall)}
+                    onClick={(e) => handleSelectButtonClick(e, hall)}
                     onMouseEnter={() => setHighlightedIndex(index)}
                     className={`w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 transition flex justify-between items-center ${
                       highlightedIndex === index
@@ -438,6 +597,7 @@ export default function VolunteerHallForm({
                         <p className="text-xs text-gray-500">
                           {hall.building}
                           {hall.floor && ` • Floor ${hall.floor}`}
+                          {hall.capacity && ` • Capacity: ${hall.capacity}`}
                         </p>
                       )}
                     </div>
@@ -449,14 +609,14 @@ export default function VolunteerHallForm({
               ) : (
                 <div className="p-4 text-center text-gray-500 text-sm">
                   <p>No lecture halls match "{searchQuery}"</p>
-                  <p className="text-xs text-gray-400 mt-1">Try searching by hall ID (e.g., G, F12)</p>
+                  <p className="text-xs text-gray-400 mt-1">Check the hall code format: {getFormatHelpText()}</p>
                 </div>
               )}
             </div>
           )}
 
           {/* Selected Hall Display */}
-          {formData.hallId && (
+          {formData.hallId && isValidHallCode(formData.hallName) && (
             <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-700 text-sm">
                 <span className="inline-block mr-2">✓</span>

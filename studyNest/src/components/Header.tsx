@@ -51,7 +51,7 @@ export default function Header({ currentPage = 'home' }: HeaderProps) {
     { href: '/lecture-halls', label: 'Lecture Halls', key: 'lecture-halls' },
     { href: '/study-areas', label: 'Study Areas', key: 'student-area' },
     { href: '/about', label: 'About', key: 'about' },
-    { href: '/complaints', label: 'Complaints', key: 'complaints' },
+    { href: '/Naveen/my-complaints', label: 'Complaints', key: 'complaints' },
   ]
 
   return (
