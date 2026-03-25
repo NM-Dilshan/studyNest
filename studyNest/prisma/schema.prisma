@@ -124,6 +124,9 @@ model study_areas {
   building                     String?                        @db.VarChar(50)
   floor                        Int?
   capacity                     Int?
+  latitude                     Float?
+  longitude                    Float?
+  radius_meters                Int?                           @default(20)
   wifi                         Boolean?                       @default(false)
   charging_ports               Boolean?                       @default(false)
   silent_zone                  Boolean?                       @default(false)
@@ -137,6 +140,7 @@ model study_areas {
   update_request_pings         update_request_pings[]
   volunteer_study_area_updates volunteer_study_area_updates[]
   area_occupancy               area_occupancy?
+  live_locations               live_locations[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -246,19 +250,6 @@ model volunteer_scores {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// Area occupancy tracking for study areas
-model area_occupancy {
-  occupancy_id        String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  study_area_id       String      @db.Uuid
-  current_count       Int         @default(0)
-  available_seats     Int         @default(0)
-  occupancy_percentage Int        @default(0)
-  crowd_status        String      @db.VarChar(20) // 'Low Crowd', 'Medium Crowd', 'High Crowd'
-  updated_at          DateTime    @updatedAt
-  study_areas         study_areas @relation(fields: [study_area_id], references: [study_area_id], onDelete: Cascade)
-
-  @@unique([study_area_id])
-}
-
 /// Location permission tracking for GDPR compliance
 model location_permissions {
   permission_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
