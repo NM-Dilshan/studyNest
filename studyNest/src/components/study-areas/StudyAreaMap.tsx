@@ -61,7 +61,7 @@ export function StudyAreaMap({ areas, hoveredAreaId, onAreaClick }: StudyAreaMap
           </div>
 
           <div className="space-y-3">
-            {areas.map((area) => {
+            {areas.map((area, index) => {
               const crowdColor =
                 area.crowdStatus === 'Low Crowd'
                   ? 'border-green-300 bg-green-50'
@@ -80,7 +80,7 @@ export function StudyAreaMap({ areas, hoveredAreaId, onAreaClick }: StudyAreaMap
 
               return (
                 <div
-                  key={area.id}
+                  key={area.id || `area-map-${index}`}
                   onClick={() => {
                     setSelectedArea(area.id);
                     onAreaClick?.(area.id);
@@ -92,9 +92,11 @@ export function StudyAreaMap({ areas, hoveredAreaId, onAreaClick }: StudyAreaMap
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <h4 className={`font-semibold ${crowdTextColor}`}>{area.name}</h4>
-                      <p className="text-xs text-gray-600 mt-1">
-                        📍 {area.latitude.toFixed(6)}, {area.longitude.toFixed(6)}
-                      </p>
+                      {typeof area.latitude === 'number' && typeof area.longitude === 'number' && (
+                        <p className="text-xs text-gray-600 mt-1">
+                          📍 {area.latitude.toFixed(6)}, {area.longitude.toFixed(6)}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className={`text-sm font-bold ${crowdTextColor}`}>{area.crowdStatus}</p>

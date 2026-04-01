@@ -6,7 +6,7 @@
 
 'use client';
 
-import { CrowdStatus, getCrowdIndicator } from '@/lib/geofence';
+import { CrowdStatus, getCrowdEmoji } from '@/lib/geofence';
 import { Users, Clock, Wifi, Volume2, Coffee, Zap } from 'lucide-react';
 
 interface Feature {
@@ -42,7 +42,7 @@ export function StudyAreaCard({
   capacity,
   features,
 }: StudyAreaCardProps) {
-  const crowdIndicator = getCrowdIndicator(crowdStatus);
+  const crowdIndicator = getCrowdEmoji(crowdStatus);
   const minutesAgo = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
   const updatedText = minutesAgo === 0 ? 'just now' : `${minutesAgo}m ago`;
 

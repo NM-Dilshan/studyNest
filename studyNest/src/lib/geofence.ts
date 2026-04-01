@@ -1,5 +1,4 @@
 /**
-<<<<<<< HEAD
  * Geofence Utility Functions
  * Privacy-safe location utilities for Study Area Finder
  * 
@@ -51,30 +50,25 @@ export function haversineDistance(
   const lat2 = toRad(point2.latitude);
   const lon2 = toRad(point2.longitude);
 
-  const dLat = lat2 - lat1;
-  const dLon = lon2 - lon1;
+  const dlat = lat2 - lat1;
+  const dlon = lon2 - lon1;
 
   const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1) *
-      Math.cos(lat2) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.sin(dlat / 2) * Math.sin(dlat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) * Math.sin(dlon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = EARTH_RADIUS_METERS * c;
 
-  return distance;
+  return EARTH_RADIUS_METERS * c;
 }
 
 /**
  * Check if a point is inside a circular geofence
- * 
- * @param point - Location to check
- * @param geofence - Circular geofence definition
- * @returns true if point is inside the circle
+ * @param point - Point to check
+ * @param geofence - Circular geofence boundary
+ * @returns true if point is inside, false otherwise
  */
-export function isPointInCircle(
+export function isPointInsideCircular(
   point: LocationPoint,
   geofence: CircularGeofence
 ): boolean {
@@ -83,83 +77,141 @@ export function isPointInCircle(
 }
 
 /**
- * Ray Casting Algorithm: Check if a point is inside a polygon
- * Useful for irregular study area shapes
- * 
- * @param point - Location to check
- * @param polygon - Array of polygon coordinates
- * @returns true if point is inside the polygon
+ * Ray casting algorithm: Check if a point is inside a polygon
+ * @param point - Point to check
+ * @param polygon - Polygon geofence boundary
+ * @returns true if point is inside, false otherwise
  */
-export function isPointInPolygon(
+export function isPointInsidePolygon(
   point: LocationPoint,
-  polygon: PolygonCoordinate[]
+  polygon: PolygonGeofence
 ): boolean {
-  if (polygon.length < 3) return false;
-
+  const coords = polygon.coordinates;
   let inside = false;
-  let j = polygon.length - 1;
 
-  for (let i = 0; i < polygon.length; i++) {
-    const xi = polygon[i].longitude;
-    const yi = polygon[i].latitude;
-    const xj = polygon[j].longitude;
-    const yj = polygon[j].latitude;
+  for (let i = 0, j = coords.length - 1; i < coords.length; j = i++) {
+    const { latitude: xi, longitude: yi } = coords[i];
+    const { latitude: xj, longitude: yj } = coords[j];
+
+    const xP = point.latitude;
+    const yP = point.longitude;
 
     const intersect =
-      yi > point.latitude !== yj > point.latitude &&
-      point.longitude < ((xj - xi) * (point.latitude - yi)) / (yj - yi) + xi;
+      yi > yP !== yj > yP && xP < ((xj - xi) * (yP - yi)) / (yj - yi) + xi;
 
     if (intersect) inside = !inside;
-    j = i;
   }
 
   return inside;
 }
 
 /**
- * Check if a point is inside any geofence (supports both circle and polygon)
- * 
- * @param point - Location to check
- * @param geofence - Geofence definition (circle or polygon)
- * @returns true if point is inside the geofence
+ * Generic check if a point is inside any geofence
+ * @param point - Point to check
+ * @param geofence - Geofence boundary (circular or polygon)
+ * @returns true if point is inside, false otherwise
  */
-export function isPointInGeofence(
+export function isPointInsideGeofence(
   point: LocationPoint,
   geofence: Geofence
 ): boolean {
   if (geofence.type === 'circle') {
-    return isPointInCircle(point, geofence);
+    return isPointInsideCircular(point, geofence);
   } else if (geofence.type === 'polygon') {
-    return isPointInPolygon(point, geofence.coordinates);
+    return isPointInsidePolygon(point, geofence);
   }
   return false;
 }
 
 /**
- * Calculate occupancy percentage
- * 
- * @param currentCount - Number of students currently inside
- * @param capacity - Maximum capacity of the area
- * @returns Occupancy percentage (0-100)
+ * Types for crowd status
  */
-export function calculateOccupancyPercentage(
-  currentCount: number,
-  capacity: number
-): number {
-  if (capacity <= 0) return 0;
-  const percentage = (currentCount / capacity) * 100;
-  return Math.min(100, Math.max(0, percentage)); // Clamp between 0-100
+export type CrowdStatus = 'Low Crowd' | 'Medium Crowd' | 'High Crowd';
+export type TrendStatus = 'Getting crowded' | 'Getting quieter' | 'Stable';
+
+export interface OccupancyDetails {
+  currentCount: number;
+  availableSeats: number;
+  occupancyPercentage: number;
+  crowdStatus: CrowdStatus;
+  trendStatus: TrendStatus | null;
+}
+
+export interface LocationTrackingData {
+  studyAreaId: string;
+  userId: string;
+  latitude: number;
+  longitude: number;
+  timestamp: Date;
+  expiresAt: Date; // 5 minutes from now
 }
 
 /**
- * Determine crowd status based on occupancy percentage
- * 
- * @param occupancyPercentage - Occupancy percentage (0-100)
- * @returns Crowd status label
+ * Create a location tracking record with automatic expiration
+ * @param studyAreaId - ID of the study area
+ * @param userId - ID of the user
+ * @param latitude - Current latitude
+ * @param longitude - Current longitude
+ * @returns LocationTrackingData object with 5-minute expiration
  */
-export type CrowdStatus = 'Low Crowd' | 'Medium Crowd' | 'High Crowd';
+export function createLocationRecord(
+  studyAreaId: string,
+  userId: string,
+  latitude: number,
+  longitude: number
+): LocationTrackingData {
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5 minutes
 
-export function getCrowdStatus(occupancyPercentage: number): CrowdStatus {
+  return {
+    studyAreaId,
+    userId,
+    latitude,
+    longitude,
+    timestamp: now,
+    expiresAt,
+  };
+}
+
+/**
+ * Check if a location record has expired
+ * @param record - Location tracking record
+ * @returns true if expired, false otherwise
+ */
+export function isLocationExpired(record: LocationTrackingData): boolean {
+  return new Date() > record.expiresAt;
+}
+
+/**
+ * Filter out expired location records
+ * @param records - Array of location tracking records
+ * @returns Filtered array of non-expired records
+ */
+export function filterActiveLocations(
+  records: LocationTrackingData[]
+): LocationTrackingData[] {
+  return records.filter((record) => !isLocationExpired(record));
+}
+
+/**
+ * Calculate occupancy based on active location records
+ * @param activeLocations - Array of active location tracking records
+ * @param capacity - Study area capacity
+ * @returns Current occupancy count
+ */
+export function calculateOccupancy(
+  activeLocations: LocationTrackingData[],
+  _capacity?: number
+): number {
+  return activeLocations.length;
+}
+
+/**
+ * Determine crowd level based on occupancy percentage
+ * @param occupancyPercentage - Percentage of capacity occupied (0-100)
+ * @returns Crowd status
+ */
+export function determineCrowdStatus(occupancyPercentage: number): CrowdStatus {
   if (occupancyPercentage <= 30) {
     return 'Low Crowd';
   } else if (occupancyPercentage <= 70) {
@@ -170,211 +222,96 @@ export function getCrowdStatus(occupancyPercentage: number): CrowdStatus {
 }
 
 /**
- * Get visual indicator for crowd status
- * 
- * @param status - Crowd status
- * @returns Object with color, icon, and description
+ * Determine trend based on previous and current count
+ * @param currentCount - Current number of people
+ * @param previousCount - Previous number of people (or null if no data)
+ * @returns Trend status
  */
-export function getCrowdIndicator(status: CrowdStatus) {
-  const indicators: Record<CrowdStatus, { color: string; icon: string; bgColor: string }> = {
-    'Low Crowd': {
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      icon: '✓',
-    },
-    'Medium Crowd': {
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-100',
-      icon: '⚠',
-    },
-    'High Crowd': {
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-      icon: '!',
-    },
-  };
-
-  return indicators[status];
-}
-
-/**
- * Format location for logging (privacy-safe)
- * Returns hash or zone identifier instead of exact coordinates
- * 
- * @param point - Location point
- * @returns Anonymized location string
- */
-export function getAnonymizedLocation(point: LocationPoint): string {
-  // Simple hash-based anonymization: quantize to 2 decimal places
-  // This gives ~1-1.5 km resolution, hiding exact location
-  const latQuantized = Math.floor(point.latitude * 100) / 100;
-  const lngQuantized = Math.floor(point.longitude * 100) / 100;
-  return `Zone_${latQuantized}_${lngQuantized}`;
-}
-
-/**
- * Check if location update is meaningful (moved more than threshold)
- * Helps reduce unnecessary updates
- * 
- * @param oldLocation - Previous location
- * @param newLocation - Current location
- * @param thresholdMeters - Minimum distance to consider as meaningful (default: 10m)
- * @returns true if the movement is significant
- */
-export function isMeaningfulLocationChange(
-  oldLocation: LocationPoint | null,
-  newLocation: LocationPoint,
-  thresholdMeters: number = 10
-): boolean {
-  if (!oldLocation) return true;
-  
-  const distance = haversineDistance(oldLocation, newLocation);
-  return distance >= thresholdMeters;
-}
-
-/**
- * Calculate center point of an area (for map visualization)
- * 
- * @param points - Array of location points
- * @returns Centroid point
- */
-export function calculateCentroid(points: LocationPoint[]): LocationPoint {
-  if (points.length === 0) {
-    return { latitude: 0, longitude: 0 };
+export function determineTrend(
+  currentCount: number,
+  previousCount: number | null
+): TrendStatus | null {
+  if (previousCount === null) {
+    return null;
   }
 
-  const sumLat = points.reduce((sum, p) => sum + p.latitude, 0);
-  const sumLng = points.reduce((sum, p) => sum + p.longitude, 0);
+  const diff = currentCount - previousCount;
+  const threshold = 2; // Minimum change to report a trend
 
-  return {
-    latitude: sumLat / points.length,
-    longitude: sumLng / points.length,
-  };
+  if (diff > threshold) {
+    return 'Getting crowded';
+  } else if (diff < -threshold) {
+    return 'Getting quieter';
+  } else {
+    return 'Stable';
+  }
 }
 
 /**
- * Get time-remaining string for location expiry
- * 
- * @param expiresAt - Expiry timestamp
- * @returns Human-readable time remaining
+ * Get crowd status emoji for visualization
+ * @param status - Crowd status
+ * @returns Emoji representation
+ */
+export function getCrowdEmoji(status: CrowdStatus): string {
+  switch (status) {
+    case 'Low Crowd':
+      return '🟢';
+    case 'Medium Crowd':
+      return '🟡';
+    case 'High Crowd':
+      return '🔴';
+    default:
+      return '⚪';
+  }
+}
+
+/**
+ * Get trend emoji for visualization
+ * @param status - Trend status
+ * @returns Emoji representation
+ */
+export function getTrendEmoji(status: TrendStatus | null): string {
+  switch (status) {
+    case 'Getting crowded':
+      return '📈';
+    case 'Getting quieter':
+      return '📉';
+    case 'Stable':
+      return '↔️';
+    default:
+      return '⏸️';
+  }
+}
+
+/**
+ * Get time remaining before expiration
+ * Formatted as: "Xm Ys" or "Xs"
+ * @param expiresAt - Expiration timestamp
+ * @returns Formatted time string
  */
 export function getTimeRemaining(expiresAt: Date): string {
   const now = new Date();
   const diffMs = expiresAt.getTime() - now.getTime();
-  
+
   if (diffMs <= 0) return 'Expired';
-  
+
   const mins = Math.floor(diffMs / 60000);
   const secs = Math.floor((diffMs % 60000) / 1000);
-  
+
   if (mins > 0) {
     return `${mins}m ${secs}s`;
   }
   return `${secs}s`;
 }
-=======
- * Geofencing utilities for study area location tracking
- * Implements Haversine formula for distance calculation
- * and privacy-safe occupancy detection
- */
 
 /**
- * Calculate distance between two geographic points using Haversine formula
- * @param lat1 - latitude of point 1
- * @param lng1 - longitude of point 1
- * @param lat2 - latitude of point 2
- * @param lng2 - longitude of point 2
- * @returns distance in meters
+ * Generate occupancy details for a study area
+ * @param currentCount - Current number of people in study area
+ * @param capacity - Total capacity of study area
+ * @param previousCount - Previous count for trend calculation (optional)
+ * @returns OccupancyDetails object
  */
-export function calculateDistanceInMeters(
-  lat1: number,
-  lng1: number,
-  lat2: number,
-  lng2: number
-): number {
-  const R = 6371000; // Earth's radius in meters
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
-  
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-  
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
-
-/**
- * Convert degrees to radians
- */
-function toRadians(degrees: number): number {
-  return (degrees * Math.PI) / 180;
-}
-
-/**
- * Check if a location is inside a study area radius
- * @param studentLat - student's current latitude
- * @param studentLng - student's current longitude
- * @param areaLat - study area center latitude
- * @param areaLng - study area center longitude
- * @param radiusMeters - study area radius in meters (default 20)
- * @returns true if inside the area, false otherwise
- */
-export function isInsideStudyArea(
-  studentLat: number,
-  studentLng: number,
-  areaLat: number,
-  areaLng: number,
-  radiusMeters: number = 20
-): boolean {
-  const distance = calculateDistanceInMeters(
-    studentLat,
-    studentLng,
-    areaLat,
-    areaLng
-  );
-  return distance <= radiusMeters;
-}
-
-/**
- * Determine crowd level based on occupancy percentage
- */
-export function determineCrowdLevel(occupancyPercentage: number): string {
-  if (occupancyPercentage <= 30) return 'Low Crowd';
-  if (occupancyPercentage <= 70) return 'Medium Crowd';
-  return 'High Crowd';
-}
-
-/**
- * Determine trend based on count change
- */
-export function determineTrend(
-  currentCount: number,
-  previousCount: number | null
-): string {
-  if (previousCount === null) return 'Stable';
-  
-  const diff = currentCount - previousCount;
-  if (diff > 3) return 'Getting crowded';
-  if (diff < -3) return 'Getting quieter';
-  return 'Stable';
-}
-
-/**
- * Calculate occupancy details for a study area
- */
-export interface OccupancyDetails {
-  currentCount: number;
-  availableSeats: number;
-  occupancyPercentage: number;
-  crowdStatus: string;
-  trendStatus: string;
-}
-
-export function calculateOccupancy(
+export function generateOccupancyDetails(
   currentCount: number,
   capacity: number,
   previousCount?: number
@@ -387,8 +324,35 @@ export function calculateOccupancy(
     currentCount,
     availableSeats,
     occupancyPercentage: Math.round(occupancyPercentage),
-    crowdStatus: determineCrowdLevel(occupancyPercentage),
+    crowdStatus: determineCrowdStatus(occupancyPercentage),
     trendStatus: determineTrend(currentCount, previousCount || null),
   };
 }
->>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
+
+/**
+ * Check if location change is meaningful (above threshold distance)
+ * Used to avoid unnecessary API calls for minor movements
+ * @param lastLocation - Previous location or null if no previous location
+ * @param newLocation - Current location with latitude and longitude
+ * @param thresholdMeters - Minimum distance in meters to be considered meaningful
+ * @returns true if change is meaningful (distance > threshold or first location), false otherwise
+ */
+export function isMeaningfulLocationChange(
+  lastLocation: { latitude: number; longitude: number } | null,
+  newLocation: { latitude: number; longitude: number },
+  thresholdMeters: number
+): boolean {
+  // First location is always meaningful
+  if (!lastLocation) {
+    return true;
+  }
+
+  // Calculate distance between last and new location
+  const distance = haversineDistance(
+    { latitude: lastLocation.latitude, longitude: lastLocation.longitude },
+    { latitude: newLocation.latitude, longitude: newLocation.longitude }
+  );
+
+  // Return true if distance exceeds threshold
+  return distance > thresholdMeters;
+}
