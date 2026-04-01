@@ -13,10 +13,65 @@ export default function StudyAreaListPage() {
   const [isHydrated, setIsHydrated] = useState(false)
   const { searchValue } = useSearch()
   const [studyAreas, setStudyAreas] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Static/Mock data for frontend testing
+  const mockStudyAreas = [
+    {
+      study_area_id: '31cc9857-c8a2-4435-9045-cfd47f536fcf',
+      area_name: 'Library Zone A',
+      building: 'Main Building',
+      floor: 0,
+      capacity: 50,
+      latitude: 40.7128,
+      longitude: -74.0060,
+      radius_meters: 20,
+      area_status: 'available',
+      wifi: true,
+      charging_ports: true,
+      silent_zone: false,
+      ac: true,
+      is_active: true,
+      created_at: new Date('2025-03-25'),
+    },
+    {
+      study_area_id: 'ebdae015-757d-4ea5-9d8f-bf64fb1443f6',
+      area_name: 'Study Lounge B',
+      building: 'Academic Block',
+      floor: 2,
+      capacity: 80,
+      latitude: 40.7138,
+      longitude: -74.0070,
+      radius_meters: 25,
+      area_status: 'low_crowd',
+      wifi: true,
+      charging_ports: true,
+      silent_zone: true,
+      ac: true,
+      is_active: true,
+      created_at: new Date('2025-03-25'),
+    },
+    {
+      study_area_id: 'a1b2c3d4-e5f6-47g8-h9i0-j1k2l3m4n5o6',
+      area_name: 'Reading Corner C',
+      building: 'Science Block',
+      floor: 1,
+      capacity: 30,
+      latitude: 40.7148,
+      longitude: -74.0050,
+      radius_meters: 15,
+      area_status: 'medium_crowd',
+      wifi: true,
+      charging_ports: false,
+      silent_zone: true,
+      ac: false,
+      is_active: true,
+      created_at: new Date('2025-03-24'),
+    },
+  ]
 
   // Helper function to escape HTML special characters including quotes
   const escapeHtml = (text) => {
@@ -30,6 +85,7 @@ export default function StudyAreaListPage() {
   }
 
   useEffect(() => {
+<<<<<<< HEAD
     // Initialize user from localStorage
     const userData = localStorage.getItem('user')
     if (userData) {
@@ -79,27 +135,18 @@ export default function StudyAreaListPage() {
       setLoading(false)
     }
   }
+=======
+    // Use mock data instead of fetching from API
+    setStudyAreas(mockStudyAreas)
+    setLoading(false)
+  }, [])
+
+>>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
 
   const handleDelete = async (id) => {
     try {
       setDeleting(true)
-      const response = await fetch(`/api/study-areas/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Failed to delete study area'
-        try {
-          const data = await response.json()
-          errorMessage = data.error || errorMessage
-        } catch (parseError) {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`
-        }
-        setError(errorMessage)
-        return
-      }
-
-      const data = await response.json()
+      // For static data, just remove from state
       setStudyAreas(studyAreas.filter(area => area.study_area_id !== id))
       setDeleteConfirm(null)
     } catch (err) {

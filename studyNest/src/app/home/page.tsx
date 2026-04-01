@@ -1,7 +1,12 @@
 'use client';
 
+<<<<<<< HEAD
 import Header from '@/components/Header'
 import SearchBar from '@/components/SearchBar'
+=======
+import MainHeader from '@/components/MainHeader'
+import { SearchBar } from '@/components/SearchBar'
+>>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -28,6 +33,10 @@ interface User {
 export default function HomePage() {
   const router = useRouter()
   const [isHydrated, setIsHydrated] = useState(false)
+<<<<<<< HEAD
+=======
+  const [searchQuery, setSearchQuery] = useState('')
+>>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
   
   // Initialize user from localStorage without setState in effect
   const [user] = useState<User | null>(() => {
@@ -115,7 +124,11 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* Header Component */}
+<<<<<<< HEAD
       <Header currentPage="home" />
+=======
+      <MainHeader />
+>>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
@@ -129,7 +142,11 @@ export default function HomePage() {
           <p className="text-lg text-gray-600 mb-6">Find your perfect study space on campus</p>
 
           {/* Search Bar with Autocomplete */}
+<<<<<<< HEAD
           <SearchBar />
+=======
+          <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search study areas or halls..." />
+>>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
         </div>
 
         {/* Feature Cards */}
