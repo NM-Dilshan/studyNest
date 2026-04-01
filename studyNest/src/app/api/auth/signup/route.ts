@@ -127,7 +127,6 @@ export async function POST(request: NextRequest) {
         password: hashedPassword,
         role: role,
         is_active: true,
-        reputation_score: 0,
       },
       select: {
         user_id: true,
@@ -157,10 +156,16 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         );
       }
+      // Log the actual error for debugging
+      console.error('Actual error message:', error.message);
+      console.error('Error details:', error);
     }
 
     return NextResponse.json(
-      { error: 'Failed to create account. Please try again.' },
+      { 
+        error: 'Failed to create account. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   } finally {

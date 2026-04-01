@@ -37,6 +37,13 @@ function TypingText() {
 }
 
 // Validation Functions
+const validateStudentId = (id: string): string => {
+  if (!id.trim()) return 'Student ID is required';
+  if (id.length < 2) return 'Student ID must be at least 2 characters';
+  if (id.length > 20) return 'Student ID cannot exceed 20 characters';
+  return '';
+};
+
 const validateFullName = (name: string): string => {
   if (!name.trim()) return '';
   if (/\d/.test(name)) return 'Name cannot contain numbers';
@@ -130,7 +137,8 @@ export default function SignUp(): React.ReactElement {
 
     // Real-time validation
     let errorMsg = '';
-    if (name === 'fullName') errorMsg = validateFullName(value);
+    if (name === 'studentId') errorMsg = validateStudentId(value);
+    else if (name === 'fullName') errorMsg = validateFullName(value);
     else if (name === 'email') errorMsg = validateEmail(value);
     else if (name === 'mobileNumber') errorMsg = validateMobileNumber('07' + value);
 
@@ -145,17 +153,19 @@ export default function SignUp(): React.ReactElement {
     setError('');
     
     // Validate all fields
+    const studentIdError = validateStudentId(formData.studentId);
     const nameError = validateFullName(formData.fullName);
     const emailError = validateEmail(formData.email);
     const mobileError = validateMobileNumber('07' + formData.mobileNumber);
 
-    if (nameError || emailError || mobileError) {
+    if (studentIdError || nameError || emailError || mobileError) {
       setFieldErrors({
+        studentId: studentIdError,
         fullName: nameError,
         email: emailError,
         mobileNumber: mobileError,
       });
-      setError('Please fix the validation errors above');
+      setError('Please fix all the validation errors above');
       return;
     }
 
@@ -180,7 +190,8 @@ export default function SignUp(): React.ReactElement {
 
       if (!response.ok) {
         const data = await response.json();
-        setError(data.error || 'Failed to create account.');
+        const errorMsg = data.details ? `${data.error} (${data.details})` : (data.error || 'Failed to create account.');
+        setError(errorMsg);
         setLoading(false);
         return;
       }
