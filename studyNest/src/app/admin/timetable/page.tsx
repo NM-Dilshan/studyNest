@@ -22,12 +22,17 @@ export default function TimetableManager() {
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const slotsPerPage = 10;
+
   useEffect(() => {
     loadHalls();
   }, []);
 
   // Reload slots whenever filter changes
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page on filter change
     loadSlots();
   }, [filterMode, filterYear, filterSemester]);
 
@@ -97,6 +102,12 @@ export default function TimetableManager() {
       setDeleteConfirmId(null);
     }
   };
+
+  // Pagination calculations
+  const indexOfLastSlot = currentPage * slotsPerPage;
+  const indexOfFirstSlot = indexOfLastSlot - slotsPerPage;
+  const currentSlots = slots.slice(indexOfFirstSlot, indexOfLastSlot);
+  const totalPages = Math.ceil(slots.length / slotsPerPage);
 
   // Determine which hall is "selected" for the form (null if All/Unassigned)
   const selectedHallIdForForm =
@@ -210,7 +221,7 @@ export default function TimetableManager() {
                       </td>
                     </tr>
                   ) : (
-                    slots.map(slot => (
+                    currentSlots.map(slot => (
                       <tr key={slot.id} className="border-b hover:bg-gray-50 transition-colors">
                         {/* Year / Sem */}
                         <td className="px-6 py-4 text-sm text-gray-900">
@@ -279,6 +290,31 @@ export default function TimetableManager() {
                 </tbody>
               </table>
             </div>
+            
+            {/* Pagination Controls */}
+            {slots.length > slotsPerPage && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{indexOfFirstSlot + 1}</span> to <span className="font-medium">{Math.min(indexOfLastSlot, slots.length)}</span> of <span className="font-medium">{slots.length}</span> results
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
