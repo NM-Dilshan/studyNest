@@ -100,6 +100,7 @@ export async function PUT(
 
     // Build update data
     const updateData: any = {};
+    if (body.hall_id !== undefined) updateData.hall_id = body.hall_id || null; // null = Unassigned
     if (body.day_of_week !== undefined) updateData.day_of_week = body.day_of_week;
     if (body.start_time !== undefined) updateData.start_time = new Date(`1970-01-01T${body.start_time}Z`);
     if (body.end_time !== undefined) updateData.end_time = new Date(`1970-01-01T${body.end_time}Z`);

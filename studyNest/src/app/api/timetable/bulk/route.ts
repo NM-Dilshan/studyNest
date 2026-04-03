@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma';
 
 /**
  * POST /api/timetable/bulk
- * Bulk insert timetable slots (for CSV upload)
+ * Bulk insert timetable slots (for CSV upload).
+ * hall_id is now optional — null means "Unassigned".
  */
 export async function POST(request: NextRequest) {
   try {
@@ -24,10 +25,6 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < records.length; i++) {
       const record = records[i];
 
-      if (!record.hall_id) {
-        errors.push(`Row ${i + 1}: hall_id is missing`);
-        continue;
-      }
       if (!record.day_of_week) {
         errors.push(`Row ${i + 1}: day_of_week is missing`);
         continue;
@@ -45,8 +42,9 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
+      // hall_id is optional — null = Unassigned session
       validRecords.push({
-        hall_id: record.hall_id,
+        hall_id: record.hall_id || null,
         academic_year: record.academic_year ? parseInt(record.academic_year) : null,
         semester: record.semester ? parseInt(record.semester) : null,
         day_of_week: record.day_of_week,
