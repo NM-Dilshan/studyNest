@@ -60,6 +60,31 @@ export default function MyComplaintsPage() {
     return 'bg-slate-100 text-slate-700 border-slate-200'
   }
 
+  const normalizeStatus = (status) =>
+    (status || '').trim().toLowerCase().replace(/[\s_]+/g, '-')
+
+  const getStatusSelectClass = (status) => {
+    const normalized = normalizeStatus(status)
+
+    if (normalized === 'pending') {
+      return 'complaint-status-select complaint-status-select--pending'
+    }
+
+    if (normalized === 'viewed') {
+      return 'complaint-status-select complaint-status-select--viewed'
+    }
+
+    if (normalized === 'in-progress') {
+      return 'complaint-status-select complaint-status-select--in-progress'
+    }
+
+    if (normalized === 'resolved') {
+      return 'complaint-status-select complaint-status-select--resolved'
+    }
+
+    return 'complaint-status-select'
+  }
+
   // Filter complaints based on search query
   const filteredComplaints = complaints.filter((complaint) => {
     const searchLower = searchQuery.toLowerCase()
@@ -152,13 +177,13 @@ export default function MyComplaintsPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full bg-[var(--bg-card)] border border-slate-200 pl-10 pr-4 py-4 rounded-2xl hover:bg-[var(--bg-soft)] transition-colors shadow-sm font-semibold text-slate-700 focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95]"
+                className={`${getStatusSelectClass(statusFilter)} w-full pl-10`}
               >
                 <option value="">All Statuses</option>
-                <option value="Pending">Pending</option>
-                <option value="Viewed">Viewed</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Resolved">Resolved</option>
+                <option value="Pending" className="complaint-status-option complaint-status-option--pending">PENDING</option>
+                <option value="Viewed" className="complaint-status-option complaint-status-option--viewed">VIEWED</option>
+                <option value="In Progress" className="complaint-status-option complaint-status-option--in-progress">IN PROGRESS</option>
+                <option value="Resolved" className="complaint-status-option complaint-status-option--resolved">RESOLVED</option>
               </select>
             </div>
           </div>
