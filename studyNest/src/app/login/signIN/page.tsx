@@ -5,7 +5,6 @@ import { Mail, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; 
 import { useRouter } from 'next/navigation';
-import MainHeader from '@/components/MainHeader';
 
 interface SignInResponse {
   user?: {
@@ -123,7 +122,6 @@ export default function SignIn(): React.ReactElement {
 
   return (
     <div className="min-h-screen bg-[#FBFDFD] antialiased">
-      <MainHeader />
       <div className="flex items-center justify-center px-4 py-6 md:py-8">
         <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
         

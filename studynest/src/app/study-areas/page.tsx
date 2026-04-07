@@ -11,7 +11,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import Header from '@/components/Header';
+import MainHeader from '@/components/MainHeader';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
 import { LocationPermissionBanner } from '@/components/study-areas/LocationPermissionBanner';
 import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard';
@@ -193,7 +193,7 @@ export default function StudyAreaFinderPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header Component */}
-      <Header currentPage="student-area" />
+      <MainHeader />
 
       {/* Study Area Header Section */}
       <div className="bg-white border-b border-gray-200">

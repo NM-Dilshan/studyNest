@@ -92,6 +92,7 @@ model lecture_halls {
   timetable              timetable[]
   update_request_pings   update_request_pings[]
   volunteer_hall_updates volunteer_hall_updates[]
+  hall_requests          hall_requests[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -179,6 +180,7 @@ model update_request_pings {
 model users {
   user_id                                                 String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   student_id                                              String?                        @unique @db.VarChar(20)
+  volunteer_id                                            String?                        @unique @db.VarChar(20)
   name                                                    String                         @db.VarChar(100)
   email                                                   String                         @unique @db.VarChar(150)
   mobile                                                  String?                        @db.VarChar(15)
@@ -199,6 +201,8 @@ model users {
   volunteer_reviews_volunteer_reviews_volunteer_idTousers volunteer_reviews[]            @relation("volunteer_reviews_volunteer_idTousers")
   volunteer_scores                                        volunteer_scores?
   volunteer_study_area_updates                            volunteer_study_area_updates[]
+  hall_requests_requester                                 hall_requests[]                @relation("requester")
+  hall_request_updates_responder                          hall_request_updates[]         @relation("responder")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -296,4 +300,46 @@ model live_locations {
   study_areas   study_areas? @relation(fields: [study_area_id], references: [study_area_id], onUpdate: NoAction)
 
   @@index([updated_at])
+}
+
+/// Real-time lecture hall information request system
+model hall_requests {
+  request_id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requester_id         String                   @db.Uuid
+  requester_role       String                   @db.VarChar(20) // 'student', 'volunteer'
+  requester_id_number  String                   @db.VarChar(20) // student_id or volunteer_id for display
+  hall_id              String                   @db.Uuid
+  request_note         String?                  @db.VarChar(300)
+  request_status       String                   @default("Pending") @db.VarChar(20) // 'Pending', 'Responded', 'Expired', 'Closed'
+  created_at           DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?                @default(now()) @db.Timestamp(6)
+  expires_at           DateTime?                @db.Timestamp(6)
+  requester            users                    @relation("requester", fields: [requester_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  lecture_halls        lecture_halls            @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+  hall_request_updates hall_request_updates[]
+  
+  @@index([requester_id])
+  @@index([hall_id])
+  @@index([request_status])
+  @@index([created_at])
+}
+
+/// Responses/updates from volunteers to hall requests
+model hall_request_updates {
+  update_id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id         String        @db.Uuid
+  responder_id       String        @db.Uuid
+  availability_status String       @db.VarChar(30) // 'Free', 'Partially Busy', 'Busy'
+  occupancy_level    String        @db.VarChar(30) // 'Empty', 'Low', 'Medium', 'High', 'Full'
+  available_seats    Int?
+  volunteer_note     String?       @db.VarChar(300)
+  confidence_level   String?       @default("Medium") @db.VarChar(20) // 'Low', 'Medium', 'High'
+  expires_at         DateTime?     @db.Timestamp(6)
+  created_at         DateTime?     @default(now()) @db.Timestamp(6)
+  hall_request       hall_requests @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+  responder          users         @relation("responder", fields: [responder_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  
+  @@index([request_id])
+  @@index([responder_id])
+  @@index([created_at])
 }
