@@ -85,7 +85,6 @@ export default function StudyAreaListPage() {
   }
 
   useEffect(() => {
-<<<<<<< HEAD
     // Initialize user from localStorage
     const userData = localStorage.getItem('user')
     if (userData) {
@@ -135,13 +134,6 @@ export default function StudyAreaListPage() {
       setLoading(false)
     }
   }
-=======
-    // Use mock data instead of fetching from API
-    setStudyAreas(mockStudyAreas)
-    setLoading(false)
-  }, [])
-
->>>>>>> bc5bb4dc82db9d055375b41f02e7c8fa78f65cd0
 
   const handleDelete = async (id) => {
     try {
