@@ -37,13 +37,6 @@ function TypingText() {
 }
 
 // Validation Functions
-const validateStudentId = (id: string): string => {
-  if (!id.trim()) return 'Student ID is required';
-  if (id.length < 2) return 'Student ID must be at least 2 characters';
-  if (id.length > 20) return 'Student ID cannot exceed 20 characters';
-  return '';
-};
-
 const validateFullName = (name: string): string => {
   if (!name.trim()) return '';
   if (/\d/.test(name)) return 'Name cannot contain numbers';
@@ -276,7 +269,7 @@ export default function SignUp(): React.ReactElement {
             <div className="mb-8 text-center lg:text-left">
               <Link href="/" className="inline-flex items-center gap-3 mb-6">
                 <div className="relative w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-md p-1.5 overflow-hidden border border-slate-100">
-                  <Image src="/logo.jpeg" alt="StudyNest Logo" width={40} height={40} className="object-contain" />
+                  <Image src="/logo.jpeg" alt="StudyNest Logo" width={40} height={40} className="object-contain w-full h-full" style={{ width: 'auto', height: 'auto' }} />
                 </div>
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight">StudyNest</h1>
               </Link>

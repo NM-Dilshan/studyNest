@@ -78,7 +78,8 @@ export function Sidebar() {
             alt="StudyNest Logo"
             width={40}
             height={40}
-            className="rounded-lg object-cover"
+            className="rounded-lg object-cover w-10 h-10"
+            style={{ width: 'auto', height: 'auto' }}
           />
           <div>
             <h1 className="text-lg font-bold text-gray-900">StudyNest</h1>

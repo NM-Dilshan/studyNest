@@ -62,7 +62,8 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
               alt="StudyNest Logo" 
               width={40}
               height={40}
-              className="rounded-md"
+              className="rounded-md w-10 h-10"
+              style={{ width: 'auto', height: 'auto' }}
             />
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-gray-900">StudyNest</h1>

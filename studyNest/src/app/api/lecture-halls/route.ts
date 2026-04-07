@@ -49,3 +49,48 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+/**
+ * POST /api/lecture-halls
+ * Create a new lecture hall
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { hall_name, building, floor, capacity, hall_type } = body
+
+    // Validation
+    if (!hall_name || !building || floor === undefined || !capacity || !hall_type) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      )
+    }
+
+    const newHall = await prisma.lecture_halls.create({
+      data: {
+        hall_name,
+        building,
+        floor: parseInt(floor, 10),
+        capacity: parseInt(capacity, 10),
+        hall_type,
+        is_active: true,
+      },
+    })
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Lecture hall created successfully',
+        hall: newHall,
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Error creating lecture hall:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to create lecture hall' },
+      { status: 500 }
+    )
+  }
+}

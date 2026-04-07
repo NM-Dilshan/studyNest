@@ -27,22 +27,9 @@ export async function GET(request: Request) {
       },
     })
 
-    // Add complaint count for each lecture hall for priority calculation
-    const complaintsWithCounts = await Promise.all(
-      complaints.map(async (complaint) => {
-        const count = await prisma.complaints.count({
-          where: { hall_id: complaint.hall_id },
-        })
-        return {
-          ...complaint,
-          complaint_count: count,
-        }
-      })
-    )
-
     return Response.json({
       success: true,
-      data: complaintsWithCounts,
+      data: complaints,
     })
   } catch (error) {
     console.error('Error fetching complaints:', error)

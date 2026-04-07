@@ -17,44 +17,52 @@ function getPriority(count: number): string {
 // GET - Hall-wise complaint summary with priorities
 export async function GET(request: Request) {
   try {
-    // Get all lecture halls
+    // Get complaint counts grouped by hall_id in a single query
+    const complaintCounts = await prisma.complaints.groupBy({
+      by: ['hall_id'],
+      _count: {
+        complaint_id: true,
+      },
+    })
+
+    // Get hall names for each hall with complaints
+    const hallIds = complaintCounts.map(c => c.hall_id).filter(Boolean)
+    
     const halls = await prisma.lecture_halls.findMany({
       select: {
         hall_id: true,
         hall_name: true,
       },
+      where: {
+        hall_id: {
+          in: hallIds,
+        },
+      },
     })
 
-    // Get complaint count for each hall
-    const summary: HallSummary[] = await Promise.all(
-      halls.map(async (hall) => {
-        const count = await prisma.complaints.count({
-          where: { hall_id: hall.hall_id },
-        })
-
+    // Combine data
+    const summary: HallSummary[] = complaintCounts
+      .map(complaint => {
+        const hall = halls.find(h => h.hall_id === complaint.hall_id)
         return {
-          hall_id: hall.hall_id,
-          hall_name: hall.hall_name,
-          complaint_count: count,
-          priority: getPriority(count),
+          hall_id: complaint.hall_id || 'unknown',
+          hall_name: hall?.hall_name || 'Unknown Hall',
+          complaint_count: complaint._count.complaint_id,
+          priority: getPriority(complaint._count.complaint_id),
         }
       })
-    )
-
-    // Filter out halls with no complaints and sort by complaint count
-    const filteredSummary = summary
-      .filter((h) => h.complaint_count > 0)
+      .filter(h => h.complaint_count > 0)
       .sort((a, b) => b.complaint_count - a.complaint_count)
 
     return Response.json({
       success: true,
-      data: filteredSummary,
+      data: summary,
       stats: {
         totalHalls: halls.length,
-        hallsWithComplaints: filteredSummary.length,
-        highPriorityHalls: filteredSummary.filter((h) => h.priority === 'High').length,
-        mediumPriorityHalls: filteredSummary.filter((h) => h.priority === 'Medium').length,
-        normalPriorityHalls: filteredSummary.filter((h) => h.priority === 'Normal').length,
+        hallsWithComplaints: summary.length,
+        highPriorityHalls: summary.filter((h) => h.priority === 'High').length,
+        mediumPriorityHalls: summary.filter((h) => h.priority === 'Medium').length,
+        normalPriorityHalls: summary.filter((h) => h.priority === 'Normal').length,
       },
     })
   } catch (error) {

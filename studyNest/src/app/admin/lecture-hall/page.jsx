@@ -35,7 +35,7 @@ export default function LectureHallListPage() {
       }
 
       const data = await response.json()
-      setHalls(data.data || [])
+      setHalls(data.halls || [])
     } catch (err) {
       setError(err.message || 'An error occurred while fetching data')
     } finally {
