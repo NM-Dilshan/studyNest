@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,6 +12,9 @@ import {
   XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useNotifications } from '@/contexts/NotificationContext'
+import { useComplaintHighlight } from '@/hooks/useComplaintHighlight'
+import { buildComplaintNotification } from '@/utils/notificationService'
 
 interface Complaint {
   complaint_id: number
@@ -90,6 +93,8 @@ const getStatusSelectClass = (status: string) => {
 }
 
 export default function AdminComplaintsPage() {
+  useComplaintHighlight()
+
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [hallSummary, setHallSummary] = useState<HallSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,12 +109,10 @@ export default function AdminComplaintsPage() {
   const [viewComplaint, setViewComplaint] = useState<Complaint | null>(null)
   const [viewGroup, setViewGroup] = useState<ComplaintGroup | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<Complaint | null>(null)
+  const seenComplaintIdsRef = useRef<Set<number>>(new Set())
+  const { addNotification } = useNotifications()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const [complaintsRes, summaryRes] = await Promise.all([
@@ -120,7 +123,23 @@ export default function AdminComplaintsPage() {
       if (complaintsRes.ok) {
         const data = await complaintsRes.json()
         if (data.success) {
-          setComplaints(Array.isArray(data.data) ? data.data : [])
+          const nextComplaints: Complaint[] = Array.isArray(data.data) ? data.data : []
+          setComplaints(nextComplaints)
+
+          if (seenComplaintIdsRef.current.size === 0) {
+            nextComplaints.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+            })
+          } else {
+            const newlyArrived = nextComplaints.filter(
+              (complaint) => !seenComplaintIdsRef.current.has(complaint.complaint_id)
+            )
+
+            newlyArrived.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+              addNotification(buildComplaintNotification(complaint))
+            })
+          }
         }
       }
 
@@ -137,7 +156,13 @@ export default function AdminComplaintsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [addNotification])
+
+  useEffect(() => {
+    fetchData()
+    const interval = window.setInterval(fetchData, 30000)
+    return () => window.clearInterval(interval)
+  }, [fetchData])
 
   const getPriority = (complaintCount: number): string => {
     if (complaintCount > 10) return 'High'
@@ -459,7 +484,11 @@ export default function AdminComplaintsPage() {
                   return (
                     <article
                       key={group.locationKey}
-                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)]"
+                      id={`complaint-${complaint.complaint_id}`}
+                      data-complaint-ids={group.complaints
+                        .map((item) => `|${item.complaint_id}|`)
+                        .join('')}
+                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)] transition-all duration-300"
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
