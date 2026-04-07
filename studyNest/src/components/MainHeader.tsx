@@ -16,7 +16,12 @@ interface User {
   created_at: string
 }
 
-export default function MainHeader() {
+interface MainHeaderProps {
+  showAuthActions?: boolean
+  showStudentId?: boolean
+}
+
+export default function MainHeader({ showAuthActions = true, showStudentId = true }: MainHeaderProps) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
 

@@ -1,11 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, ChevronDown, Search } from 'lucide-react'
+import { ChevronDown, Search } from 'lucide-react'
 import { useSearch } from '@/contexts/SearchContext'
+import NotificationBell from '@/components/notifications/NotificationBell'
 
 export default function AdminHeader() {
-  const [notificationOpen, setNotificationOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const { searchValue, setSearchValue } = useSearch()
 
@@ -19,8 +19,6 @@ export default function AdminHeader() {
       day: 'numeric'
     })
   }
-
-  const notificationCount = 3
 
   return (
     <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-40">
@@ -47,55 +45,13 @@ export default function AdminHeader() {
             </div>
 
             {/* Notification Bell */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setNotificationOpen(!notificationOpen)
-                  setProfileOpen(false)
-                }}
-                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <Bell size={20} />
-                {notificationCount > 0 && (
-                  <span className="absolute top-1 right-1 flex items-center justify-center h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                    {notificationCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Dropdown */}
-              {notificationOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {[1, 2, 3].map((item) => (
-                      <a
-                        key={item}
-                        href="#"
-                        className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                      >
-                        <p className="text-sm text-gray-900 font-medium">Notification {item}</p>
-                        <p className="text-xs text-gray-500 mt-1">Check your spaces and resources</p>
-                      </a>
-                    ))}
-                  </div>
-                  <div className="px-4 py-2 border-t border-gray-100 text-center">
-                    <a href="#" className="text-xs font-medium text-blue-600 hover:text-blue-700">
-                      View all notifications
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
+            <NotificationBell />
 
             {/* Admin Profile Section */}
             <div className="relative">
               <button
                 onClick={() => {
                   setProfileOpen(!profileOpen)
-                  setNotificationOpen(false)
                 }}
                 className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >

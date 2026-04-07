@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,6 +12,9 @@ import {
   XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useNotifications } from '@/contexts/NotificationContext'
+import { useComplaintHighlight } from '@/hooks/useComplaintHighlight'
+import { buildComplaintNotification } from '@/utils/notificationService'
 
 interface Complaint {
   complaint_id: number
@@ -50,6 +53,14 @@ interface StudyAreaSummary {
   priority: string
 }
 
+interface ComplaintGroup {
+  locationKey: string
+  locationName: string
+  complaints: Complaint[]
+  latestComplaint: Complaint
+  highestPriority: string
+}
+
 const statusBadgeStyles: Record<string, string> = {
   Pending: 'bg-amber-50 text-amber-700 border-amber-200',
   Viewed: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -63,7 +74,27 @@ const priorityBadgeStyles: Record<string, string> = {
   High: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
+const normalizeStatus = (status: string) =>
+  status.trim().toLowerCase().replace(/[\s_]+/g, '-')
+
+const getStatusSelectClass = (status: string) => {
+  const variant =
+    normalizeStatus(status) === 'pending'
+      ? 'status-select--pending'
+      : normalizeStatus(status) === 'viewed'
+        ? 'status-select--viewed'
+        : normalizeStatus(status) === 'in-progress'
+          ? 'status-select--in-progress'
+          : normalizeStatus(status) === 'resolved'
+            ? 'status-select--resolved'
+            : 'status-select--pending'
+
+  return `admin-status-select ${variant}`
+}
+
 export default function AdminComplaintsPage() {
+  useComplaintHighlight()
+
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [hallSummary, setHallSummary] = useState<HallSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -76,13 +107,12 @@ export default function AdminComplaintsPage() {
   const [activeTab, setActiveTab] = useState<'complaints' | 'summary'>('complaints')
   const [summaryPriorityFilter, setSummaryPriorityFilter] = useState<'all' | 'high' | 'medium' | 'normal'>('all')
   const [viewComplaint, setViewComplaint] = useState<Complaint | null>(null)
+  const [viewGroup, setViewGroup] = useState<ComplaintGroup | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<Complaint | null>(null)
+  const seenComplaintIdsRef = useRef<Set<number>>(new Set())
+  const { addNotification } = useNotifications()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const [complaintsRes, summaryRes] = await Promise.all([
@@ -93,7 +123,23 @@ export default function AdminComplaintsPage() {
       if (complaintsRes.ok) {
         const data = await complaintsRes.json()
         if (data.success) {
-          setComplaints(Array.isArray(data.data) ? data.data : [])
+          const nextComplaints: Complaint[] = Array.isArray(data.data) ? data.data : []
+          setComplaints(nextComplaints)
+
+          if (seenComplaintIdsRef.current.size === 0) {
+            nextComplaints.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+            })
+          } else {
+            const newlyArrived = nextComplaints.filter(
+              (complaint) => !seenComplaintIdsRef.current.has(complaint.complaint_id)
+            )
+
+            newlyArrived.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+              addNotification(buildComplaintNotification(complaint))
+            })
+          }
         }
       }
 
@@ -110,7 +156,13 @@ export default function AdminComplaintsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [addNotification])
+
+  useEffect(() => {
+    fetchData()
+    const interval = window.setInterval(fetchData, 30000)
+    return () => window.clearInterval(interval)
+  }, [fetchData])
 
   const getPriority = (complaintCount: number): string => {
     if (complaintCount > 10) return 'High'
@@ -147,6 +199,9 @@ export default function AdminComplaintsPage() {
         setComplaints((prev) => prev.filter((c) => c.complaint_id !== complaintId))
         if (viewComplaint?.complaint_id === complaintId) {
           setViewComplaint(null)
+        }
+        if (viewGroup) {
+          setViewGroup(null)
         }
         setWithdrawTarget(null)
       } else {
@@ -209,6 +264,46 @@ export default function AdminComplaintsPage() {
     const matchesStudyArea = !studyAreaFilter || complaint.study_area_id === studyAreaFilter
 
     return matchesSearch && matchesStatus && matchesHall && matchesStudyArea
+  })
+
+  const groupedComplaints: ComplaintGroup[] = Object.values(
+    filteredComplaints.reduce((acc, complaint) => {
+      const locationKey = complaint.hall_id
+        ? `hall:${complaint.hall_id}`
+        : complaint.study_area_id
+          ? `study:${complaint.study_area_id}`
+          : `other:${getLocationName(complaint)}`
+
+      if (!acc[locationKey]) {
+        acc[locationKey] = {
+          locationKey,
+          locationName: getLocationName(complaint),
+          complaints: [],
+          latestComplaint: complaint,
+          highestPriority: 'Normal',
+        }
+      }
+
+      acc[locationKey].complaints.push(complaint)
+      return acc
+    }, {} as Record<string, ComplaintGroup>)
+  ).map((group) => {
+    const sorted = [...group.complaints].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+
+    const highestPriority = sorted.reduce((best, complaint) => {
+      const current = complaint.priority || getPriority(complaint.complaint_count || 0)
+      const rank = { Normal: 1, Medium: 2, High: 3 } as const
+      return rank[current as keyof typeof rank] > rank[best as keyof typeof rank] ? current : best
+    }, 'Normal')
+
+    return {
+      ...group,
+      complaints: sorted,
+      latestComplaint: sorted[0],
+      highestPriority,
+    }
   })
 
   const stats = {
@@ -278,7 +373,7 @@ export default function AdminComplaintsPage() {
             <h1 className="text-4xl font-black tracking-tight text-slate-900">Complaint Management</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Manage and resolve student complaints</p>
           </div>
-          <Link href="/admin" className="text-sm font-bold text-[#2E6F95] hover:text-[#255B79]">
+          <Link href="/Naveen/Admin/dashboard" className="text-sm font-bold text-[#2E6F95] hover:text-[#255B79]">
             Back to Admin
           </Link>
         </header>
@@ -382,24 +477,32 @@ export default function AdminComplaintsPage() {
 
             {/* Complaint Cards */}
             <section className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              {filteredComplaints.length > 0 ? (
-                filteredComplaints.map((complaint) => {
-                  const priority = complaint.priority || getPriority(complaint.complaint_count || 0)
+              {groupedComplaints.length > 0 ? (
+                groupedComplaints.map((group) => {
+                  const complaint = group.latestComplaint
+                  const priority = group.highestPriority
                   return (
                     <article
-                      key={complaint.complaint_id}
-                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)]"
+                      key={group.locationKey}
+                      id={`complaint-${complaint.complaint_id}`}
+                      data-complaint-ids={group.complaints
+                        .map((item) => `|${item.complaint_id}|`)
+                        .join('')}
+                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)] transition-all duration-300"
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
                           <h3 className="text-3xl font-black tracking-tight text-emerald-600">
-                            {getLocationName(complaint)}
+                            {group.locationName}
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
-                            Complaint ID: <span className="font-semibold">#{complaint.complaint_id}</span>
+                            Latest Complaint ID: <span className="font-semibold">#{complaint.complaint_id}</span>
                           </p>
                           <p className="text-sm font-semibold text-slate-700 mt-1">
                             {complaint.issue_category}
+                          </p>
+                          <p className="text-xs font-semibold text-slate-500 mt-1">
+                            {group.complaints.length} complaint{group.complaints.length > 1 ? 's' : ''} in this location
                           </p>
                         </div>
                         <span
@@ -440,10 +543,10 @@ export default function AdminComplaintsPage() {
                       <div className="mt-4 pt-4 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setViewComplaint(complaint)}
+                            onClick={() => setViewGroup(group)}
                             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-colors"
                           >
-                            <Eye size={15} /> View Progress
+                            <Eye size={15} /> View All ({group.complaints.length})
                           </button>
 
                           <button
@@ -461,16 +564,16 @@ export default function AdminComplaintsPage() {
                             value={complaint.status}
                             onChange={(e) => handleStatusUpdate(complaint.complaint_id, e.target.value)}
                             disabled={statusUpdating === complaint.complaint_id}
-                            className="px-3 py-2 rounded-full border border-slate-300 text-xs font-black uppercase tracking-wide text-slate-700 bg-white"
+                            className={getStatusSelectClass(complaint.status)}
                           >
-                            <option value="Pending">Pending</option>
-                            <option value="Viewed">Viewed</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Resolved">Resolved</option>
+                            <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                            <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                            <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                            <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
                           </select>
 
                           <span className="px-4 py-2 rounded-full border text-xs font-black tracking-wide bg-emerald-50 text-emerald-600 border-emerald-100">
-                            {getLocationName(complaint)}
+                            {group.locationName}
                           </span>
                         </div>
                       </div>
@@ -578,7 +681,7 @@ export default function AdminComplaintsPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
-                          Complaint (Hall ID)
+                          Complaint
                         </th>
                         <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                           Complaint Count
@@ -625,7 +728,6 @@ export default function AdminComplaintsPage() {
                             >
                               <td className="px-5 py-4">
                                 <p className="text-sm font-semibold text-gray-900">{hall.hall_name}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{hall.hall_id}</p>
                               </td>
                               <td className="px-5 py-4">
                                 <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -664,7 +766,7 @@ export default function AdminComplaintsPage() {
                       <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                           <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
-                            Study Area (ID)
+                            Study Area
                           </th>
                           <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                             Complaint Count
@@ -711,7 +813,6 @@ export default function AdminComplaintsPage() {
                               >
                                 <td className="px-5 py-4">
                                   <p className="text-sm font-semibold text-gray-900">{area.area_name}</p>
-                                  <p className="text-xs text-gray-500 mt-0.5">{area.study_area_id}</p>
                                 </td>
                                 <td className="px-5 py-4">
                                   <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -743,6 +844,87 @@ export default function AdminComplaintsPage() {
           </section>
         )}
       </main>
+
+      {viewGroup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Close group modal"
+            className="absolute inset-0 bg-slate-900/45"
+            onClick={() => setViewGroup(null)}
+          />
+          <div className="relative w-full max-w-4xl rounded-[24px] border border-white/70 bg-[var(--bg-card)] p-6 shadow-2xl max-h-[85vh] overflow-hidden">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-[#2E6F95]">Location Complaints</p>
+                <h3 className="text-2xl font-black text-slate-900 mt-1">{viewGroup.locationName}</h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  {viewGroup.complaints.length} complaint{viewGroup.complaints.length > 1 ? 's' : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewGroup(null)}
+                className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto max-h-[65vh] pr-1 space-y-3">
+              {viewGroup.complaints.map((item) => (
+                <div
+                  key={item.complaint_id}
+                  className="rounded-2xl border border-slate-200 bg-[var(--bg-soft)] p-4"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-900">Complaint #{item.complaint_id}</p>
+                      <p className="text-sm font-semibold text-slate-700 mt-1">{item.issue_category}</p>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {new Date(item.created_at).toLocaleDateString()} at{' '}
+                        {new Date(item.created_at).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+
+                    <span className={`px-3 py-1 rounded-full border text-xs font-black uppercase tracking-wide ${getStatusClass(item.status)}`}>
+                      {statusUpdating === item.complaint_id ? 'Updating...' : item.status}
+                    </span>
+                  </div>
+
+                  <p className="text-sm text-slate-600 leading-relaxed mt-3">{item.description}</p>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setViewGroup(null)
+                        setViewComplaint(item)
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50"
+                    >
+                      <Eye size={14} /> View Details
+                    </button>
+
+                    <select
+                      value={item.status}
+                      onChange={(e) => handleStatusUpdate(item.complaint_id, e.target.value)}
+                      disabled={statusUpdating === item.complaint_id}
+                      className={getStatusSelectClass(item.status)}
+                    >
+                      <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                      <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                      <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                      <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {viewComplaint && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -814,12 +996,12 @@ export default function AdminComplaintsPage() {
                   value={viewComplaint.status}
                   onChange={(e) => handleStatusUpdate(viewComplaint.complaint_id, e.target.value)}
                   disabled={statusUpdating === viewComplaint.complaint_id}
-                  className="px-3 py-2 rounded-full border border-slate-300 text-xs font-black uppercase tracking-wide text-slate-700 bg-white"
+                  className={getStatusSelectClass(viewComplaint.status)}
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="Viewed">Viewed</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
+                  <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                  <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                  <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                  <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
                 </select>
                 <span className={`px-4 py-2 rounded-full border text-xs font-black uppercase tracking-wide ${getStatusClass(viewComplaint.status)}`}>
                   {statusUpdating === viewComplaint.complaint_id ? 'Updating...' : viewComplaint.status}

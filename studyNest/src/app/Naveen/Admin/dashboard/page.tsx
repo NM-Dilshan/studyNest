@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart,
@@ -10,9 +11,27 @@ import {
   Tooltip,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { AlertCircle, Clock, MapPin, Users, Eye, TrendingUp, Plus } from "lucide-react";
+
+interface ComplaintItem {
+  complaint_id: number;
+  issue_category: string;
+  status: string;
+  created_at: string;
+  complaint_count?: number;
+  lecture_halls?: {
+    hall_name: string;
+  };
+  study_areas?: {
+    area_name: string;
+  };
+}
 
 // Data
 const lectureHallsData = [
@@ -54,39 +73,12 @@ const weeklyData = [
   { day: "Sun", visits: 180 },
 ];
 
-const complaintsData = [
-  {
-    id: 1,
-    location: "Lecture Hall A101",
-    issue: "AC not working",
-    priority: "High" as const,
-    status: "Pending" as const,
-    time: "10 min ago",
-  },
-  {
-    id: 2,
-    location: "Main Library",
-    issue: "Wi-Fi connectivity",
-    priority: "Medium" as const,
-    status: "In Progress" as const,
-    time: "30 min ago",
-  },
-  {
-    id: 3,
-    location: "Study Room 3",
-    issue: "Lighting issue",
-    priority: "Low" as const,
-    status: "Resolved" as const,
-    time: "1 hour ago",
-  },
-];
-
 // Badges
-const PriorityBadge = ({ priority }: { priority: "High" | "Medium" | "Low" }) => {
+const PriorityBadge = ({ priority }: { priority: "High" | "Medium" | "Normal" }) => {
   const colors = {
     High: "bg-red-100 text-red-700 border-red-200",
     Medium: "bg-amber-100 text-amber-700 border-amber-200",
-    Low: "bg-green-100 text-green-700 border-green-200",
+    Normal: "bg-green-100 text-green-700 border-green-200",
   };
   return (
     <span
@@ -97,19 +89,41 @@ const PriorityBadge = ({ priority }: { priority: "High" | "Medium" | "Low" }) =>
   );
 };
 
-const StatusBadge = ({ status }: { status: "Pending" | "In Progress" | "Resolved" }) => {
-  const colors = {
-    Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    Resolved: "bg-green-100 text-green-700 border-green-200",
-  };
+const StatusBadge = ({ status }: { status: string }) => {
+  const normalized = (status || "").toLowerCase();
+  const statusColor =
+    normalized.includes("resolve")
+      ? "bg-green-100 text-green-700 border-green-200"
+      : normalized.includes("progress")
+        ? "bg-amber-100 text-amber-700 border-amber-200"
+        : normalized.includes("view")
+          ? "bg-blue-100 text-blue-700 border-blue-200"
+          : "bg-slate-100 text-slate-700 border-slate-200";
+
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[status]}`}
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${statusColor}`}
     >
       {status}
     </span>
   );
+};
+
+const getPriorityFromCount = (count: number) => {
+  if (count > 10) return "High" as const;
+  if (count > 6) return "Medium" as const;
+  return "Normal" as const;
+};
+
+const getRelativeTime = (timestamp: string) => {
+  const ms = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
 };
 
 // Summary Card
@@ -171,6 +185,71 @@ const ChartCard = ({
 );
 
 export default function AdminDashboard() {
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        setComplaintsLoading(true);
+        const response = await fetch("/api/admin/complaints");
+        const data = await response.json();
+        if (response.ok && data.success && Array.isArray(data.data)) {
+          setComplaints(data.data);
+        } else {
+          setComplaints([]);
+        }
+      } catch (error) {
+        console.error("Error fetching admin complaints:", error);
+        setComplaints([]);
+      } finally {
+        setComplaintsLoading(false);
+      }
+    };
+
+    fetchComplaints();
+  }, []);
+
+  const complaintStats = useMemo(() => {
+    const pending = complaints.filter((c) => {
+      const value = (c.status || "").toLowerCase();
+      return value.includes("pending");
+    }).length;
+
+    const viewed = complaints.filter((c) =>
+      (c.status || "").toLowerCase().includes("view")
+    ).length;
+
+    const inProgress = complaints.filter((c) =>
+      (c.status || "").toLowerCase().includes("progress")
+    ).length;
+
+    const resolved = complaints.filter((c) =>
+      (c.status || "").toLowerCase().includes("resolve")
+    ).length;
+
+    return {
+      total: complaints.length,
+      pending,
+      viewed,
+      pendingAndViewed: pending + viewed,
+      inProgress,
+      resolved,
+    };
+  }, [complaints]);
+
+  const recentComplaints = useMemo(() => complaints.slice(0, 6), [complaints]);
+
+  const complaintStatusChartData = useMemo(
+    () => [
+      { name: "Pending", value: complaintStats.pending, color: "#9ca3af" },
+      { name: "Viewed", value: complaintStats.viewed, color: "#2563eb" },
+      { name: "In Progress", value: complaintStats.inProgress, color: "#f59e0b" },
+      { name: "Resolved", value: complaintStats.resolved, color: "#16a34a" },
+    ],
+    [complaintStats]
+  );
+
   return (
     <div className="min-h-screen bg-[#F4F9F8]">
       <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -181,15 +260,15 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <SummaryCard
             title="Total Complaints"
-            value="248"
+            value={complaintsLoading ? "..." : complaintStats.total}
             description=""
             icon={<AlertCircle className="w-10 h-10" />}
-            trend="+12% from last month"
-            trendPositive={false}
+            trend={complaintsLoading ? undefined : `${complaintStats.resolved} resolved so far`}
+            trendPositive={true}
           />
           <SummaryCard
             title="Pending"
-            value="23"
+            value={complaintsLoading ? "..." : complaintStats.pendingAndViewed}
             description="Requires attention"
             icon={<Clock className="w-10 h-10" />}
           />
@@ -247,9 +326,9 @@ export default function AdminDashboard() {
               <h2 className="text-lg font-semibold text-gray-900">Recent Complaints</h2>
               <p className="text-sm text-gray-500">Latest issues reported by students</p>
             </div>
-            <button className="text-sm font-semibold text-[#2E6F95] hover:text-[#1f4b66] transition-colors">
+            <Link href="/admin/complaints" className="text-sm font-semibold text-[#2E6F95] hover:text-[#1f4b66] transition-colors">
               View All
-            </button>
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -264,27 +343,91 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {complaintsData.map((complaint) => (
-                  <tr key={complaint.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{complaint.location}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{complaint.issue}</td>
+                {complaintsLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                      Loading complaints...
+                    </td>
+                  </tr>
+                ) : recentComplaints.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-10 text-center text-sm font-medium text-gray-500">
+                      No complaints available
+                    </td>
+                  </tr>
+                ) : (
+                  recentComplaints.map((complaint) => (
+                  <tr key={complaint.complaint_id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {complaint.lecture_halls?.hall_name || complaint.study_areas?.area_name || "Unknown Location"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{complaint.issue_category}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <PriorityBadge priority={complaint.priority} />
+                      <PriorityBadge priority={getPriorityFromCount(complaint.complaint_count || 0)} />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <StatusBadge status={complaint.status} />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.time}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getRelativeTime(complaint.created_at)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
+                      <Link href="/admin/complaints" className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                         <Eye className="w-4 h-4 mr-1" /> View
-                      </button>
+                      </Link>
                     </td>
                   </tr>
-                ))}
+                ))) }
               </tbody>
             </table>
           </div>
+        </div>
+
+        {/* Complaint Status Chart */}
+        <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Complaint Status Overview</h2>
+            <p className="text-sm text-gray-500">Live status distribution from database complaints</p>
+          </div>
+
+          {complaintsLoading ? (
+            <p className="text-sm font-medium text-gray-500 py-8">Loading chart data...</p>
+          ) : complaintStatusChartData.every((item) => item.value === 0) ? (
+            <p className="text-sm font-medium text-gray-500 py-8">No complaint data available for chart</p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+              <div style={{ width: "100%", height: 280 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={complaintStatusChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      innerRadius={56}
+                      outerRadius={92}
+                      paddingAngle={3}
+                    >
+                      {complaintStatusChartData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {complaintStatusChartData.map((item) => (
+                  <div key={item.name} className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{item.name}</p>
+                    </div>
+                    <p className="text-2xl font-black text-slate-900">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Vertical Bar & Line Charts */}
