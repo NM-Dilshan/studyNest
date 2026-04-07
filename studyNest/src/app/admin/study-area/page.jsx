@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import Header from '@/components/Header'
 import { useSearch } from '@/contexts/SearchContext'
 import { HighlightText } from '@/components/HighlightText'
 
@@ -148,31 +147,7 @@ export default function StudyAreaListPage() {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 text-green-800'
-      case 'maintenance':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'closed':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
-  const getStatusBadge = (status) => {
-    switch (status) {
-      case 'available':
-        return '✓ Available'
-      case 'maintenance':
-        return '🔧 Maintenance'
-      case 'closed':
-        return '✕ Closed'
-      default:
-        return status
-    }
-  }
 
   // Filter study areas based on search value from header
   const filteredAreas = studyAreas.filter((area) => {
@@ -185,9 +160,6 @@ export default function StudyAreaListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header Component */}
-      <Header currentPage="home" />
-
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Title & Add Button */}
@@ -244,7 +216,6 @@ export default function StudyAreaListPage() {
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Building</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Floor</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Capacity</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Features</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
                   </tr>
@@ -260,11 +231,6 @@ export default function StudyAreaListPage() {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">{area.floor || '-'}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{area.capacity || '-'}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(area.area_status)}`}>
-                          {getStatusBadge(area.area_status)}
-                        </span>
-                      </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex gap-2 flex-wrap">
                           {area.wifi && <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">WiFi</span>}

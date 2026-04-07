@@ -16,6 +16,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
+  MapPin,
 } from 'lucide-react'
 import {
   validateFormData,
@@ -25,13 +26,10 @@ import {
   validateBuilding,
   validateFloor,
   validateCapacity,
-  validateLatitude,
-  validateLongitude,
-  validateRadiusMeters,
-  validateStatus,
   type StudyAreaFormData,
   type ValidationErrors,
 } from '@/lib/validation/studyAreaValidation'
+import DeviceLocationPicker from '@/components/admin/DeviceLocationPicker'
 
 export default function AddStudyAreaPage() {
   const router = useRouter()
@@ -40,15 +38,21 @@ export default function AddStudyAreaPage() {
   const [message, setMessage] = useState('')
   const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
+  const [location, setLocation] = useState({
+    latitude: null as number | null,
+    longitude: null as number | null,
+    source: null as 'device' | 'manual' | null,
+    radius: 20,
+  })
 
   const [formData, setFormData] = useState<StudyAreaFormData>({
     area_name: '',
     building: '',
     floor: '',
     capacity: '',
-    latitude: '',
-    longitude: '',
-    radius_meters: STUDY_AREA_VALIDATION.RADIUS_METERS.DEFAULT.toString(),
+    latitude: '0',
+    longitude: '0',
+    radius_meters: '20',
     area_status: 'available',
     wifi: false,
     charging_ports: false,
@@ -70,14 +74,6 @@ export default function AddStudyAreaPage() {
         return validateFloor(value as string)
       case 'capacity':
         return validateCapacity(value as string)
-      case 'latitude':
-        return validateLatitude(value as string)
-      case 'longitude':
-        return validateLongitude(value as string)
-      case 'radius_meters':
-        return validateRadiusMeters(value as string)
-      case 'area_status':
-        return validateStatus(value as string)
       default:
         return null
     }
@@ -138,20 +134,30 @@ export default function AddStudyAreaPage() {
     setError('')
     setMessage('')
 
+    // Validate location is selected
+    if (!location.latitude || !location.longitude) {
+      setError('Location must be selected on the map')
+      return
+    }
+
     // Mark all fields as touched
     setTouchedFields({
       area_name: true,
       building: true,
       floor: true,
       capacity: true,
-      latitude: true,
-      longitude: true,
-      radius_meters: true,
-      area_status: true,
     })
 
+    // Update formData with location values and dynamic radius
+    const updatedFormData: StudyAreaFormData = {
+      ...formData,
+      latitude: String(location.latitude),
+      longitude: String(location.longitude),
+      radius_meters: String(location.radius), // Use radius from location picker
+    }
+
     // Validate form data
-    const validationResult = validateFormData(formData)
+    const validationResult = validateFormData(updatedFormData)
 
     if (!validationResult.isValid) {
       setFieldErrors(validationResult.errors)
@@ -169,7 +175,7 @@ export default function AddStudyAreaPage() {
       setLoading(true)
 
       // Convert form data to API payload
-      const payload = formDataToPayload(formData)
+      const payload = formDataToPayload(updatedFormData)
 
       const response = await fetch('/api/study-areas', {
         method: 'POST',
@@ -324,160 +330,59 @@ export default function AddStudyAreaPage() {
                     value={formData.floor}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    placeholder="e.g., 2 or -1 for basement"
+                    min="0"
+                    placeholder="e.g., 1, 2, 3"
                     className={`${inputClass} ${touchedFields.floor && fieldErrors.floor ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
                   {touchedFields.floor && fieldErrors.floor ? (
                     <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.floor}</p>
                   ) : (
-                    <p className="mt-1 text-[11px] text-slate-400">Supports basement floors (e.g., -2, -1)</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    <Users size={14} />
-                    Capacity *
-                  </label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    value={formData.capacity}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="e.g., 50"
-                    className={`${inputClass} ${touchedFields.capacity && fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
-                  />
-                  {touchedFields.capacity && fieldErrors.capacity ? (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.capacity}</p>
-                  ) : (
-                    <p className="mt-1 text-[11px] text-slate-400">Max: 2000</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Status *
-                  </label>
-                  <select
-                    name="area_status"
-                    value={formData.area_status}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    className={`${inputClass} ${touchedFields.area_status && fieldErrors.area_status ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
-                  >
-                    <option value="">Select a status</option>
-                    {STUDY_AREA_VALIDATION.STATUS.DISPLAY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  {touchedFields.area_status && fieldErrors.area_status && (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.area_status}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Location & GPS */}
-          <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
-            <div className="mb-8 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                  <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-              </div>
-              <h3 className="text-lg font-bold text-slate-800">Location & Geofence</h3>
-            </div>
-
-            <div className="space-y-6">
-              <p className="text-sm font-medium text-slate-500">
-                Enter GPS coordinates for the study area. These are used for geofencing and location tracking.
-              </p>
-
-              {fieldErrors._cross && (
-                <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
-                  <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                  <span>{fieldErrors._cross}</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Latitude *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="-90"
-                    max="90"
-                    name="latitude"
-                    value={formData.latitude}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="e.g., 40.7128"
-                    className={`${inputClass} ${touchedFields.latitude && fieldErrors.latitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
-                  />
-                  {touchedFields.latitude && fieldErrors.latitude ? (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.latitude}</p>
-                  ) : (
-                    <p className="mt-1 text-[11px] text-slate-400">Range: -90° to 90°</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Longitude *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.0001"
-                    min="-180"
-                    max="180"
-                    name="longitude"
-                    value={formData.longitude}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    placeholder="e.g., -74.0060"
-                    className={`${inputClass} ${touchedFields.longitude && fieldErrors.longitude ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
-                  />
-                  {touchedFields.longitude && fieldErrors.longitude ? (
-                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.longitude}</p>
-                  ) : (
-                    <p className="mt-1 text-[11px] text-slate-400">Range: -180° to 180°</p>
+                    <p className="mt-1 text-[11px] text-slate-400">Only positive numbers allowed</p>
                   )}
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                  Geofence Radius (meters) *
+                <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <Users size={14} />
+                  Capacity *
                 </label>
                 <input
                   type="number"
-                  min="1"
-                  name="radius_meters"
-                  value={formData.radius_meters}
+                  name="capacity"
+                  value={formData.capacity}
                   onChange={handleChange}
                   onBlur={handleBlur}
-                  placeholder="e.g., 20"
-                  className={`${inputClass} ${touchedFields.radius_meters && fieldErrors.radius_meters ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                  min="1"
+                  placeholder="e.g., 50"
+                  className={`${inputClass} ${touchedFields.capacity && fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
-                {touchedFields.radius_meters && fieldErrors.radius_meters ? (
-                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.radius_meters}</p>
+                {touchedFields.capacity && fieldErrors.capacity ? (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.capacity}</p>
                 ) : (
-                  <p className="mt-1 text-[11px] text-slate-400">
-                    Recommended range: {STUDY_AREA_VALIDATION.RADIUS_METERS.MIN}-{STUDY_AREA_VALIDATION.RADIUS_METERS.MAX} meters
-                  </p>
+                  <p className="mt-1 text-[11px] text-slate-400">Only positive numbers allowed. Max: 2000</p>
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Location */}
+          <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2E6F95]/10 text-[#2E6F95]">
+                <MapPin size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Location</h3>
+            </div>
+
+            <p className="mb-6 text-sm font-medium text-slate-500">
+              Select a location for this study area. Click on the map to place a marker or use your device location.
+            </p>
+
+            <DeviceLocationPicker
+              value={location}
+              onChange={setLocation}
+            />
           </div>
 
           {/* Features */}
