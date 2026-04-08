@@ -33,6 +33,18 @@ interface ComplaintItem {
   };
 }
 
+interface DashboardStats {
+  volunteers: {
+    total: number;
+    activeToday: number;
+  };
+  activeSpaces: {
+    total: number;
+    halls: number;
+    areas: number;
+  };
+}
+
 // Data
 const lectureHallsData = [
   { name: "Hall A101", usage: 148 },
@@ -187,6 +199,18 @@ const ChartCard = ({
 export default function AdminDashboard() {
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(true);
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
+    volunteers: {
+      total: 0,
+      activeToday: 0,
+    },
+    activeSpaces: {
+      total: 0,
+      halls: 0,
+      areas: 0,
+    },
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     const fetchComplaints = async () => {
@@ -208,6 +232,25 @@ export default function AdminDashboard() {
     };
 
     fetchComplaints();
+  }, []);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        setStatsLoading(true);
+        const response = await fetch("/api/admin/dashboard/stats");
+        const data = await response.json();
+        if (response.ok && data.success && data.data) {
+          setDashboardStats(data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchDashboardStats();
   }, []);
 
   const complaintStats = useMemo(() => {
@@ -274,16 +317,20 @@ export default function AdminDashboard() {
           />
           <SummaryCard
             title="Active Spaces"
-            value="42"
-            description="18 halls, 24 areas"
+            value={statsLoading ? "..." : dashboardStats.activeSpaces.total}
+            description={
+              statsLoading
+                ? "Loading active spaces"
+                : `${dashboardStats.activeSpaces.halls} halls, ${dashboardStats.activeSpaces.areas} areas`
+            }
             icon={<MapPin className="w-10 h-10" />}
           />
           <SummaryCard
             title="Volunteers"
-            value="156"
+            value={statsLoading ? "..." : dashboardStats.volunteers.total}
             description=""
             icon={<Users className="w-10 h-10" />}
-            trend="+8 active today"
+            trend={statsLoading ? undefined : `+${dashboardStats.volunteers.activeToday} active today`}
             trendPositive={true}
           />
         </div>
