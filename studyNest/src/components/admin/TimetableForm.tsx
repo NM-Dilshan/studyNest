@@ -242,34 +242,34 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   };
 
   return (
-    <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white/80 dark:bg-neutral-900/80 backdrop-blur-2xl rounded-3xl p-6 md:p-8 border border-white/40 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-lg w-full relative max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl p-6 md:p-8 border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-lg w-full relative max-h-[90vh] overflow-y-auto">
         
-        <button onClick={onCancel} className="absolute top-6 right-6 p-2 text-neutral-400 hover:text-neutral-900 dark:hover:text-white rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+        <button onClick={onCancel} className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-900 rounded-full hover:bg-gray-100 transition-colors">
           <X className="w-5 h-5"/>
         </button>
         
-        <h3 className="text-xl font-bold mb-6 text-neutral-900 dark:text-white">
+        <h3 className="text-xl font-bold mb-6 text-gray-900">
           {initialData ? 'Edit Timetable Slot' : 'Add Timetable Slot'}
         </h3>
         
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-500/20">
+          <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-700 text-sm border border-red-200">
             {error}
           </div>
         )}
 
         {!initialData && (
-          <div className="flex gap-2 mb-6 p-1.5 bg-neutral-100/60 dark:bg-neutral-800/60 rounded-xl backdrop-blur-md">
+          <div className="flex gap-2 mb-6 p-1.5 bg-gray-100 rounded-xl">
             <button
               onClick={() => setMode('manual')}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'manual' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'manual' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
             >
               Manual Entry
             </button>
             <button
               onClick={() => setMode('csv')}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'csv' ? 'bg-white dark:bg-neutral-700 shadow-sm text-neutral-900 dark:text-white' : 'text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300'}`}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${mode === 'csv' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
             >
               CSV Upload
             </button>
@@ -280,11 +280,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
           <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Year</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Year</label>
                 <select 
                   value={formData.academic_year}
                   onChange={(e) => setFormData({ ...formData, academic_year: parseInt(e.target.value) })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm"
                 >
                   {[1, 2, 3, 4].map(y => (
                     <option key={y} value={y}>Year {y}</option>
@@ -292,11 +292,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Semester</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Semester</label>
                 <select 
                   value={formData.semester}
                   onChange={(e) => setFormData({ ...formData, semester: parseInt(e.target.value) })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm"
                 >
                   {[1, 2].map(s => (
                     <option key={s} value={s}>Semester {s}</option>
@@ -329,11 +329,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Day of Week</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Day of Week</label>
                 <select 
                   value={formData.day_of_week}
                   onChange={(e) => setFormData({ ...formData, day_of_week: e.target.value })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm"
                   required
                 >
                   {DAYS.map(day => (
@@ -342,55 +342,55 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Subject Code <span className="text-red-400">*</span></label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Subject Code <span className="text-red-500">*</span></label>
                 <input 
                   type="text" 
                   placeholder="e.g. SE3050"
                   value={formData.subject_code}
                   onChange={(e) => { setFormData({ ...formData, subject_code: e.target.value }); setFieldErrors(prev => ({...prev, subject_code: ''})); }}
-                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.subject_code ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm`}
+                  className={`w-full bg-white border ${fieldErrors.subject_code ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 shadow-sm`}
                 />
                 {fieldErrors.subject_code && <p className="text-xs text-red-500 mt-1">{fieldErrors.subject_code}</p>}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Subject Name</label>
+              <label className="block text-sm font-medium mb-1.5 text-gray-700">Subject Name</label>
               <input 
                 type="text" 
                 placeholder="e.g. Software Engineering"
                 value={formData.subject_name}
                 onChange={(e) => setFormData({ ...formData, subject_name: e.target.value })}
-                className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 shadow-sm"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Group Name</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Group Name</label>
                 <input 
                   type="text" 
                   placeholder="e.g. WE-03"
                   value={formData.group_name}
                   onChange={(e) => setFormData({ ...formData, group_name: e.target.value })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 shadow-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300">Lecturer</label>
+                <label className="block text-sm font-medium mb-1.5 text-gray-700">Lecturer</label>
                 <input 
                   type="text" 
                   placeholder="e.g. Dr. Silva"
                   value={formData.lecturer_name}
                   onChange={(e) => setFormData({ ...formData, lecturer_name: e.target.value })}
-                  className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white placeholder-neutral-400 shadow-sm"
+                  className="w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 placeholder-gray-400 shadow-sm"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1.5 flex items-center justify-between text-neutral-700 dark:text-neutral-300">
+                <label className="block text-sm font-medium mb-1.5 flex items-center justify-between text-gray-700">
                   Start Time <Clock className="w-3.5 h-3.5 opacity-50" />
                 </label>
                 <input 
@@ -398,13 +398,13 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                   min="08:00" max="20:00"
                   value={formData.start_time.substring(0, 5)}
                   onChange={(e) => { setFormData({ ...formData, start_time: e.target.value + ':00' }); setFieldErrors(prev => ({...prev, start_time: '', end_time: ''})); }}
-                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.start_time ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm`}
+                  className={`w-full bg-white border ${fieldErrors.start_time ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm`}
                   required
                 />
                 {fieldErrors.start_time && <p className="text-xs text-red-500 mt-1">{fieldErrors.start_time}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1.5 flex items-center justify-between text-neutral-700 dark:text-neutral-300">
+                <label className="block text-sm font-medium mb-1.5 flex items-center justify-between text-gray-700">
                   End Time <Clock className="w-3.5 h-3.5 opacity-50" />
                 </label>
                 <input 
@@ -412,7 +412,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                   min="08:00" max="20:00"
                   value={formData.end_time.substring(0, 5)}
                   onChange={(e) => { setFormData({ ...formData, end_time: e.target.value + ':00' }); setFieldErrors(prev => ({...prev, end_time: ''})); }}
-                  className={`w-full bg-white/60 dark:bg-neutral-800/80 border ${fieldErrors.end_time ? 'border-red-400 ring-1 ring-red-400' : 'border-white/20 dark:border-white/5'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm`}
+                  className={`w-full bg-white border ${fieldErrors.end_time ? 'border-red-400 ring-1 ring-red-400' : 'border-gray-300'} rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm`}
                   required
                 />
                 {fieldErrors.end_time && <p className="text-xs text-red-500 mt-1">{fieldErrors.end_time}</p>}
@@ -430,22 +430,22 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
             </div>
           </form>
         ) : (
-          <div className="py-8 flex flex-col items-center justify-center border-2 border-dashed border-neutral-300 dark:border-neutral-700 rounded-2xl bg-white/40 dark:bg-neutral-800/40 backdrop-blur-md">
+          <div className="py-8 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl bg-gray-50">
             <Upload className="w-12 h-12 text-blue-500 mb-4 opacity-80" />
-            <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Upload Timetable CSV</h4>
-            <div className="text-sm text-neutral-500 text-center px-4 mb-2 leading-relaxed">
-              <p className="font-medium text-neutral-700 dark:text-neutral-300 mb-1">Supported Format:</p>
-              <code className="bg-white/60 dark:bg-neutral-900/60 px-2 py-1 rounded inline-block text-xs font-mono shadow-sm border border-neutral-200 dark:border-neutral-800">
+            <h4 className="font-semibold text-gray-900 mb-3">Upload Timetable CSV</h4>
+            <div className="text-sm text-gray-600 text-center px-4 mb-2 leading-relaxed">
+              <p className="font-medium text-gray-700 mb-1">Supported Format:</p>
+              <code className="bg-white px-2 py-1 rounded inline-block text-xs font-mono shadow-sm border border-gray-200">
                 day, startTime, endTime, module, type, hall, lecturer
               </code>
             </div>
-            <p className="text-xs text-neutral-400 text-center px-6 mb-1">
+            <p className="text-xs text-gray-500 text-center px-6 mb-1">
               <strong>module:</strong> &quot;IT3010 - NDM Practical&quot; → auto-splits code &amp; name
             </p>
-            <p className="text-xs text-neutral-400 text-center px-6 mb-4">
+            <p className="text-xs text-gray-500 text-center px-6 mb-4">
               <strong>hall:</strong> hall name (e.g. G1101) → auto-maps to hall ID
             </p>
-            <label className="cursor-pointer bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 px-8 py-3 rounded-full font-medium hover:bg-neutral-800 dark:hover:bg-neutral-100 transition-all hover:scale-105 shadow-md">
+            <label className="cursor-pointer bg-blue-600 text-white px-8 py-3 rounded-full font-medium hover:bg-blue-700 transition-all hover:scale-105 shadow-md">
               <span>Choose File</span>
               <input 
                 type="file" 
