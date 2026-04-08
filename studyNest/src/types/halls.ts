@@ -34,6 +34,7 @@ export interface TimetableSlot {
   subject_name: string | null;
   group_name: string | null;
   lecturer_name: string | null;
+  raw_hall_name: string | null;
   is_reserved: boolean;
   created_at: string;
   hall_name?: string | null;

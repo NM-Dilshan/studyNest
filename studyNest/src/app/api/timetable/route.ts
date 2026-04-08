@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
       subject_name: slot.subject_name || null,
       group_name: slot.group_name || null,
       lecturer_name: slot.lecturer_name || null,
+      raw_hall_name: slot.raw_hall_name || null,
       is_reserved: slot.is_reserved ?? true,
       created_at: slot.created_at?.toISOString() || null,
       hall_name: slot.lecture_halls?.hall_name || null,
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
         subject_name: body.subject_name || null,
         group_name: body.group_name || null,
         lecturer_name: body.lecturer_name || null,
+        raw_hall_name: body.raw_hall_name || null,
         is_reserved: body.is_reserved ?? true,
       },
       include: {
@@ -161,6 +163,7 @@ export async function POST(request: NextRequest) {
           subject_name: newSlot.subject_name,
           group_name: newSlot.group_name,
           lecturer_name: newSlot.lecturer_name,
+          raw_hall_name: newSlot.raw_hall_name,
           is_reserved: newSlot.is_reserved,
           created_at: newSlot.created_at?.toISOString(),
           hall_name: newSlot.lecture_halls?.hall_name || null,

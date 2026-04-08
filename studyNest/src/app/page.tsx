@@ -23,7 +23,7 @@ export default async function LandingPage() {
             <img 
               src="/logo.jpeg" 
               alt="StudyNest Logo" 
-              className="h-10 w-auto rounded-lg shadow-md"
+              className="h-10 w-10 rounded-lg shadow-md object-cover"
             />
             <div>
               <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
@@ -229,7 +229,7 @@ export default async function LandingPage() {
                 <img 
                   src="/logo.jpeg" 
                   alt="StudyNest Logo" 
-                  className="h-8 w-auto rounded-lg shadow-md"
+                  className="h-8 w-8 rounded-lg shadow-md object-cover"
                 />
                 <span className="text-xl font-bold text-white">StudyNest</span>
               </div>
