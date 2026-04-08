@@ -257,11 +257,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#FBFCFE] rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.2)] max-w-2xl w-full relative overflow-hidden border border-white/20">
         
-        {/* Decorative background pattern (subtle diagonal lines like image 2) */}
+        {/* Decorative background pattern */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: `repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%)`, backgroundSize: '10px 10px' }}></div>
 
         <div className="relative p-8 md:p-10 max-h-[90vh] overflow-y-auto">
-          {/* Header section like image 2 */}
+          {/* Header section */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <button onClick={onCancel} className="p-3 bg-white border border-slate-200 rounded-full text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm">
@@ -284,7 +284,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
           </p>
           
           {error && (
-            <div className="mb-8 p-4 rounded-2xl bg-red-50 text-red-600 text-sm border border-red-100 flex items-center gap-3 animate-in fade-in slide-in-from-top-4">
+            <div className="mb-8 p-4 rounded-2xl bg-red-50 text-red-600 text-sm border border-red-100 flex items-center gap-3">
               <AlertCircle className="w-5 h-5 shrink-0" />
               {error}
             </div>

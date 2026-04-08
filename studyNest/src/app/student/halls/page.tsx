@@ -43,7 +43,7 @@ export default function FreeHallFinder() {
       
       // Compute scores, passing halls data for client-side scoring
       const scores = await computeScores(
-        halls.map(h => h.id), 
+        halls.map(h => h.id),
         preferences as Partial<UserPreferences>,
         halls
       );
