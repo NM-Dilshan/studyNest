@@ -180,6 +180,14 @@ export function VolunteerDashboardStats({
     data.level
   );
 
+  const starLabels: Record<number, keyof RatingBreakdown> = {
+    5: 'five',
+    4: 'four',
+    3: 'three',
+    2: 'two',
+    1: 'one',
+  };
+
   const renderStars = (count: number) => {
     return '⭐'.repeat(count);
   };
@@ -309,8 +317,7 @@ export function VolunteerDashboardStats({
           <h3 className="font-semibold text-gray-900">Rating Distribution</h3>
 
           {[5, 4, 3, 2, 1].map((stars) => {
-            const count =
-              data.ratingBreakdown[stars as keyof typeof data.ratingBreakdown];
+            const count = data.ratingBreakdown[starLabels[stars]];
             const percentage =
               data.totalReviews > 0 ? (count / data.totalReviews) * 100 : 0;
 

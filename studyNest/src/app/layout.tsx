@@ -29,11 +29,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <NotificationProvider>{children}</NotificationProvider>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        {children}
-        <SmartChatbot />
+        <NotificationProvider>
+          {children}
+          <SmartChatbot />
+        </NotificationProvider>
       </body>
     </html>
   );

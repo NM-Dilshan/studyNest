@@ -8,6 +8,13 @@ type LectureHallListItem = {
   building: string | null
   block: string | null
   floor: number | null
+  capacity: number | null
+  hall_type: string
+  projector: boolean
+  wifi: boolean
+  ac: boolean
+  whiteboard: boolean
+  maintenance_status: string
 }
 
 function jsonError(message: string, status = 500, details?: unknown) {
@@ -107,6 +114,13 @@ export async function GET(request: NextRequest) {
         building: true,
         block: true,
         floor: true,
+        capacity: true,
+        hall_type: true,
+        projector: true,
+        wifi: true,
+        ac: true,
+        whiteboard: true,
+        maintenance_status: true,
       },
       orderBy: [{ building: 'asc' }, { floor: 'asc' }, { hall_name: 'asc' }],
     })) as LectureHallListItem[]

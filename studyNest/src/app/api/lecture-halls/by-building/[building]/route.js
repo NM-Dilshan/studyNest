@@ -28,6 +28,12 @@ export async function GET(request, { params }) {
         hall_name: true,
         floor: true,
         capacity: true,
+        hall_type: true,
+        projector: true,
+        wifi: true,
+        ac: true,
+        whiteboard: true,
+        maintenance_status: true,
       },
       orderBy: { hall_name: 'asc' },
     })
