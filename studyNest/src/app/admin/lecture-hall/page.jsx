@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearch } from '@/contexts/SearchContext'
 import { HighlightText } from '@/components/HighlightText'
@@ -48,6 +48,11 @@ export default function LectureHallListPage() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
+  const [buildingFilter, setBuildingFilter] = useState('all')
+  const [floorFilter, setFloorFilter] = useState('all')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [featureFilter, setFeatureFilter] = useState('all')
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1)
@@ -145,19 +150,55 @@ export default function LectureHallListPage() {
     }
   }
 
-  // Filter halls based on search value from header
-  const filteredHalls = halls.filter((hall) => {
-    const searchLower = searchValue.toLowerCase()
-    return (
-      (hall.hall_name || '').toLowerCase().includes(searchLower) ||
-      (hall.building && hall.building.toLowerCase().includes(searchLower))
-    )
-  })
+  const buildingOptions = useMemo(() => {
+    return Array.from(new Set(halls.map((hall) => hall.building).filter(Boolean))).sort()
+  }, [halls])
+
+  const floorOptions = useMemo(() => {
+    return Array.from(new Set(halls.map((hall) => hall.floor).filter((floor) => floor !== null && floor !== undefined)))
+      .map((floor) => Number(floor))
+      .sort((a, b) => a - b)
+  }, [halls])
+
+  const filteredHalls = useMemo(() => {
+    const searchLower = searchValue.toLowerCase().trim()
+
+    return halls.filter((hall) => {
+      const matchesSearch =
+        !searchLower ||
+        (hall.hall_name || '').toLowerCase().includes(searchLower) ||
+        (hall.building || '').toLowerCase().includes(searchLower)
+
+      const matchesBuilding = buildingFilter === 'all' || hall.building === buildingFilter
+      const matchesFloor = floorFilter === 'all' || String(hall.floor) === floorFilter
+      const hallType = hall.hall_type || 'lecture_hall'
+      const matchesType = typeFilter === 'all' || hallType === typeFilter
+      const hallStatus = normalizeStatus(hall.maintenance_status)
+      const matchesStatus = statusFilter === 'all' || hallStatus === statusFilter
+
+      let matchesFeature = true
+      if (featureFilter !== 'all') {
+        if (featureFilter === 'projector') matchesFeature = toBool(hall.projector)
+        if (featureFilter === 'wifi') matchesFeature = toBool(hall.wifi)
+        if (featureFilter === 'ac') matchesFeature = toBool(hall.ac)
+        if (featureFilter === 'whiteboard') matchesFeature = toBool(hall.whiteboard)
+      }
+
+      return (
+        matchesSearch &&
+        matchesBuilding &&
+        matchesFloor &&
+        matchesType &&
+        matchesStatus &&
+        matchesFeature
+      )
+    })
+  }, [halls, searchValue, buildingFilter, floorFilter, typeFilter, statusFilter, featureFilter])
 
   // Reset to first page when search changes
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchValue])
+  }, [searchValue, buildingFilter, floorFilter, typeFilter, statusFilter, featureFilter])
 
   // Pagination calculations
   const indexOfLastItem = currentPage * itemsPerPage
@@ -189,6 +230,87 @@ export default function LectureHallListPage() {
           </div>
         )}
 
+        {!loading && halls.length > 0 && (
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
+              <select
+                value={buildingFilter}
+                onChange={(e) => setBuildingFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              >
+                <option value="all">All Buildings</option>
+                {buildingOptions.map((building) => (
+                  <option key={building} value={building}>{building}</option>
+                ))}
+              </select>
+
+              <select
+                value={floorFilter}
+                onChange={(e) => setFloorFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              >
+                <option value="all">All Floors</option>
+                {floorOptions.map((floor) => (
+                  <option key={floor} value={String(floor)}>Floor {floor}</option>
+                ))}
+              </select>
+
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              >
+                <option value="all">All Types</option>
+                <option value="lecture_hall">Lecture Hall</option>
+                <option value="lab">Lab</option>
+              </select>
+
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              >
+                <option value="all">All Status</option>
+                <option value="available">Available</option>
+                <option value="under_maintenance">Under Maintenance</option>
+                <option value="reserved_exam">Reserved - Exam</option>
+                <option value="reserved_event">Reserved - Event</option>
+                <option value="closed">Closed</option>
+              </select>
+
+              <select
+                value={featureFilter}
+                onChange={(e) => setFeatureFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700"
+              >
+                <option value="all">All Features</option>
+                <option value="projector">Projector</option>
+                <option value="wifi">WiFi</option>
+                <option value="ac">AC</option>
+                <option value="whiteboard">Whiteboard</option>
+              </select>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setBuildingFilter('all')
+                  setFloorFilter('all')
+                  setTypeFilter('all')
+                  setStatusFilter('all')
+                  setFeatureFilter('all')
+                }}
+                className="rounded-lg border border-gray-300 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+              >
+                Clear Filters
+              </button>
+            </div>
+
+            <p className="mt-3 text-xs font-medium text-gray-500">
+              Showing {filteredHalls.length} of {halls.length} lecture halls
+            </p>
+          </div>
+        )}
+
         {/* Loading State */}
         {loading ? (
           <div className="flex justify-center items-center h-64">
@@ -214,9 +336,9 @@ export default function LectureHallListPage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="max-h-[62vh] overflow-auto">
               <table className="w-full">
-                <thead className="bg-gray-100 border-b">
+                <thead className="sticky top-0 z-10 bg-gray-100 border-b">
                   <tr>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Hall Name</th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Building</th>

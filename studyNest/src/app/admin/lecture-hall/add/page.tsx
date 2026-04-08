@@ -141,7 +141,7 @@ export default function AddLectureHallPage() {
 
     if (name === 'block' || name === 'floor' || name === 'hall_number' || name === 'building') {
       if (updatedData.block && updatedData.floor && updatedData.hall_number) {
-        const floorStr = String(updatedData.floor).padStart(2, '0');
+        const floorStr = String(updatedData.floor);
         const hallNumStr = String(updatedData.hall_number).padStart(2, '0');
         updatedData.hall_name = `${updatedData.block}${floorStr}${hallNumStr}`;
       } else {
@@ -197,7 +197,14 @@ export default function AddLectureHallPage() {
         throw new Error(data?.error || 'Failed to create lecture hall');
       }
 
-      setMessage('Lecture hall created successfully! Redirecting...');
+      const autoAssignedCount = Number(data?.auto_assigned_count ?? 0);
+      if (autoAssignedCount > 0) {
+        setMessage(
+          `Lecture hall created successfully! Auto-assigned ${autoAssignedCount} unassigned timetable session(s). Redirecting...`
+        );
+      } else {
+        setMessage('Lecture hall created successfully! Redirecting...');
+      }
       setTimeout(() => router.push('/admin/lecture-hall'), 1200);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
