@@ -1,26 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// Simple UUID v4 regex check
+// UUID v4-like check for hall IDs.
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const USER_ID_REGEX = /^[A-Za-z0-9_-]{3,100}$/;
+
+interface FavouritePayload {
+  userId?: unknown;
+  hallId?: unknown;
+}
+
+function normalizeUserId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return USER_ID_REGEX.test(trimmed) ? trimmed : null;
+}
+
+function normalizeHallId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return UUID_REGEX.test(trimmed) ? trimmed : null;
+}
 
 /**
- * GET /api/student/favourites?userId=<uuid>
+ * GET /api/student/favourites?userId=<id>
  * Returns the user's favourite hall IDs
  */
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.nextUrl.searchParams.get('userId');
+    const userId = normalizeUserId(request.nextUrl.searchParams.get('userId'));
     if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'userId is required' },
+        { success: false, error: 'Valid userId is required' },
         { status: 400 }
       );
-    }
-
-    // If userId is not a valid UUID, return empty (mock user scenario)
-    if (!UUID_REGEX.test(userId)) {
-      return NextResponse.json({ success: true, data: [] });
     }
 
     const favourites = await prisma.favorite_halls.findMany({
@@ -40,10 +55,11 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to fetch favourites';
     console.error('Error fetching favourites:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch favourites' },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -55,13 +71,33 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, hallId } = body;
+    const body = (await request.json()) as FavouritePayload;
+    const userId = normalizeUserId(body.userId);
+    const hallId = normalizeHallId(body.hallId);
 
-    if (!userId || !hallId) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'userId and hallId are required' },
+        { success: false, error: 'Valid userId is required' },
         { status: 400 }
+      );
+    }
+
+    if (!hallId) {
+      return NextResponse.json(
+        { success: false, error: 'Valid hallId (UUID) is required' },
+        { status: 400 }
+      );
+    }
+
+    const hall = await prisma.lecture_halls.findUnique({
+      where: { hall_id: hallId },
+      select: { hall_id: true },
+    });
+
+    if (!hall) {
+      return NextResponse.json(
+        { success: false, error: 'Lecture hall not found' },
+        { status: 404 }
       );
     }
 
@@ -80,10 +116,11 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Added to favourites' });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to add favourite';
     console.error('Error adding favourite:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to add favourite' },
+      { success: false, error: message },
       { status: 500 }
     );
   }
@@ -95,12 +132,20 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, hallId } = body;
+    const body = (await request.json()) as FavouritePayload;
+    const userId = normalizeUserId(body.userId);
+    const hallId = normalizeHallId(body.hallId);
 
-    if (!userId || !hallId) {
+    if (!userId) {
       return NextResponse.json(
-        { success: false, error: 'userId and hallId are required' },
+        { success: false, error: 'Valid userId is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!hallId) {
+      return NextResponse.json(
+        { success: false, error: 'Valid hallId (UUID) is required' },
         { status: 400 }
       );
     }
@@ -113,10 +158,11 @@ export async function DELETE(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true, message: 'Removed from favourites' });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to remove favourite';
     console.error('Error removing favourite:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to remove favourite' },
+      { success: false, error: message },
       { status: 500 }
     );
   }
