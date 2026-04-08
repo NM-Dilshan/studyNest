@@ -216,13 +216,14 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
       if (records.length === 0) throw new Error('No valid rows found in CSV');
 
       const result = await timetableService.bulkInsertFromCSV(records);
+      const skippedCount = (result as { skipped?: number }).skipped ?? 0;
       const otherErrors = result.errors || [];
       
-      if (warnings.length > 0 || otherErrors.length > 0 || result.skipped > 0) {
+      if (warnings.length > 0 || otherErrors.length > 0 || skippedCount > 0) {
         setUploadSummary({
           processed: records.length,
           inserted: result.count,
-          skipped: result.skipped,
+          skipped: skippedCount,
           warnings: [...warnings, ...otherErrors]
         });
       } else {

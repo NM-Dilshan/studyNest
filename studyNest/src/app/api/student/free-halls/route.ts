@@ -47,7 +47,7 @@ export async function GET() {
     for (const entry of occupiedEntries) {
       const startTime = entry.start_time.toISOString().substring(11, 19); // Extract HH:MM:SS
       const endTime = entry.end_time.toISOString().substring(11, 19);
-      if (currentTime >= startTime && currentTime < endTime) {
+        if (entry.hall_id && currentTime >= startTime && currentTime < endTime) {
         occupiedHallIds.add(entry.hall_id);
       }
     }

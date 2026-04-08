@@ -158,9 +158,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const timetableId = parseInt(id);
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Timetable ID is required' },
+        { status: 400 }
+      );
+    }
 
-    if (isNaN(timetableId)) {
+    const timetableId = Number(id);
+
+    if (!Number.isInteger(timetableId) || timetableId <= 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid timetable ID' },
         { status: 400 }
@@ -187,6 +194,14 @@ export async function DELETE(
       message: 'Timetable slot deleted successfully',
     });
   } catch (error: any) {
+    // Fallback guard for race conditions where record is deleted between find and delete.
+    if (error?.code === 'P2025') {
+      return NextResponse.json(
+        { success: false, error: 'Timetable slot not found' },
+        { status: 404 }
+      );
+    }
+
     console.error('Error deleting timetable slot:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Failed to delete timetable slot' },
