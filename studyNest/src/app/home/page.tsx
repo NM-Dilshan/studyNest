@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { MapPin, X } from 'lucide-react'
-import { LocationPermissionBanner } from '@/components/study-areas/LocationPermissionBanner'
 
 type RecentUpdate = {
   type: 'Hall' | 'Study Area'
@@ -278,13 +277,6 @@ export default function HomePage() {
           {/* Search Bar with Autocomplete */}
           <SearchBar />
         </div>
-
-        {/* Location Permission Banner - Show after login */}
-        {userId && isHydrated && (
-          <div className="mb-12">
-            <LocationPermissionBanner userId={userId} />
-          </div>
-        )}
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">

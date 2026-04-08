@@ -61,24 +61,32 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
   }
 
   const toggleGPS = async () => {
-    if (!user) return
+    if (!user || !location) return
 
-    if (gpsEnabled) {
-      // Disable GPS
-      location.stopTracking()
-      await location.revokePermission()
-      localStorage.removeItem(`gpsEnabled_${user.user_id}`)
-      setGpsEnabled(false)
-    } else {
-      // Enable GPS
-      try {
-        await location.requestPermission()
-        location.startTracking()
-        localStorage.setItem(`gpsEnabled_${user.user_id}`, 'true')
-        setGpsEnabled(true)
-      } catch (err) {
-        console.error('Failed to enable GPS:', err)
+    try {
+      if (gpsEnabled) {
+        // Disable GPS
+        if (location.stopTracking && typeof location.stopTracking === 'function') {
+          location.stopTracking()
+        }
+        if (location.revokePermission && typeof location.revokePermission === 'function') {
+          await location.revokePermission()
+        }
+        localStorage.removeItem(`gpsEnabled_${user.user_id}`)
+        setGpsEnabled(false)
+      } else {
+        // Enable GPS
+        if (location.requestPermission && typeof location.requestPermission === 'function') {
+          await location.requestPermission()
+          if (location.startTracking && typeof location.startTracking === 'function') {
+            location.startTracking()
+          }
+          localStorage.setItem(`gpsEnabled_${user.user_id}`, 'true')
+          setGpsEnabled(true)
+        }
       }
+    } catch (err) {
+      console.error('Failed to toggle GPS:', err)
     }
   }
 
