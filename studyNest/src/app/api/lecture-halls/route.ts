@@ -8,12 +8,35 @@ type LectureHallListItem = {
   building: string | null
   block: string | null
   floor: number | null
+  capacity: number | null
+  hall_type: string | null
+  maintenance_status: string | null
+  is_active: boolean | null
+  projector: boolean | null
+  wifi: boolean | null
+  ac: boolean | null
+  whiteboard: boolean | null
+}
+
+type LectureHallCreatedItem = {
+  hall_id: string
+  hall_name: string
+}
+
+type TimetableUnassignedItem = {
+  timetable_id: number
+  raw_hall_name: string | null
 }
 
 type LectureHallModel = {
   findMany: (args?: unknown) => Promise<LectureHallListItem[]>
   findUnique: (args: unknown) => Promise<{ hall_id: string } | null>
-  create: (args: unknown) => Promise<unknown>
+  create: (args: unknown) => Promise<LectureHallCreatedItem>
+}
+
+type TimetableModel = {
+  findMany: (args?: unknown) => Promise<TimetableUnassignedItem[]>
+  updateMany: (args: unknown) => Promise<{ count: number }>
 }
 
 function jsonError(message: string, status = 500, details?: unknown) {
@@ -57,6 +80,24 @@ function getLectureHallModel(prisma: unknown): LectureHallModel | null {
   }
 
   return delegate as LectureHallModel
+}
+
+function getTimetableModel(prisma: unknown): TimetableModel | null {
+  const model = (prisma as { timetable?: unknown })?.timetable
+  if (!model || typeof model !== 'object') {
+    return null
+  }
+
+  const delegate = model as Partial<TimetableModel>
+  if (typeof delegate.findMany !== 'function' || typeof delegate.updateMany !== 'function') {
+    return null
+  }
+
+  return delegate as TimetableModel
+}
+
+function normalizeHallKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
 const VALID_STATUSES = new Set([
@@ -143,6 +184,14 @@ export async function GET(request: NextRequest) {
         building: true,
         block: true,
         floor: true,
+        capacity: true,
+        hall_type: true,
+        maintenance_status: true,
+        is_active: true,
+        projector: true,
+        wifi: true,
+        ac: true,
+        whiteboard: true,
       },
       orderBy: [{ building: 'asc' }, { floor: 'asc' }, { hall_name: 'asc' }],
     })
@@ -179,6 +228,14 @@ export async function POST(request: NextRequest) {
     if (!lectureHallModel) {
       return jsonError(
         'Prisma model "lecture_halls" is unavailable. Verify schema model name and run prisma generate.',
+        500
+      )
+    }
+
+    const timetableModel = getTimetableModel(prisma)
+    if (!timetableModel) {
+      return jsonError(
+        'Prisma model "timetable" is unavailable. Verify schema model name and run prisma generate.',
         500
       )
     }
@@ -229,11 +286,48 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Auto-assign previously unassigned CSV rows that referenced this hall name.
+    const targetKey = normalizeHallKey(hallName)
+    const unassignedRows = await timetableModel.findMany({
+      where: {
+        hall_id: null,
+        raw_hall_name: {
+          not: null,
+        },
+      },
+      select: {
+        timetable_id: true,
+        raw_hall_name: true,
+      },
+    })
+
+    const matchingIds = unassignedRows
+      .filter((row) => row.raw_hall_name && normalizeHallKey(row.raw_hall_name) === targetKey)
+      .map((row) => row.timetable_id)
+
+    let autoAssignedCount = 0
+    if (matchingIds.length > 0) {
+      const updateResult = await timetableModel.updateMany({
+        where: {
+          timetable_id: {
+            in: matchingIds,
+          },
+        },
+        data: {
+          hall_id: newHall.hall_id,
+          raw_hall_name: null,
+        },
+      })
+      autoAssignedCount = updateResult.count
+    }
+
     return NextResponse.json(
       {
         success: true,
         message: 'Lecture hall created successfully',
+        auto_assigned_count: autoAssignedCount,
         hall: newHall,
+        data: newHall,
       },
       { status: 201 }
     )

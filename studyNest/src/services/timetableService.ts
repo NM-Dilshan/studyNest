@@ -53,11 +53,25 @@ export const timetableService = {
     return json.data;
   },
 
-  async deleteSlot(id: number): Promise<void> {
-    const res = await fetch(`/api/timetable/${id}`, {
+  async deleteSlot(id: number | string): Promise<void> {
+    const normalizedId = Number(id);
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+      console.error('[timetableService.deleteSlot] Invalid slot id received from UI:', id);
+      throw new Error('Invalid timetable slot ID');
+    }
+
+    console.info('[timetableService.deleteSlot] Deleting timetable slot with ID:', normalizedId);
+
+    const res = await fetch(`/api/timetable/${normalizedId}`, {
       method: 'DELETE',
     });
     const json = await res.json();
+    console.info('[timetableService.deleteSlot] Delete response:', {
+      requestedId: normalizedId,
+      success: json?.success,
+      error: json?.error,
+      status: res.status,
+    });
     if (!json.success) throw new Error(json.error || 'Failed to delete slot');
   },
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma/client';
 
 /**
  * GET /api/timetable/[id]
@@ -57,10 +58,10 @@ export async function GET(
         building: slot.lecture_halls?.building,
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching timetable slot:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch timetable slot' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to fetch timetable slot' },
       { status: 500 }
     );
   }
@@ -100,7 +101,7 @@ export async function PUT(
     }
 
     // Build update data
-    const updateData: any = {};
+    const updateData: Prisma.timetableUpdateInput = {};
     if (body.hall_id !== undefined) updateData.hall_id = body.hall_id || null; // null = Unassigned
     if (body.day_of_week !== undefined) updateData.day_of_week = body.day_of_week;
     if (body.start_time !== undefined) updateData.start_time = new Date(`1970-01-01T${body.start_time}Z`);
@@ -139,10 +140,10 @@ export async function PUT(
         created_at: updated.created_at?.toISOString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error updating timetable slot:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to update timetable slot' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to update timetable slot' },
       { status: 500 }
     );
   }
@@ -158,6 +159,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    console.info('[DELETE /api/timetable/[id]] Received timetable slot ID:', id);
+
     if (!id) {
       return NextResponse.json(
         { success: false, error: 'Timetable ID is required' },
@@ -165,7 +168,8 @@ export async function DELETE(
       );
     }
 
-    const timetableId = Number(id);
+    const timetableId = Number.parseInt(id, 10);
+    console.info('[DELETE /api/timetable/[id]] Parsed timetable_id:', timetableId);
 
     if (!Number.isInteger(timetableId) || timetableId <= 0) {
       return NextResponse.json(
@@ -176,9 +180,11 @@ export async function DELETE(
 
     const existing = await prisma.timetable.findUnique({
       where: { timetable_id: timetableId },
+      select: { timetable_id: true },
     });
 
     if (!existing) {
+      console.warn('[DELETE /api/timetable/[id]] Timetable slot not found for timetable_id:', timetableId);
       return NextResponse.json(
         { success: false, error: 'Timetable slot not found' },
         { status: 404 }
@@ -189,13 +195,14 @@ export async function DELETE(
       where: { timetable_id: timetableId },
     });
 
+    console.info('[DELETE /api/timetable/[id]] Timetable slot deleted successfully:', timetableId);
+
     return NextResponse.json({
       success: true,
-      message: 'Timetable slot deleted successfully',
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Fallback guard for race conditions where record is deleted between find and delete.
-    if (error?.code === 'P2025') {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
       return NextResponse.json(
         { success: false, error: 'Timetable slot not found' },
         { status: 404 }
@@ -204,7 +211,7 @@ export async function DELETE(
 
     console.error('Error deleting timetable slot:', error);
     return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to delete timetable slot' },
+      { success: false, error: error instanceof Error ? error.message : 'Failed to delete timetable slot' },
       { status: 500 }
     );
   }
