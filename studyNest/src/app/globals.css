@@ -26,12 +26,122 @@
   --color-brand-primary-dark: var(--brand-primary-dark);
   --color-brand-primary-soft: var(--brand-primary-soft);
   --color-brand-primary-softer: var(--brand-primary-softer);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #ffffff;
+    --foreground: #171717;
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Shared form helpers for consistent, high-contrast inputs/buttons */
+.form-card {
+  @apply bg-white shadow-lg border border-gray-200 rounded-2xl p-6 md:p-8;
+}
+
+.form-label {
+  @apply block text-sm font-semibold text-gray-700 mb-2;
+}
+
+.form-control {
+  @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 shadow-sm;
+  @apply focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition;
+}
+
+.form-select {
+  @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 shadow-sm;
+  @apply focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition appearance-none cursor-pointer;
+}
+
+.form-checkbox {
+  @apply w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500;
+}
+
+.form-primary-btn {
+  @apply inline-flex justify-center items-center gap-2 px-4 py-3 rounded-xl font-semibold text-white bg-sky-700 shadow-md;
+  @apply hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:scale-[0.98] transition;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.form-secondary-btn {
+  @apply inline-flex justify-center items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sky-700 bg-white border border-sky-200;
+  @apply hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:scale-[0.98] transition;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+/* Apply defaults to any control inside a form card, even if classes were missed */
+.form-card input:not([type='checkbox']),
+.form-card select,
+.form-card textarea {
+  @apply w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 shadow-sm;
+  @apply focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition;
+}
+
+.form-card label {
+  @apply block text-sm font-semibold text-gray-700 mb-2;
+}
+
+.form-card button[type='submit'],
+.form-card .btn-primary,
+.form-card .primary-btn {
+  @apply inline-flex justify-center items-center gap-2 px-4 py-3 rounded-xl font-semibold text-white bg-sky-700 shadow-md;
+  @apply hover:bg-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:scale-[0.98] transition;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+.form-card .btn-secondary,
+.form-card .secondary-btn {
+  @apply inline-flex justify-center items-center gap-2 px-4 py-3 rounded-xl font-semibold text-sky-700 bg-white border border-sky-200;
+  @apply hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 active:scale-[0.98] transition;
+  @apply disabled:opacity-60 disabled:cursor-not-allowed;
+}
+
+/* Global form contrast fix: keep user-entered text readable on light cards */
+form input:not([type='checkbox']):not([type='radio']):not([type='range']),
+form select,
+form textarea {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+  border-color: #9ca3af !important;
+}
+
+form input:not([type='checkbox']):not([type='radio']):not([type='range'])::placeholder,
+form textarea::placeholder {
+  color: #6b7280 !important;
+  opacity: 1;
+}
+
+form label,
+form span {
+  color: #374151;
+}
+
+form select option {
+  color: #111827;
+  background-color: #ffffff;
+}
+
+form input:focus,
+form select:focus,
+form textarea:focus {
+  border-color: #0284c7 !important;
+}
+
+form input:disabled,
+form select:disabled,
+form textarea:disabled {
+  color: #6b7280;
+  background-color: #f3f4f6;
+  cursor: not-allowed;
 }
 
 .admin-status-select {

@@ -5,6 +5,7 @@ export function useFreeHalls() {
   const [halls, setHalls] = useState<FreeHallResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const fetchHalls = async () => {
     try {
@@ -13,9 +14,11 @@ export function useFreeHalls() {
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Failed to fetch');
       setHalls(json.data || []);
+      setLastUpdated(new Date());
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch free halls');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch free halls';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -23,9 +26,9 @@ export function useFreeHalls() {
 
   useEffect(() => {
     fetchHalls();
-    const interval = setInterval(fetchHalls, 5 * 60 * 1000); // Refresh every 5 minutes
+    const interval = setInterval(fetchHalls, 60 * 1000); // Refresh every minute
     return () => clearInterval(interval);
   }, []);
 
-  return { halls, loading, error, refetch: fetchHalls };
+  return { halls, loading, error, lastUpdated, refetch: fetchHalls };
 }
