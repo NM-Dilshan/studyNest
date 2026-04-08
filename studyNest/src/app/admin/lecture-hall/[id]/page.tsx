@@ -23,6 +23,54 @@ interface LectureHall {
   created_at: string | null;
 }
 
+const TRUE_VALUES = new Set(['true', '1', 'yes', 'on', 't', 'y']);
+
+function toBool(value: boolean | string | number | null | undefined): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value === 1;
+  if (typeof value === 'string') return TRUE_VALUES.has(value.trim().toLowerCase());
+  return false;
+}
+
+function normalizeStatus(value: string | null | undefined): string {
+  const status = String(value || '').trim().toLowerCase();
+  return status || 'not_set';
+}
+
+function statusBadgeClass(status: string): string {
+  switch (status) {
+    case 'available':
+      return 'bg-green-100 text-green-800';
+    case 'under_maintenance':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'reserved_exam':
+      return 'bg-blue-100 text-blue-800';
+    case 'reserved_event':
+      return 'bg-purple-100 text-purple-800';
+    case 'closed':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-gray-100 text-gray-700';
+  }
+}
+
+function statusLabel(status: string): string {
+  switch (status) {
+    case 'available':
+      return 'Available';
+    case 'under_maintenance':
+      return 'Under Maintenance';
+    case 'reserved_exam':
+      return 'Reserved - Exam';
+    case 'reserved_event':
+      return 'Reserved - Event';
+    case 'closed':
+      return 'Closed';
+    default:
+      return 'Not Set';
+  }
+}
+
 export default function LectureHallViewPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
@@ -85,11 +133,12 @@ export default function LectureHallViewPage() {
   };
 
   const featureList = [
-    hall?.projector ? 'Projector' : null,
-    hall?.wifi ? 'WiFi' : null,
-    hall?.ac ? 'AC' : null,
-    hall?.whiteboard ? 'Whiteboard' : null,
+    toBool(hall?.projector) ? 'Projector' : null,
+    toBool(hall?.wifi) ? 'WiFi' : null,
+    toBool(hall?.ac) ? 'AC' : null,
+    toBool(hall?.whiteboard) ? 'Whiteboard' : null,
   ].filter(Boolean) as string[];
+  const maintenance = normalizeStatus(hall?.maintenance_status);
 
   if (loading) {
     return (
@@ -161,7 +210,14 @@ export default function LectureHallViewPage() {
             <DetailItem label="Hall Number" value={hall.hall_number || '-'} />
             <DetailItem label="Capacity" value={hall.capacity != null ? String(hall.capacity) : '-'} />
             <DetailItem label="Hall Type" value={hall.hall_type || '-'} />
-            <DetailItem label="Maintenance" value={hall.maintenance_status || '-'} />
+            <DetailItem
+              label="Maintenance"
+              value={
+                <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusBadgeClass(maintenance)}`}>
+                  {statusLabel(maintenance)}
+                </span>
+              }
+            />
             <DetailItem label="Active" value={hall.is_active ? 'Yes' : 'No'} />
             <DetailItem
               label="Created At"
@@ -175,11 +231,11 @@ export default function LectureHallViewPage() {
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+function DetailItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-slate-800">{value}</p>
+      <div className="mt-1 text-sm font-semibold text-slate-800">{value}</div>
     </div>
   );
 }
