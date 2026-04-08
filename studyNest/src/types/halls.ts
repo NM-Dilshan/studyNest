@@ -43,6 +43,13 @@ export interface TimetableSlot {
 
 export interface FreeHallResult extends LectureHall {
   is_free_now: boolean;
+  can_book_now?: boolean;
+  current_status?: 'free_now' | 'occupied_by_timetable' | 'blocked_by_maintenance';
+  blocked_reason?: string | null;
+  occupied_until?: string | null;
+  free_until?: string | null;
+  next_free_start?: string | null;
+  next_free_end?: string | null;
   score?: number;
   distance_km?: number | null;
 }
