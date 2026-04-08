@@ -24,8 +24,6 @@ export default function TimetableManager() {
   useEffect(() => {
     if (selectedHallId) {
       loadSlots(selectedHallId);
-    } else {
-      setSlots([]);
     }
   }, [selectedHallId, filterYear, filterSemester]);
 
@@ -34,9 +32,8 @@ export default function TimetableManager() {
       const data = await hallService.getLectureHalls();
       setHalls(data);
       if (data.length > 0 && !selectedHallId) {
-        const defaultHallId = data[0].id;
-        setSelectedHallId(defaultHallId);
-        await loadSlots(defaultHallId);
+        // Default to 'all' instead of the first hall to show everything initially
+        setSelectedHallId('all');
       }
     } catch (err: any) {
       console.error(err);
@@ -50,10 +47,14 @@ export default function TimetableManager() {
     try {
       setLoading(true);
       setError(null);
+      const isUnassigned = hallId === 'unassigned';
+      const actualHallId = (hallId === 'all' || isUnassigned) ? undefined : hallId;
+      
       const data = await timetableService.getTimetable(
-        hallId,
+        actualHallId,
         filterYear || undefined,
-        filterSemester || undefined
+        filterSemester || undefined,
+        isUnassigned
       );
       setSlots(data);
     } catch (err: any) {
@@ -115,10 +116,13 @@ export default function TimetableManager() {
                 onChange={(e) => setSelectedHallId(e.target.value)}
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm"
               >
-                <option value="" disabled>Select a hall...</option>
-                {halls.map(h => (
-                  <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
-                ))}
+                <option value="all">All Lecture Sessions</option>
+                <option value="unassigned">Unassigned Sessions (Missing Halls)</option>
+                <optgroup label="Filter by Specific Hall">
+                  {halls.map(h => (
+                    <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 

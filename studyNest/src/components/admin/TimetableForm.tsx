@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Save, Clock, X, AlertCircle, Building2, Calendar, BookOpen, Users, GraduationCap, MapPin, ChevronLeft } from 'lucide-react';
+import { Upload, Save, Clock, X, AlertCircle, Building2, Calendar, BookOpen, Users, GraduationCap, MapPin, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { TimetableSlot, LectureHall } from '../../types/halls';
 import { timetableService } from '../../services/timetableService';
 import { hallService } from '../../services/hallService';
@@ -19,6 +19,12 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [halls, setHalls] = useState<LectureHall[]>([]);
+  const [uploadSummary, setUploadSummary] = useState<{
+    processed: number;
+    inserted: number;
+    skipped: number;
+    warnings: string[];
+  } | null>(null);
 
   // Fetch all halls on mount for the dropdown
   useEffect(() => {
@@ -43,12 +49,10 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   const validate = (): boolean => {
     const errors: Record<string, string> = {};
 
-    // Required field
     if (!formData.subject_code.trim()) {
       errors.subject_code = 'Subject Code is required';
     }
 
-    // Time range: 08:00 - 20:00 only
     const startHH = parseInt(formData.start_time.substring(0, 2));
     const endHH = parseInt(formData.end_time.substring(0, 2));
     const endMM = parseInt(formData.end_time.substring(3, 5));
@@ -60,7 +64,6 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
       errors.end_time = 'End time must be between 8:00 AM and 8:00 PM';
     }
 
-    // End must be after start
     if (formData.start_time >= formData.end_time) {
       errors.end_time = 'End time must be after start time';
     }
@@ -89,7 +92,6 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     }
   };
 
-  // Helper: normalize time like "8:30" or "08:30" to "08:30:00"
   const normalizeTime = (t: string): string => {
     const parts = t.replace(/[^\d:]/g, '').split(':');
     const hh = (parts[0] || '0').padStart(2, '0');
@@ -98,7 +100,6 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     return `${hh}:${mm}:${ss}`;
   };
 
-  // Helper: short day names to full
   const normalizeDayName = (d: string): string => {
     const val = d.trim();
     const map: Record<string, string> = {
@@ -120,15 +121,12 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
     try {
       setLoading(true);
       setError(null);
+      setUploadSummary(null);
       const text = await file.text();
       const lines = text.split('\n').filter(l => l.trim() !== '');
       if (lines.length <= 1) throw new Error('CSV is empty or missing headers');
 
       const headers = lines[0].toLowerCase().replace(/\r/g, '').split(',').map(h => h.trim());
-
-      // Support both formats:
-      // Format A (user's CSV): day, startTime, endTime, module, type, hall, lecturer
-      // Format B (system):     day_of_week, start_time, end_time, subject_code, ...
 
       const dayIdx = headers.indexOf('day') !== -1 ? headers.indexOf('day') : headers.indexOf('day_of_week');
       const startIdx = headers.indexOf('starttime') !== -1 ? headers.indexOf('starttime') : headers.indexOf('start_time');
@@ -145,13 +143,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
         throw new Error('CSV must contain columns: day (or day_of_week), startTime (or start_time), endTime (or end_time)');
       }
 
-      // If CSV has a "hall" column, fetch all halls and build a name→id lookup map
       let hallNameToId: Record<string, string> = {};
       if (hallIdx !== -1) {
         const allHalls: LectureHall[] = await hallService.getLectureHalls();
         allHalls.forEach(h => {
           hallNameToId[h.name.toLowerCase()] = h.id;
-          // Fuzzy match: also index without spaces (e.g., "G O404" → "go404")
           hallNameToId[h.name.replace(/\s+/g, '').toLowerCase()] = h.id;
         });
       }
@@ -163,10 +159,8 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
         const values = lines[i].replace(/\r/g, '').split(',').map(v => v.trim());
         if (values.length < 3) continue;
 
-        // Capture the raw hall name text from CSV
         const rawHallName = hallIdx !== -1 && values[hallIdx] ? values[hallIdx].trim() : null;
 
-        // Resolve hall_id — default to null (unassigned) not the currently selected hall
         let resolvedHallId: string | null = null;
         if (hallIdx !== -1 && values[hallIdx]) {
           const csvHallName = values[hallIdx].toLowerCase().replace(/\s+/g, '');
@@ -174,15 +168,13 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
           if (foundId) {
             resolvedHallId = foundId;
           } else {
-            resolvedHallId = null; // hall not registered → store as Unassigned
-            warnings.push(`Row ${i + 1}: Hall "${values[hallIdx]}" not registered in system. Stored as Unassigned.`);
+            resolvedHallId = null; 
+            warnings.push(`Row ${i + 1}: Hall "${values[hallIdx]}" not found (Unassigned)`);
           }
         } else if (hallIdx === -1 && hallId) {
-          // No hall column in CSV — use the currently selected hall if one is chosen
           resolvedHallId = hallId || null;
         }
 
-        // Parse module column: "IT3010 - NDM Practical" → code: IT3010, name: NDM Practical
         let subjectCode: string | null = null;
         let subjectName: string | null = null;
         if (moduleIdx !== -1 && values[moduleIdx]) {
@@ -195,23 +187,15 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
             subjectCode = moduleVal.trim();
           }
         }
-        // Override with explicit columns if present
         if (subjectCodeIdx !== -1 && values[subjectCodeIdx]) subjectCode = values[subjectCodeIdx];
         if (subjectNameIdx !== -1 && values[subjectNameIdx]) subjectName = values[subjectNameIdx];
 
-        // Type column → append to subject name
         if (typeIdx !== -1 && values[typeIdx]) {
           const typeVal = values[typeIdx].trim();
           if (subjectName && typeVal) {
             subjectName = `${subjectName} (${typeVal})`;
           }
         }
-
-        // Group
-        const groupName = groupIdx !== -1 ? values[groupIdx] || null : null;
-
-        // Lecturer
-        const lecturerName = lecturerIdx !== -1 ? values[lecturerIdx] || null : null;
 
         records.push({
           hall_id: resolvedHallId,
@@ -222,8 +206,8 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
           end_time: normalizeTime(values[endIdx]),
           subject_code: subjectCode,
           subject_name: subjectName,
-          group_name: groupName,
-          lecturer_name: lecturerName,
+          group_name: groupIdx !== -1 ? values[groupIdx] || null : null,
+          lecturer_name: lecturerIdx !== -1 ? values[lecturerIdx] || null : null,
           raw_hall_name: rawHallName,
           is_reserved: true,
         });
@@ -232,16 +216,15 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
       if (records.length === 0) throw new Error('No valid rows found in CSV');
 
       const result = await timetableService.bulkInsertFromCSV(records);
-      
-      const missingHalls = warnings.filter(w => w.includes('not registered'));
       const otherErrors = result.errors || [];
       
-      let feedbackMsg = `✅ Processed: ${records.length} slots. `;
-      if (result.count > 0) feedbackMsg += `Inserted: ${result.count}. `;
-      if (result.skipped > 0) feedbackMsg += `Skipped (Duplicates): ${result.skipped}. `;
-      
-      if (missingHalls.length > 0 || otherErrors.length > 0) {
-        setError(`${feedbackMsg} ⚠️ Issues: ${[...missingHalls, ...otherErrors].join('; ')}`);
+      if (warnings.length > 0 || otherErrors.length > 0 || result.skipped > 0) {
+        setUploadSummary({
+          processed: records.length,
+          inserted: result.count,
+          skipped: result.skipped,
+          warnings: [...warnings, ...otherErrors]
+        });
       } else {
         onSuccess();
       }
@@ -279,9 +262,11 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
             </button>
           </div>
 
-          <p className="text-slate-500 mb-8 max-w-md">
-            Configure schedule details, subject information, and venue assignments with a clean and consistent setup flow.
-          </p>
+          {!uploadSummary && (
+            <p className="text-slate-500 mb-8 max-w-md">
+              Configure schedule details, subject information, and venue assignments with a clean and consistent setup flow.
+            </p>
+          )}
           
           {error && (
             <div className="mb-8 p-4 rounded-2xl bg-red-50 text-red-600 text-sm border border-red-100 flex items-center gap-3">
@@ -290,7 +275,58 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
             </div>
           )}
 
-          {!initialData && (
+          {/* Upload Summary View */}
+          {uploadSummary && (
+            <div className="mb-8 p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100 animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-slate-900">Upload Processed</h4>
+                  <p className="text-sm text-slate-500">Review the status and any warnings below.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Total</p>
+                  <p className="text-xl font-black text-slate-900">{uploadSummary.processed}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Inserted</p>
+                  <p className="text-xl font-black text-emerald-600">{uploadSummary.inserted}</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm text-center">
+                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Skipped</p>
+                  <p className="text-xl font-black text-amber-600">{uploadSummary.skipped}</p>
+                </div>
+              </div>
+
+              {uploadSummary.warnings.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black uppercase text-slate-400 px-1">Warnings / Unassigned Halls</p>
+                  <div className="max-h-[200px] overflow-y-auto bg-white/50 border border-slate-100 rounded-2xl p-4 text-[13px] text-slate-600 space-y-1.5 custom-scrollbar">
+                    {uploadSummary.warnings.map((w, idx) => (
+                      <div key={idx} className="flex items-start gap-2">
+                        <span className="text-amber-500 mt-0.5 opacity-70">•</span>
+                        {w}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button 
+                onClick={onSuccess}
+                className="w-full mt-8 py-5 rounded-[1.25rem] font-black text-white bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20 transition-all active:scale-[0.98]"
+              >
+                Finish & Close
+              </button>
+            </div>
+          )}
+
+          {!initialData && !uploadSummary && (
             <div className="flex gap-2 mb-8 p-1.5 bg-slate-100 rounded-[1.25rem]">
               <button
                 onClick={() => setMode('manual')}
@@ -307,9 +343,8 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
             </div>
           )}
 
-          {mode === 'manual' ? (
+          {mode === 'manual' && !uploadSummary ? (
             <form onSubmit={handleManualSubmit} className="space-y-8">
-              
               {/* Timing & Day Section */}
               <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-6">
                 <div className="flex items-center gap-3 mb-2">
@@ -502,7 +537,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 </button>
               </div>
             </form>
-          ) : (
+          ) : mode === 'csv' && !uploadSummary ? (
             <div className="py-12 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50 relative overflow-hidden group">
               <div className="absolute inset-0 bg-blue-50 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
               
@@ -518,17 +553,6 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                     <p className="font-bold text-slate-700 uppercase tracking-widest text-[10px]">Expected Columns</p>
                     <div className="bg-white border border-slate-200 p-3 rounded-2xl shadow-sm text-[11px] font-mono break-all text-slate-600">
                       day, startTime, endTime, module, type, hall, lecturer
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 justify-center">
-                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                      <span><strong>module:</strong> &quot;IT3010 - NDM Practical&quot; auto-splits</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-400 justify-center">
-                      <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
-                      <span><strong>hall:</strong> matches existing hall names</span>
                     </div>
                   </div>
                 </div>
@@ -553,7 +577,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 )}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>
