@@ -97,8 +97,16 @@ export default function ComplaintsPage() {
     [studyAreasData]
   )
 
+  // Filter out Arts Block and Science Block from both lecture halls and study areas
+  const filteredLectureHallBuildings = buildings.filter(
+    (b) => b !== 'Arts Block' && b !== 'Science Block'
+  )
+  const filteredStudyAreaBuildings = studyAreaBuildings.filter(
+    (b) => b !== 'Arts Block' && b !== 'Science Block'
+  )
+
   const buildingOptions =
-    formData.complaintType === 'study_area' ? studyAreaBuildings : buildings
+    formData.complaintType === 'study_area' ? filteredStudyAreaBuildings : filteredLectureHallBuildings
 
   const issueCategories = [
     'Noise',
@@ -798,6 +806,51 @@ export default function ComplaintsPage() {
                             </option>
                           ))}
                         </select>
+
+                        {formData.locationId && (
+                          <div className="mt-6">
+                            <h3 className="mb-4 text-sm font-bold text-slate-900">Selected Study Area Details</h3>
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                              <table className="w-full">
+                                <tbody>
+                                  {(() => {
+                                    const selected = studyAreaLocations.find(
+                                      (loc) => loc.study_area_id === formData.locationId
+                                    )
+                                    return selected ? (
+                                      <>
+                                        <tr className="border-b border-slate-200">
+                                          <td className="px-4 py-3 text-sm font-semibold text-slate-600">
+                                            Area Name
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                                            {selected.area_name || 'N/A'}
+                                          </td>
+                                        </tr>
+                                        <tr className="border-b border-slate-200">
+                                          <td className="px-4 py-3 text-sm font-semibold text-slate-600">
+                                            Building
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-bold text-slate-900">
+                                            {selected.building || 'N/A'}
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td className="px-4 py-3 text-sm font-semibold text-slate-600">
+                                            Study Area ID
+                                          </td>
+                                          <td className="px-4 py-3 text-sm font-mono text-slate-600">
+                                            {selected.study_area_id}
+                                          </td>
+                                        </tr>
+                                      </>
+                                    ) : null
+                                  })()}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
