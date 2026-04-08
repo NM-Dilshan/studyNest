@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Calendar, Trash2, Plus, ArrowLeft, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, Trash2, Plus, Pencil, Search } from 'lucide-react';
 import { TimetableSlot, LectureHall } from '../../../types/halls';
 import { timetableService } from '../../../services/timetableService';
 import { hallService } from '../../../services/hallService';
@@ -12,6 +12,8 @@ export default function TimetableManager() {
   const [selectedHallId, setSelectedHallId] = useState<string>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
   const [filterSemester, setFilterSemester] = useState<number | ''>('');
+  const [hallSearchQuery, setHallSearchQuery] = useState('');
+  const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimetableSlot | undefined>();
@@ -86,15 +88,26 @@ export default function TimetableManager() {
 
   const selectedHallName = halls.find((h) => h.id === selectedHallId)?.name;
 
+  const filteredSlots = useMemo(() => {
+    const hallQ = hallSearchQuery.trim().toLowerCase();
+    const sessionQ = sessionSearchQuery.trim().toLowerCase();
+
+    return slots.filter((slot) => {
+      const hallLabel = `${slot.hall_name || ''} ${halls.find((h) => h.id === slot.hall_id)?.name || ''} ${slot.raw_hall_name || ''}`.toLowerCase();
+      const sessionLabel = `${slot.subject_code || ''} ${slot.subject_name || ''} ${slot.group_name || ''} ${slot.lecturer_name || ''}`.toLowerCase();
+
+      const hallMatch = !hallQ || hallLabel.includes(hallQ);
+      const sessionMatch = !sessionQ || sessionLabel.includes(sessionQ);
+      return hallMatch && sessionMatch;
+    });
+  }, [slots, halls, hallSearchQuery, sessionSearchQuery]);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-10 relative overflow-hidden text-gray-900">
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-100 rounded-full blur-3xl opacity-50" />
       
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex items-center gap-4 mb-8">
-          <button className="p-2 hover:bg-gray-200 rounded-xl transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+        <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold">Timetable Management</h1>
             <p className="text-gray-600 mt-1">Manage scheduled classes and blocked times</p>
@@ -163,6 +176,35 @@ export default function TimetableManager() {
               <Plus className="w-4 h-4" /> Add Slot / CSV
             </button>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-gray-600">Search Lecture Hall</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={hallSearchQuery}
+                  onChange={(e) => setHallSearchQuery(e.target.value)}
+                  placeholder="e.g. F1308, New Building, G1101"
+                  className="w-full pl-9 pr-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-gray-600">Search Lecture Session</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={sessionSearchQuery}
+                  onChange={(e) => setSessionSearchQuery(e.target.value)}
+                  placeholder="e.g. IT3010, NDM, Tutorial, lecturer name"
+                  className="w-full pl-9 pr-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading ? (
@@ -190,15 +232,15 @@ export default function TimetableManager() {
                   </tr>
                 </thead>
                 <tbody>
-                  {slots.length === 0 ? (
+                  {filteredSlots.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                         <Calendar className="w-10 h-10 opacity-50 mx-auto mb-3" />
-                        No timetable slots found for this hall.
+                        No timetable slots found for current filters.
                       </td>
                     </tr>
                   ) : (
-                    slots.map(slot => (
+                    filteredSlots.map(slot => (
                       <tr key={slot.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-4 text-sm">
                           {slot.academic_year && slot.semester ? (
