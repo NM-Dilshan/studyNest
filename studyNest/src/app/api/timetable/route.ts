@@ -1,5 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma/client';
+
+function jsonError(message: string, status = 500, details?: unknown) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      ...(details ? { details } : {}),
+    },
+    { status }
+  );
+}
+
+function mapPrismaError(error: unknown): { message: string; details?: unknown } {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error.code === 'P2022') {
+      return {
+        message: 'Database schema mismatch detected for timetable. Please synchronize Prisma schema with the database.',
+        details: { code: error.code, meta: error.meta },
+      };
+    }
+
+    return {
+      message: 'Database request failed while processing timetable data.',
+      details: { code: error.code, meta: error.meta },
+    };
+  }
+
+  if (error instanceof Error) {
+    return { message: error.message };
+  }
+
+  return { message: 'Unknown server error' };
+}
 
 /**
  * GET /api/timetable
@@ -21,7 +55,7 @@ export async function GET(request: NextRequest) {
     const hallName = searchParams.get('hallName') || searchParams.get('lectureHallName');
     const unassigned = searchParams.get('unassigned');
 
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (unassigned === 'true') {
       // Show only sessions with no hall assigned
@@ -88,12 +122,10 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ success: true, data });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching timetable:', error);
-    return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to fetch timetable' },
-      { status: 500 }
-    );
+    const mapped = mapPrismaError(error);
+    return jsonError(mapped.message, 500, mapped.details);
   }
 }
 
@@ -190,11 +222,9 @@ export async function POST(request: NextRequest) {
       },
       { status: 201 }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating timetable slot:', error);
-    return NextResponse.json(
-      { success: false, error: error?.message || 'Failed to create timetable slot' },
-      { status: 500 }
-    );
+    const mapped = mapPrismaError(error);
+    return jsonError(mapped.message, 500, mapped.details);
   }
 }

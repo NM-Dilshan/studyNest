@@ -10,6 +10,12 @@ type LectureHallListItem = {
   floor: number | null
 }
 
+type LectureHallModel = {
+  findMany: (args?: unknown) => Promise<LectureHallListItem[]>
+  findUnique: (args: unknown) => Promise<{ hall_id: string } | null>
+  create: (args: unknown) => Promise<unknown>
+}
+
 function jsonError(message: string, status = 500, details?: unknown) {
   return NextResponse.json(
     {
@@ -21,6 +27,10 @@ function jsonError(message: string, status = 500, details?: unknown) {
   )
 }
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback
+}
+
 async function getPrismaClient() {
   try {
     const prismaModule = await import('@/lib/prisma')
@@ -29,6 +39,24 @@ async function getPrismaClient() {
     console.error('Failed to initialize Prisma client for /api/lecture-halls:', error)
     return null
   }
+}
+
+function getLectureHallModel(prisma: unknown): LectureHallModel | null {
+  const model = (prisma as { lecture_halls?: unknown })?.lecture_halls
+  if (!model || typeof model !== 'object') {
+    return null
+  }
+
+  const delegate = model as Partial<LectureHallModel>
+  if (
+    typeof delegate.findMany !== 'function' ||
+    typeof delegate.findUnique !== 'function' ||
+    typeof delegate.create !== 'function'
+  ) {
+    return null
+  }
+
+  return delegate as LectureHallModel
 }
 
 const VALID_STATUSES = new Set([
@@ -96,10 +124,18 @@ export async function GET(request: NextRequest) {
       return jsonError('Database is not configured. Check DATABASE_URL environment variable.', 500)
     }
 
+    const lectureHallModel = getLectureHallModel(prisma)
+    if (!lectureHallModel) {
+      return jsonError(
+        'Prisma model "lecture_halls" is unavailable. Verify schema model name and run prisma generate.',
+        500
+      )
+    }
+
     const { searchParams } = request.nextUrl
     const activeOnly = searchParams.get('activeOnly') !== 'false'
 
-    const halls = (await prisma.lecture_halls.findMany({
+    const halls = await lectureHallModel.findMany({
       where: activeOnly ? { is_active: true } : undefined,
       select: {
         hall_id: true,
@@ -109,7 +145,7 @@ export async function GET(request: NextRequest) {
         floor: true,
       },
       orderBy: [{ building: 'asc' }, { floor: 'asc' }, { hall_name: 'asc' }],
-    })) as LectureHallListItem[]
+    })
 
     // Keep both keys for frontend compatibility: data.halls || data.data
     return NextResponse.json({
@@ -124,7 +160,7 @@ export async function GET(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined,
       error,
     })
-    return jsonError('Failed to fetch lecture halls', 500)
+    return jsonError('Failed to fetch lecture halls', 500, getErrorMessage(error, 'Unknown error'))
   }
 }
 
@@ -139,47 +175,43 @@ export async function POST(request: NextRequest) {
       return jsonError('Database is not configured. Check DATABASE_URL environment variable.', 500)
     }
 
+    const lectureHallModel = getLectureHallModel(prisma)
+    if (!lectureHallModel) {
+      return jsonError(
+        'Prisma model "lecture_halls" is unavailable. Verify schema model name and run prisma generate.',
+        500
+      )
+    }
+
     const body = (await request.json()) as LectureHallPayload
     const hallName = String(body.hall_name || '').trim()
     const building = String(body.building || '').trim()
 
     // Validation
     if (!hallName || !building) {
-      return NextResponse.json(
-        { error: 'Hall name and building are required' },
-        { status: 400 }
-      )
+      return jsonError('Hall name and building are required', 400)
     }
 
-    const duplicate = await prisma.lecture_halls.findUnique({
+    const duplicate = await lectureHallModel.findUnique({
       where: { hall_name: hallName },
       select: { hall_id: true },
     })
 
     if (duplicate) {
-      return NextResponse.json(
-        { error: 'Hall name already exists' },
-        { status: 409 }
-      )
+      return jsonError('Hall name already exists', 409)
     }
 
     const floor = parseNullableInt(body.floor)
     const capacity = parseNullableInt(body.capacity)
     if (body.floor !== undefined && body.floor !== null && body.floor !== '' && floor === null) {
-      return NextResponse.json(
-        { error: 'Floor must be a valid number' },
-        { status: 400 }
-      )
+      return jsonError('Floor must be a valid number', 400)
     }
 
     if (body.capacity !== undefined && body.capacity !== null && body.capacity !== '' && capacity === null) {
-      return NextResponse.json(
-        { error: 'Capacity must be a valid number' },
-        { status: 400 }
-      )
+      return jsonError('Capacity must be a valid number', 400)
     }
 
-    const newHall = await prisma.lecture_halls.create({
+    const newHall = await lectureHallModel.create({
       data: {
         hall_name: hallName,
         building,
@@ -211,6 +243,6 @@ export async function POST(request: NextRequest) {
       stack: error instanceof Error ? error.stack : undefined,
       error,
     })
-    return jsonError(error instanceof Error ? error.message : 'Failed to create lecture hall', 500)
+    return jsonError('Failed to create lecture hall', 500, getErrorMessage(error, 'Unknown error'))
   }
 }
