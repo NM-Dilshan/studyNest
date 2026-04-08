@@ -28,7 +28,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
-, "src/app/Naveen/my-complaints/[id]/page.tsx"  ],
-  "exclude": ["node_modules"]
+    "**/*.mts",
+    "src/app/Naveen/my-complaints/[id]/page.tsx"
+  ],
+  "exclude": ["node_modules", "tmp"]
 }

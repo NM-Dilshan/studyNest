@@ -4,8 +4,9 @@ import { prisma } from '@/lib/prisma';
 /**
  * GET /api/timetable
  * Query params:
- *   hall_id=<uuid>      → filter by specific hall
- *   unassigned=true     → filter where hall_id IS NULL
+ *   hall_id|hallId|lectureHallId=<uuid>  → filter by specific hall
+ *   hallName|lectureHallName=<name>      → filter by hall name
+ *   unassigned=true                        → filter where hall_id IS NULL
  *   academic_year=<n>   → filter by year
  *   semester=<n>        → filter by semester
  *   (no params)         → return ALL sessions
@@ -13,10 +14,12 @@ import { prisma } from '@/lib/prisma';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const hallId = searchParams.get('hall_id');
+    const hallId =
+      searchParams.get('hall_id') ||
+      searchParams.get('hallId') ||
+      searchParams.get('lectureHallId');
+    const hallName = searchParams.get('hallName') || searchParams.get('lectureHallName');
     const unassigned = searchParams.get('unassigned');
-    const academicYear = searchParams.get('academic_year');
-    const semester = searchParams.get('semester');
 
     const where: any = {};
 
@@ -26,14 +29,29 @@ export async function GET(request: NextRequest) {
     } else if (hallId) {
       // Show sessions for a specific hall
       where.hall_id = hallId;
+    } else if (hallName) {
+      where.lecture_halls = {
+        is: {
+          hall_name: {
+            equals: hallName,
+            mode: 'insensitive',
+          },
+        },
+      };
     }
-    // If neither, show ALL sessions (no where filter on hall_id)
-
-    if (academicYear) {
-      where.academic_year = parseInt(academicYear);
+    const academicYear = searchParams.get('academic_year');
+    if (academicYear && academicYear.toUpperCase() !== 'ALL') {
+      const parsedAcademicYear = Number(academicYear);
+      if (Number.isInteger(parsedAcademicYear)) {
+        where.academic_year = parsedAcademicYear;
+      }
     }
-    if (semester) {
-      where.semester = parseInt(semester);
+    const semester = searchParams.get('semester');
+    if (semester && semester.toUpperCase() !== 'ALL') {
+      const parsedSemester = Number(semester);
+      if (Number.isInteger(parsedSemester)) {
+        where.semester = parsedSemester;
+      }
     }
 
     const slots = await prisma.timetable.findMany({
