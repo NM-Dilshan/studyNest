@@ -7,7 +7,7 @@
 'use client';
 
 import { CrowdStatus, getCrowdEmoji } from '@/lib/geofence';
-import { Users, Clock, Wifi, Volume2, Coffee, Zap } from 'lucide-react';
+import { Users, Wifi, Volume2, Coffee, Zap } from 'lucide-react';
 
 interface Feature {
   icon: React.ReactNode;
@@ -21,7 +21,6 @@ interface StudyAreaCardProps {
   availableSeats: number;
   occupancyPercentage: number;
   crowdStatus: CrowdStatus;
-  lastUpdated: Date;
   capacity: number;
   features?: {
     wifi?: boolean;
@@ -38,13 +37,10 @@ export function StudyAreaCard({
   availableSeats,
   occupancyPercentage,
   crowdStatus,
-  lastUpdated,
   capacity,
   features,
 }: StudyAreaCardProps) {
   const crowdIndicator = getCrowdEmoji(crowdStatus);
-  const minutesAgo = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
-  const updatedText = minutesAgo === 0 ? 'just now' : `${minutesAgo}m ago`;
 
   const featuresToShow: Feature[] = [];
   if (features?.wifi) featuresToShow.push({ icon: <Wifi size={16} />, label: 'WiFi' });
@@ -58,7 +54,6 @@ export function StudyAreaCard({
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-1">{name}</h3>
-          <p className="text-xs text-gray-500">ID: {id}</p>
         </div>
         <div className={`px-3 py-1 rounded-full text-sm font-medium ${crowdIndicator.bgColor} ${crowdIndicator.color}`}>
           {crowdStatus}
@@ -92,17 +87,11 @@ export function StudyAreaCard({
         </div>
       </div>
 
-      {/* Available seats and last updated */}
-      <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-gray-200">
+      {/* Available seats */}
+      <div className="mb-4 pb-4 border-b border-gray-200">
         <div className="bg-green-50 rounded-lg p-3">
           <p className="text-xs text-gray-600 mb-1">Available Seats</p>
           <p className="text-xl font-bold text-green-600">{availableSeats}</p>
-        </div>
-        <div className="bg-gray-50 rounded-lg p-3">
-          <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-            <Clock size={14} /> Last Updated
-          </p>
-          <p className="text-sm font-medium text-gray-700">{updatedText}</p>
         </div>
       </div>
 

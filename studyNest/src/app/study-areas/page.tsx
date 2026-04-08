@@ -4,6 +4,7 @@
  * 
  * Features:
  * - Location permission request
+ * - GPS toggle button for quick enable/disable
  * - Polling-based occupancy updates
  * - Privacy-safe aggregated data only
  */
@@ -13,7 +14,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import MainHeader from '@/components/MainHeader';
 import { useLocationTracking } from '@/hooks/useLocationTracking';
-import { LocationPermissionBanner } from '@/components/study-areas/LocationPermissionBanner';
 import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard';
 import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary';
 import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap';
@@ -207,17 +207,6 @@ export default function StudyAreaFinderPage() {
 
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        {/* Location permission banner */}
-        <div className="mb-8">
-          <LocationPermissionBanner
-            permissionStatus={location.permissionStatus}
-            isTracking={location.isTracking}
-            error={location.error}
-            onRequestPermission={location.requestPermission}
-            onRevoke={location.revokePermission}
-          />
-        </div>
-
         {/* Error message */}
         {error && (
           <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
@@ -236,9 +225,6 @@ export default function StudyAreaFinderPage() {
             <span className="text-gray-600 font-medium">Loading study areas...</span>
           </div>
         )}
-
-        {/* Summary cards and tips */}
-        {!isLoading && <StudyAreaSummary stats={stats} />}
 
         {/* Study areas grid */}
         {!isLoading && (
@@ -262,7 +248,6 @@ export default function StudyAreaFinderPage() {
                       availableSeats={occupancy?.available_seats || area.capacity}
                       occupancyPercentage={occupancy?.occupancy_percentage || 0}
                       crowdStatus={crowdStatus}
-                      lastUpdated={new Date(occupancy?.updated_at || new Date())}
                       capacity={area.capacity}
                       features={{
                         wifi: area.wifi,

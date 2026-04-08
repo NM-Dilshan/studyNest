@@ -5,6 +5,8 @@ import SearchBar from '@/components/SearchBar'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { MapPin, X } from 'lucide-react'
+import { LocationPermissionBanner } from '@/components/study-areas/LocationPermissionBanner'
 
 type RecentUpdate = {
   type: 'Hall' | 'Study Area'
@@ -28,6 +30,9 @@ interface User {
 export default function HomePage() {
   const router = useRouter()
   const [isHydrated, setIsHydrated] = useState(false)
+  const [showGPSDialog, setShowGPSDialog] = useState(false)
+  const [gpsStatus, setGpsStatus] = useState<'idle' | 'requesting' | 'enabled' | 'denied'>('idle')
+  const [userId, setUserId] = useState<string | null>(null)
   
   // Initialize user from localStorage without setState in effect
   const [user] = useState<User | null>(() => {
@@ -85,6 +90,17 @@ export default function HomePage() {
     // Handle authentication redirect
     if (!user) {
       router.push('/login/signIN')
+    } else {
+      // Set userId for LocationPermissionBanner
+      setUserId(user.user_id)
+      // Show GPS permission dialog after login
+      const gpsDialogShown = localStorage.getItem(`gpsDialogShown_${user.user_id}`)
+      if (!gpsDialogShown) {
+        // Show dialog after a short delay for better UX
+        setTimeout(() => {
+          setShowGPSDialog(true)
+        }, 1000)
+      }
     }
   }, [user, router])
 
@@ -92,6 +108,66 @@ export default function HomePage() {
     e.preventDefault()
     localStorage.removeItem('user')
     router.push('/login/signIN')
+  }
+
+  const requestGPSPermission = async () => {
+    if (!user) return
+    
+    setGpsStatus('requesting')
+    try {
+      const permission = await navigator.permissions.query({ name: 'geolocation' })
+      if (permission.state === 'denied') {
+        setGpsStatus('denied')
+        setTimeout(() => {
+          setShowGPSDialog(false)
+          localStorage.setItem(`gpsDialogShown_${user.user_id}`, 'true')
+        }, 2000)
+        return
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setGpsStatus('enabled')
+          // Store GPS preference
+          localStorage.setItem(`gpsEnabled_${user.user_id}`, 'true')
+          localStorage.setItem(`gpsDialogShown_${user.user_id}`, 'true')
+          
+          // Send location to server
+          fetch('/api/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.user_id,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }),
+          }).catch(console.error)
+
+          // Close dialog after 2 seconds
+          setTimeout(() => {
+            setShowGPSDialog(false)
+          }, 2000)
+        },
+        (error) => {
+          console.error('GPS error:', error)
+          setGpsStatus('denied')
+          localStorage.setItem(`gpsDialogShown_${user.user_id}`, 'true')
+          setTimeout(() => {
+            setShowGPSDialog(false)
+          }, 2000)
+        }
+      )
+    } catch (error) {
+      console.error('Failed to request GPS:', error)
+      setGpsStatus('denied')
+    }
+  }
+
+  const handleSkipGPS = () => {
+    if (user) {
+      localStorage.setItem(`gpsDialogShown_${user.user_id}`, 'true')
+    }
+    setShowGPSDialog(false)
   }
 
   if (loading) {
@@ -117,6 +193,77 @@ export default function HomePage() {
       {/* Header Component */}
       <MainHeader />
 
+      {/* GPS Permission Dialog */}
+      {showGPSDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-3 rounded-lg">
+                  <MapPin className="w-6 h-6 text-blue-600" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">Enable Location</h2>
+              </div>
+              <button
+                onClick={handleSkipGPS}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-2">
+              Help us show you the most accurate crowd levels in study areas.
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-sm text-blue-700">
+              <strong>🔒 Privacy:</strong> Your location is never stored permanently or shared with other users. Data expires every 5 minutes.
+            </div>
+
+            <div className="space-y-3">
+              {gpsStatus === 'enabled' && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center text-green-700 font-medium">
+                  ✓ Location access granted!
+                </div>
+              )}
+              {gpsStatus === 'denied' && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center text-red-700 font-medium">
+                  ✗ Location access denied. You can enable it in settings anytime.
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSkipGPS}
+                  className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition"
+                >
+                  Skip for Now
+                </button>
+                <button
+                  onClick={requestGPSPermission}
+                  disabled={gpsStatus === 'requesting'}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition text-white ${
+                    gpsStatus === 'requesting'
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : gpsStatus === 'enabled' || gpsStatus === 'denied'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                >
+                  {gpsStatus === 'requesting'
+                    ? 'Requesting...'
+                    : gpsStatus === 'enabled'
+                      ? 'Enabled ✓'
+                      : gpsStatus === 'denied'
+                        ? 'OK'
+                        : 'Enable Location'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Welcome Section */}
         <div className="mb-12">
@@ -131,6 +278,13 @@ export default function HomePage() {
           {/* Search Bar with Autocomplete */}
           <SearchBar />
         </div>
+
+        {/* Location Permission Banner - Show after login */}
+        {userId && isHydrated && (
+          <div className="mb-12">
+            <LocationPermissionBanner userId={userId} />
+          </div>
+        )}
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
