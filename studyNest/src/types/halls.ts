@@ -24,7 +24,7 @@ export interface LectureHall {
 
 export interface TimetableSlot {
   id: number;
-  hall_id: string;
+  hall_id: string | null;
   academic_year: number | null;
   semester: number | null;
   day_of_week: string;           // 'Monday', 'Tuesday', etc.

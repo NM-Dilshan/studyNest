@@ -1,12 +1,27 @@
 import { TimetableSlot } from '../types/halls';
 
 export const timetableService = {
-  async getTimetable(hallId?: string, academicYear?: number, semester?: number): Promise<TimetableSlot[]> {
+  /**
+   * Fetch timetable slots.
+   * - No params → all sessions
+   * - hallId = UUID → filter by specific hall
+   * - unassigned = true → filter sessions with no hall
+   */
+  async getTimetable(
+    hallId?: string,
+    academicYear?: number,
+    semester?: number,
+    unassigned?: boolean
+  ): Promise<TimetableSlot[]> {
     const params = new URLSearchParams();
-    if (hallId) params.set('hall_id', hallId);
+    if (unassigned) {
+      params.set('unassigned', 'true');
+    } else if (hallId) {
+      params.set('hall_id', hallId);
+    }
     if (academicYear) params.set('academic_year', String(academicYear));
     if (semester) params.set('semester', String(semester));
-    
+
     const url = `/api/timetable${params.toString() ? '?' + params.toString() : ''}`;
 
     const res = await fetch(url);

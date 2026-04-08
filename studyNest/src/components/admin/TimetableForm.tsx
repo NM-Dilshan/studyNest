@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Upload, Save, Clock, X, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, Save, Clock, X, AlertCircle, Building2 } from 'lucide-react';
 import { TimetableSlot, LectureHall } from '../../types/halls';
 import { timetableService } from '../../services/timetableService';
 import { hallService } from '../../services/hallService';
@@ -18,10 +18,16 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [halls, setHalls] = useState<LectureHall[]>([]);
+
+  // Fetch all halls on mount for the dropdown
+  useEffect(() => {
+    hallService.getLectureHalls().then(setHalls).catch(console.error);
+  }, []);
 
   // Manual form state
   const [formData, setFormData] = useState({
-    hall_id: hallId,
+    hall_id: initialData?.hall_id || hallId || '',
     academic_year: initialData?.academic_year || 3,
     semester: initialData?.semester || 1,
     day_of_week: initialData?.day_of_week || 'Monday',
@@ -70,9 +76,9 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
       setLoading(true);
       setError(null);
       if (initialData) {
-        await timetableService.updateSlot(initialData.id, formData as any);
+        await timetableService.updateSlot(initialData.id, { ...formData, hall_id: formData.hall_id || null } as any);
       } else {
-        await timetableService.createSlot(formData as any);
+        await timetableService.createSlot({ ...formData, hall_id: formData.hall_id || null } as any);
       }
       onSuccess();
     } catch (err: any) {
@@ -139,13 +145,13 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
         throw new Error('CSV must contain columns: day (or day_of_week), startTime (or start_time), endTime (or end_time)');
       }
 
-      // If CSV has a "hall" column, fetch all halls and map name → id
+      // If CSV has a "hall" column, fetch all halls and build a name→id lookup map
       let hallNameToId: Record<string, string> = {};
       if (hallIdx !== -1) {
         const allHalls: LectureHall[] = await hallService.getLectureHalls();
         allHalls.forEach(h => {
           hallNameToId[h.name.toLowerCase()] = h.id;
-          // Also map without spaces for fuzzy matching
+          // Fuzzy match: also index without spaces (e.g., "G O404" → "go404")
           hallNameToId[h.name.replace(/\s+/g, '').toLowerCase()] = h.id;
         });
       }
@@ -157,16 +163,20 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
         const values = lines[i].replace(/\r/g, '').split(',').map(v => v.trim());
         if (values.length < 3) continue;
 
-        // Resolve hall_id
-        let resolvedHallId = hallId; // default to selected hall
+        // Resolve hall_id — default to null (unassigned) not the currently selected hall
+        let resolvedHallId: string | null = null;
         if (hallIdx !== -1 && values[hallIdx]) {
           const csvHallName = values[hallIdx].toLowerCase().replace(/\s+/g, '');
           const foundId = hallNameToId[csvHallName] || hallNameToId[values[hallIdx].toLowerCase()];
           if (foundId) {
             resolvedHallId = foundId;
           } else {
-            warnings.push(`Row ${i + 1}: Hall "${values[hallIdx]}" not found, using selected hall`);
+            resolvedHallId = null; // hall not registered → store as Unassigned
+            warnings.push(`Row ${i + 1}: Hall "${values[hallIdx]}" not registered in system. Stored as Unassigned.`);
           }
+        } else if (hallIdx === -1 && hallId) {
+          // No hall column in CSV — use the currently selected hall if one is chosen
+          resolvedHallId = hallId || null;
         }
 
         // Parse module column: "IT3010 - NDM Practical" → code: IT3010, name: NDM Practical
@@ -293,6 +303,28 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                   ))}
                 </select>
               </div>
+            </div>
+
+            {/* Lecture Hall Dropdown */}
+            <div>
+              <label className="block text-sm font-medium mb-1.5 text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 opacity-60" /> Lecture Hall
+              </label>
+              <select
+                value={formData.hall_id}
+                onChange={(e) => setFormData({ ...formData, hall_id: e.target.value })}
+                className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+              >
+                <option value="">— Unassigned —</option>
+                {halls.map(h => (
+                  <option key={h.id} value={h.id}>{h.name} — {h.building}</option>
+                ))}
+              </select>
+              {!formData.hall_id && (
+                <p className="text-xs text-orange-500 mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" /> No hall assigned. You can assign one now or later.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -423,7 +455,7 @@ export function TimetableForm({ hallId, initialData, onSuccess, onCancel }: Time
                 disabled={loading}
               />
             </label>
-            {loading && <p className="mt-4 text-sm text-blue-500 font-medium animate-pulse flex items-center gap-2"><div className="w-3 h-3 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /> Processing file...</p>}
+            {loading && <span className="mt-4 text-sm text-blue-500 font-medium animate-pulse flex items-center gap-2"><span className="w-3 h-3 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin inline-block" /> Processing file...</span>}
           </div>
         )}
       </div>

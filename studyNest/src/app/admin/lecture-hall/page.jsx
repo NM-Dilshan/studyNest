@@ -13,6 +13,10 @@ export default function LectureHallListPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
   useEffect(() => {
     fetchHalls()
   }, [])
@@ -115,6 +119,17 @@ export default function LectureHallListPage() {
     )
   })
 
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchValue])
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage
+  const currentHalls = filteredHalls.slice(indexOfFirstItem, indexOfLastItem)
+  const totalPages = Math.ceil(filteredHalls.length / itemsPerPage)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -179,7 +194,7 @@ export default function LectureHallListPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredHalls.map((hall) => (
+                  {currentHalls.map((hall) => (
                     <tr key={hall.hall_id} className="border-b hover:bg-blue-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">
                         <HighlightText text={hall.hall_name} searchTerm={searchValue} />
@@ -226,6 +241,31 @@ export default function LectureHallListPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination Controls */}
+            {filteredHalls.length > itemsPerPage && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200">
+                <div className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to <span className="font-medium">{Math.min(indexOfLastItem, filteredHalls.length)}</span> of <span className="font-medium">{filteredHalls.length}</span> results
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>

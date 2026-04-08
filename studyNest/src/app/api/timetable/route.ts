@@ -2,23 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 /**
- * GET /api/timetable?hall_id=xxx
- * Returns timetable slots, optionally filtered by hall_id
+ * GET /api/timetable
+ * Query params:
+ *   hall_id=<uuid>      → filter by specific hall
+ *   unassigned=true     → filter where hall_id IS NULL
+ *   academic_year=<n>   → filter by year
+ *   semester=<n>        → filter by semester
+ *   (no params)         → return ALL sessions
  */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const hallId = searchParams.get('hall_id');
+    const unassigned = searchParams.get('unassigned');
+    const academicYear = searchParams.get('academic_year');
+    const semester = searchParams.get('semester');
 
     const where: any = {};
-    if (hallId) {
+
+    if (unassigned === 'true') {
+      // Show only sessions with no hall assigned
+      where.hall_id = null;
+    } else if (hallId) {
+      // Show sessions for a specific hall
       where.hall_id = hallId;
     }
-    const academicYear = searchParams.get('academic_year');
+    // If neither, show ALL sessions (no where filter on hall_id)
+
     if (academicYear) {
       where.academic_year = parseInt(academicYear);
     }
-    const semester = searchParams.get('semester');
     if (semester) {
       where.semester = parseInt(semester);
     }
@@ -67,19 +80,13 @@ export async function GET(request: NextRequest) {
 
 /**
  * POST /api/timetable
- * Create a single timetable slot
+ * Create a single timetable slot.
+ * hall_id is now optional — null means "Unassigned".
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // Validation
-    if (!body.hall_id) {
-      return NextResponse.json(
-        { success: false, error: 'hall_id is required' },
-        { status: 400 }
-      );
-    }
     if (!body.day_of_week) {
       return NextResponse.json(
         { success: false, error: 'day_of_week is required' },
@@ -93,15 +100,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify hall exists
-    const hall = await prisma.lecture_halls.findUnique({
-      where: { hall_id: body.hall_id },
-    });
-    if (!hall) {
-      return NextResponse.json(
-        { success: false, error: 'Lecture hall not found' },
-        { status: 404 }
-      );
+    // Only verify hall exists if hall_id is provided
+    if (body.hall_id) {
+      const hall = await prisma.lecture_halls.findUnique({
+        where: { hall_id: body.hall_id },
+      });
+      if (!hall) {
+        return NextResponse.json(
+          { success: false, error: 'Lecture hall not found' },
+          { status: 404 }
+        );
+      }
     }
 
     // Parse time strings to Date objects (Prisma Time type uses Date with date part ignored)
@@ -117,7 +126,7 @@ export async function POST(request: NextRequest) {
 
     const newSlot = await prisma.timetable.create({
       data: {
-        hall_id: body.hall_id,
+        hall_id: body.hall_id || null,
         academic_year: body.academic_year ? parseInt(body.academic_year) : null,
         semester: body.semester ? parseInt(body.semester) : null,
         day_of_week: body.day_of_week,
@@ -128,6 +137,11 @@ export async function POST(request: NextRequest) {
         group_name: body.group_name || null,
         lecturer_name: body.lecturer_name || null,
         is_reserved: body.is_reserved ?? true,
+      },
+      include: {
+        lecture_halls: {
+          select: { hall_name: true, building: true },
+        },
       },
     });
 
@@ -149,6 +163,8 @@ export async function POST(request: NextRequest) {
           lecturer_name: newSlot.lecturer_name,
           is_reserved: newSlot.is_reserved,
           created_at: newSlot.created_at?.toISOString(),
+          hall_name: newSlot.lecture_halls?.hall_name || null,
+          building: newSlot.lecture_halls?.building || null,
         },
       },
       { status: 201 }
