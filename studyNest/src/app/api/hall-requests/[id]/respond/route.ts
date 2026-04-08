@@ -16,10 +16,10 @@ import { prisma } from '@/lib/prisma'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const requestId = params.id
+    const { id: requestId } = await params
     const body = await request.json()
     const {
       responderId,
@@ -32,9 +32,20 @@ export async function POST(
     } = body
 
     // Validate required fields
-    if (!requestId || !responderId || !availabilityStatus || !occupancyLevel) {
+    const missingFields = [];
+    if (!requestId) missingFields.push('requestId');
+    if (!responderId) missingFields.push('responderId');
+    if (!availabilityStatus) missingFields.push('availabilityStatus');
+    if (!occupancyLevel) missingFields.push('occupancyLevel');
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { 
+          success: false, 
+          error: 'Missing required fields', 
+          missingFields,
+          received: { requestId, responderId, availabilityStatus, occupancyLevel }
+        },
         { status: 400 }
       )
     }
@@ -131,11 +142,11 @@ export async function POST(
     )
   } catch (error) {
     console.error('Error submitting response:', error)
+    const errorMsg = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { success: false, error: 'Failed to submit response' },
+      { success: false, error: 'Failed to submit response', details: errorMsg },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
+
   }
 }

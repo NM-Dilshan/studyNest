@@ -35,9 +35,19 @@ export async function GET(
       )
     }
 
-    const currentCount = area.area_occupancy?.current_count || 0
-    const capacity = area.capacity || 100
-    const occupancy = calculateOccupancy(currentCount, capacity)
+    // Get active students count with recent location updates (within 5 minutes)
+    const recentLocations = await prisma.live_locations.findMany({
+      where: {
+        study_area_id: id,
+        updated_at: {
+          gte: new Date(Date.now() - 5 * 60 * 1000),
+        },
+      },
+    })
+
+    const currentCount = area.area_occupancy?.current_count ?? recentLocations.length ?? 0
+    const capacity = area.capacity ?? 100
+    const occupancyPercentage = (currentCount / capacity) * 100
 
     const enrichedArea = {
       id: area.study_area_id,
@@ -47,31 +57,22 @@ export async function GET(
       capacity: area.capacity,
       latitude: area.latitude as number,
       longitude: area.longitude as number,
-      radiusMeters: area.radius_meters || 20,
+      radiusMeters: area.radius_meters ?? 20,
       facilities: {
         wifi: area.wifi,
         chargingPorts: area.charging_ports,
         silentZone: area.silent_zone,
         ac: area.ac,
       },
-      ...occupancy,
-      lastUpdated: area.area_occupancy?.updated_at || area.created_at,
+      currentCount,
+      occupancyPercentage: Math.round(occupancyPercentage),
+      lastUpdated: area.area_occupancy?.updated_at ?? area.created_at,
     }
-
-    // Get active students count (those with recent location updates within 5 minutes)
-    const recentStudents = await prisma.live_locations.count({
-      where: {
-        study_area_id: id,
-        updated_at: {
-          gte: new Date(Date.now() - 5 * 60 * 1000),
-        } as any,
-      },
-    })
 
     return NextResponse.json({
       success: true,
       area: enrichedArea,
-      activeStudents: recentStudents,
+      activeStudents: recentLocations.length,
     })
   } catch (error) {
     console.error('Error fetching study area details:', error)

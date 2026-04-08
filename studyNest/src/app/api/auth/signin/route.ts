@@ -107,8 +107,6 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to sign in. Please try again.' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

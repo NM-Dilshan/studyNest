@@ -86,11 +86,18 @@ export default function RequestForm({
     return () => clearTimeout(timer)
   }, [searchQuery])
 
+  // Show dropdown when search results arrive
+  useEffect(() => {
+    if (filteredHalls.length > 0 && searchQuery) {
+      setShowDropdown(true)
+    }
+  }, [filteredHalls, searchQuery])
+
   // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const searchInput = document.getElementById('hallSearch')
-      if (searchInput && !searchInput.contains(event.target as Node)) {
+      const searchContainer = document.getElementById('hallSearch')?.parentElement?.parentElement
+      if (searchContainer && !searchContainer.contains(event.target as Node)) {
         setShowDropdown(false)
       }
     }

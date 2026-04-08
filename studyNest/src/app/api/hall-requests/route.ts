@@ -79,6 +79,34 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Get requester name and hall name for notification
+    const requesterName = hallRequest.requester.name
+    const hallName = hallRequest.lecture_halls.hall_name
+
+    // Fetch all active volunteers to notify
+    const volunteers = await prisma.users.findMany({
+      where: {
+        role: 'volunteer',
+        is_active: true,
+      },
+      select: {
+        user_id: true,
+      },
+    })
+
+    // Create notifications for all volunteers
+    if (volunteers.length > 0) {
+      await prisma.notifications.createMany({
+        data: volunteers.map((volunteer) => ({
+          user_id: volunteer.user_id,
+          title: `New Hall Request - ${hallName}`,
+          message: `${requesterName} requested information about ${hallName}${hallRequest.lecture_halls.building ? ` in ${hallRequest.lecture_halls.building}` : ''}.${hallRequest.request_note ? ` Note: ${hallRequest.request_note}` : ''}`,
+          notification_type: 'hall_request',
+          is_read: false,
+        })),
+      })
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -93,8 +121,6 @@ export async function POST(request: NextRequest) {
       { success: false, error: 'Failed to create request' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }
 
@@ -177,7 +203,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Failed to fetch requests' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

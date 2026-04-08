@@ -60,8 +60,6 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to record permission' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

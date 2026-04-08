@@ -203,6 +203,7 @@ model users {
   volunteer_study_area_updates                            volunteer_study_area_updates[]
   hall_requests_requester                                 hall_requests[]                @relation("requester")
   hall_request_updates_responder                          hall_request_updates[]         @relation("responder")
+  volunteer_feedback_given                                volunteer_feedback[]           @relation("feedback_giver")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -240,16 +241,21 @@ model volunteer_reviews {
 }
 
 model volunteer_scores {
-  score_id         Int       @id @default(autoincrement())
-  volunteer_id     String    @unique @db.Uuid
-  total_updates    Int?      @default(0)
-  total_reviews    Int?      @default(0)
-  average_rating   Decimal?  @default(0) @db.Decimal(4, 2)
-  accurate_count   Int?      @default(0)
-  inaccurate_count Int?      @default(0)
-  score            Decimal?  @default(0) @db.Decimal(6, 2)
-  updated_at       DateTime? @default(now()) @db.Timestamp(6)
-  users            users     @relation(fields: [volunteer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  score_id                    Int                      @id @default(autoincrement())
+  volunteer_id                String                   @unique @db.Uuid
+  total_updates               Int?                     @default(0)
+  total_reviews               Int?                     @default(0)
+  average_rating              Decimal?                 @default(0) @db.Decimal(4, 2)
+  accurate_count              Int?                     @default(0)
+  inaccurate_count            Int?                     @default(0)
+  score                       Decimal?                 @default(0) @db.Decimal(6, 2)
+  total_responses             Int?                     @default(0) // New: responses submitted to hall requests
+  total_feedback_received     Int?                     @default(0) // New: feedback count from users
+  average_feedback_rating     Decimal?                 @default(0) @db.Decimal(3, 2) // New: average star rating from feedback
+  total_points                Int?                     @default(0) // New: gamification points
+  level                       Int?                     @default(1) // New: volunteer level (1-5)
+  updated_at                  DateTime?                @default(now()) @db.Timestamp(6)
+  users                       users                    @relation(fields: [volunteer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -317,6 +323,7 @@ model hall_requests {
   requester            users                    @relation("requester", fields: [requester_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
   lecture_halls        lecture_halls            @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
   hall_request_updates hall_request_updates[]
+  feedback             volunteer_feedback[]
   
   @@index([requester_id])
   @@index([hall_id])
@@ -338,8 +345,31 @@ model hall_request_updates {
   created_at         DateTime?     @default(now()) @db.Timestamp(6)
   hall_request       hall_requests @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
   responder          users         @relation("responder", fields: [responder_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  feedback           volunteer_feedback[]
   
   @@index([request_id])
   @@index([responder_id])
+  @@index([created_at])
+}
+
+/// User feedback for volunteer responses - part of volunteer level-up system
+model volunteer_feedback {
+  feedback_id      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  response_id      String              @db.Uuid // Reference to hall_request_updates
+  request_id       String              @db.Uuid // Reference to hall_requests
+  given_by_user_id String              @db.Uuid // The requester giving feedback
+  stars            Int                 // 1 to 5 stars
+  comment          String?             @db.VarChar(300) // Optional comment
+  created_at       DateTime?           @default(now()) @db.Timestamp(6)
+  
+  // Relations
+  response         hall_request_updates @relation(fields: [response_id], references: [update_id], onDelete: Cascade, onUpdate: NoAction)
+  request          hall_requests       @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+  given_by         users               @relation("feedback_giver", fields: [given_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  
+  // Constraints
+  @@unique([response_id, given_by_user_id]) // One feedback per user per response
+  @@index([request_id])
+  @@index([given_by_user_id])
   @@index([created_at])
 }

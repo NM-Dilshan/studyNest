@@ -25,15 +25,6 @@ export async function GET(request: NextRequest) {
         requester_id: userId,
       },
       include: {
-        requester: {
-          select: {
-            user_id: true,
-            name: true,
-            student_id: true,
-            volunteer_id: true,
-            role: true,
-          },
-        },
         lecture_halls: {
           select: {
             hall_id: true,
@@ -57,13 +48,6 @@ export async function GET(request: NextRequest) {
             confidence_level: true,
             created_at: true,
             expires_at: true,
-            responder: {
-              select: {
-                user_id: true,
-                name: true,
-                volunteer_id: true,
-              },
-            },
           },
         },
       },
@@ -78,9 +62,35 @@ export async function GET(request: NextRequest) {
       where: { requester_id: userId },
     })
 
+    // Fetch responder details for all updates
+    const responderIds = new Set<string>()
+    requests.forEach(req => {
+      req.hall_request_updates.forEach(update => {
+        responderIds.add(update.responder_id)
+      })
+    })
+
+    const responders = responderIds.size > 0
+      ? await prisma.users.findMany({
+          where: { user_id: { in: Array.from(responderIds) } },
+          select: { user_id: true, name: true, volunteer_id: true },
+        })
+      : []
+
+    const responderMap = new Map(responders.map(r => [r.user_id, r]))
+
+    // Map responder data to updates
+    const enrichedRequests = requests.map(req => ({
+      ...req,
+      hall_request_updates: req.hall_request_updates.map(update => ({
+        ...update,
+        responder: responderMap.get(update.responder_id) || null,
+      })),
+    }))
+
     return NextResponse.json({
       success: true,
-      data: requests,
+      data: enrichedRequests,
       pagination: {
         skip,
         take,
@@ -94,7 +104,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Failed to fetch your requests' },
       { status: 500 }
     )
-  } finally {
-    await prisma.$disconnect()
   }
 }

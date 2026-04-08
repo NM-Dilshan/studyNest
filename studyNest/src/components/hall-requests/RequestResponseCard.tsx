@@ -1,6 +1,8 @@
 'use client'
 
 import { AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { ResponseFeedbackForm } from '@/components/feedback/ResponseFeedbackForm'
 
 interface HallUpdate {
   update_id: string
@@ -21,9 +23,18 @@ interface HallUpdate {
 
 interface RequestResponseCardProps {
   response: HallUpdate
+  requestId?: string
+  currentUserId?: string
+  onFeedbackSubmitted?: () => void
 }
 
-export default function RequestResponseCard({ response }: RequestResponseCardProps) {
+export default function RequestResponseCard({ 
+  response, 
+  requestId, 
+  currentUserId,
+  onFeedbackSubmitted 
+}: RequestResponseCardProps) {
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false)
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -89,14 +100,9 @@ export default function RequestResponseCard({ response }: RequestResponseCardPro
         </div>
       )}
 
-      {/* Volunteer Info and Primary Status */}
+      {/* Primary Status */}
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="text-sm font-semibold text-gray-900">{response.responder.name}</p>
-          <p className="text-xs text-gray-600">
-            Volunteer ID: {response.responder.volunteer_id || response.responder_id.slice(0, 8)}
-          </p>
-        </div>
+        <div className="flex-1"></div>
         <div className="flex gap-2 flex-wrap justify-end">
           <span className={`px-2 py-1 rounded text-xs font-semibold ${getAvailabilityColor(response.availability_status)}`}>
             {response.availability_status}
@@ -140,6 +146,33 @@ export default function RequestResponseCard({ response }: RequestResponseCardPro
           <span>Valid until: {formatDate(response.expires_at)}</span>
         )}
       </div>
+
+      {/* Feedback Form */}
+      {currentUserId && requestId && (
+        <div className="mt-4 pt-4 border-t border-slate-200">
+          {!showFeedbackForm ? (
+            <button
+              onClick={() => setShowFeedbackForm(true)}
+              className="w-full py-2 px-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold rounded transition-all duration-200 hover:shadow-md"
+            >
+              ⭐ Rate This Response
+            </button>
+          ) : (
+            <ResponseFeedbackForm
+              responseId={response.update_id}
+              requestId={requestId}
+              userId={currentUserId}
+              volunteerId={response.responder_id}
+              volunteerName={response.responder.name}
+              onSuccess={() => {
+                setShowFeedbackForm(false)
+                onFeedbackSubmitted?.()
+              }}
+              onCancel={() => setShowFeedbackForm(false)}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

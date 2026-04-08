@@ -193,7 +193,13 @@ export default function MyRequestsList({ userId, refreshTrigger }: MyRequestsLis
             <div className="p-4 space-y-3">
               <h4 className="text-sm font-semibold text-gray-700">Volunteer Responses:</h4>
               {request.hall_request_updates.map((update) => (
-                <RequestResponseCard key={update.update_id} response={update} />
+                <RequestResponseCard 
+                  key={update.update_id} 
+                  response={update}
+                  requestId={request.request_id}
+                  currentUserId={userId}
+                  onFeedbackSubmitted={() => fetchRequests()}
+                />
               ))}
             </div>
           ) : request.request_status === 'Responded' ? (
