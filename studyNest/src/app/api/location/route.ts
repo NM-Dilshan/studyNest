@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { isInsideStudyArea, calculateOccupancy } from '@/lib/geofence'
+import { isPointInsideCircular, calculateOccupancy, type LocationPoint, type CircularGeofence } from '@/lib/geofence'
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,12 +55,13 @@ export async function POST(request: NextRequest) {
       if (
         area.latitude !== null &&
         area.longitude !== null &&
-        isInsideStudyArea(
-          latitude,
-          longitude,
-          area.latitude,
-          area.longitude,
-          area.radius_meters || 20
+        isPointInsideCircular(
+          { latitude, longitude } as LocationPoint,
+          {
+            type: 'circle',
+            center: { latitude: area.latitude, longitude: area.longitude },
+            radiusMeters: area.radius_meters || 20,
+          } as CircularGeofence
         )
       ) {
         insideAreas.push(area.study_area_id)

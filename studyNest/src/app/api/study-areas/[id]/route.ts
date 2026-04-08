@@ -104,23 +104,40 @@ export async function PUT(
       facilities,
     } = body
 
+    // Build update data object, handling type conversions
+    const updateData: any = {}
+    
+    if (name !== undefined && name !== null) {
+      updateData.area_name = name
+    }
+    if (building !== undefined && building !== null) {
+      updateData.building = building
+    }
+    if (floor !== undefined && floor !== null) {
+      updateData.floor = parseInt(String(floor), 10)
+    }
+    if (capacity !== undefined && capacity !== null) {
+      updateData.capacity = parseInt(String(capacity), 10)
+    }
+    if (latitude !== undefined && latitude !== null) {
+      updateData.latitude = parseFloat(String(latitude))
+    }
+    if (longitude !== undefined && longitude !== null) {
+      updateData.longitude = parseFloat(String(longitude))
+    }
+    if (radiusMeters !== undefined && radiusMeters !== null) {
+      updateData.radius_meters = parseInt(String(radiusMeters), 10)
+    }
+    if (facilities) {
+      updateData.wifi = facilities.wifi === true
+      updateData.charging_ports = facilities.chargingPorts === true
+      updateData.silent_zone = facilities.silentZone === true
+      updateData.ac = facilities.ac === true
+    }
+
     const updatedArea = await prisma.study_areas.update({
       where: { study_area_id: id },
-      data: {
-        ...(name && { area_name: name }),
-        ...(building && { building }),
-        ...(floor && { floor }),
-        ...(capacity && { capacity }),
-        ...(latitude && { latitude }),
-        ...(longitude && { longitude }),
-        ...(radiusMeters && { radius_meters: radiusMeters }),
-        ...(facilities && {
-          wifi: facilities.wifi || false,
-          charging_ports: facilities.chargingPorts || false,
-          silent_zone: facilities.silentZone || false,
-          ac: facilities.ac || false,
-        }),
-      },
+      data: updateData,
     })
 
     return NextResponse.json({
@@ -137,6 +154,50 @@ export async function PUT(
     console.error('Error updating study area:', error)
     return NextResponse.json(
       { error: 'Failed to update study area' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * DELETE /api/study-areas/[id]
+ * Delete a study area (soft delete - mark as inactive)
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Check if study area exists
+    const area = await prisma.study_areas.findUnique({
+      where: { study_area_id: id },
+    })
+
+    if (!area) {
+      return NextResponse.json(
+        { error: 'Study area not found' },
+        { status: 404 }
+      )
+    }
+
+    // Soft delete - mark as inactive
+    await prisma.study_areas.update({
+      where: { study_area_id: id },
+      data: {
+        is_active: false,
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Study area deleted successfully',
+    })
+  } catch (error) {
+    console.error('Error deleting study area:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete study area' },
       { status: 500 }
     )
   }

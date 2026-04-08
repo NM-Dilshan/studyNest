@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { AlertCircle, Loader2, Check, X } from 'lucide-react'
+import { AlertCircle, Loader2, Check, X, Info } from 'lucide-react'
+import {
+  isValidHallCode,
+  isValidPartialHallCode,
+  validateHallCode,
+  getFormatHelpText,
+  shouldTriggerSearch,
+  isCompleteHallCode,
+  type ValidationResult,
+} from '@/lib/validations/hallCodeValidation'
 
 interface Hall {
   hall_id: string
@@ -26,34 +35,99 @@ export default function RequestForm({
   userName,
   onRequestCreated,
 }: RequestFormProps) {
-  const [halls, setHalls] = useState<Hall[]>([])
+  const [filteredHalls, setFilteredHalls] = useState<Hall[]>([])
   const [selectedHallId, setSelectedHallId] = useState('')
   const [note, setNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [hallsLoading, setHallsLoading] = useState(true)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [hallCodeValidation, setHallCodeValidation] = useState<ValidationResult>({
+    isValid: false,
+    error: '',
+  })
+  const [hallName, setHallName] = useState('')
 
-  // Fetch halls on mount
+  // Search lecture halls using the search API
   useEffect(() => {
-    const fetchHalls = async () => {
+    if (!searchQuery.trim() || !shouldTriggerSearch(searchQuery)) {
+      setFilteredHalls([])
+      setHighlightedIndex(-1)
+      return
+    }
+
+    // Debounce search requests
+    const timer = setTimeout(async () => {
+      setSearchLoading(true)
       try {
-        setHallsLoading(true)
-        const response = await fetch('/api/lecture-halls')
-        const result = await response.json()
-        if (result.success) {
-          setHalls(result.data || [])
+        const response = await fetch(
+          `/api/lecture-halls/search?q=${encodeURIComponent(searchQuery)}&limit=15`
+        )
+        
+        if (response.ok) {
+          const data = await response.json()
+          setFilteredHalls(data)
+          setHighlightedIndex(-1)
+        } else {
+          console.error('Failed to search halls:', response.status)
+          setFilteredHalls([])
         }
-      } catch (err) {
-        console.error('Error fetching halls:', err)
-        setError('Failed to load lecture halls')
+      } catch (error) {
+        console.error('Error searching halls:', error)
+        setFilteredHalls([])
       } finally {
-        setHallsLoading(false)
+        setSearchLoading(false)
+      }
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const searchInput = document.getElementById('hallSearch')
+      if (searchInput && !searchInput.contains(event.target as Node)) {
+        setShowDropdown(false)
       }
     }
 
-    fetchHalls()
-  }, [])
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showDropdown])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase()
+    setSearchQuery(value)
+    
+    // Validate hall code format
+    const validation = validateHallCode(value)
+    setHallCodeValidation(validation)
+    
+    // Reset selection if user modifies input
+    if (value !== hallName) {
+      setSelectedHallId('')
+    }
+    
+    // Clear error when user is typing
+    if (error && error.includes('Please select')) {
+      setError('')
+    }
+  }
+
+  const handleSelectHall = (hall: Hall) => {
+    setSelectedHallId(hall.hall_id)
+    setSearchQuery(hall.hall_name || `${hall.building}`)
+    setHallName(hall.hall_name || '')
+    setFilteredHalls([])
+    setShowDropdown(false)
+    setHallCodeValidation({ isValid: true, error: '' })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -94,6 +168,8 @@ export default function RequestForm({
 
       setSuccess(true)
       setSelectedHallId('')
+      setSearchQuery('')
+      setHallName('')
       setNote('')
 
       setTimeout(() => {
@@ -132,30 +208,79 @@ export default function RequestForm({
 
         {/* Hall Selection */}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Lecture Hall <span className="text-red-500">*</span>
-          </label>
-          {hallsLoading ? (
-            <div className="animate-pulse">
-              <div className="h-10 bg-gray-200 rounded" />
-            </div>
-          ) : (
-            <select
-              value={selectedHallId}
-              onChange={(e) => setSelectedHallId(e.target.value)}
-              className="w-full px-4 py-2 bg-white text-gray-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2E6F95]"
-            >
-              <option value="">-- Select a hall --</option>
-              {halls.map((hall) => (
-                <option key={hall.hall_id} value={hall.hall_id}>
-                  {hall.hall_name}
-                  {hall.building && ` (${hall.building})`}
-                  {hall.capacity && ` - Capacity: ${hall.capacity}`}
-                </option>
-              ))}
-            </select>
-          )}
-          <p className="text-xs text-gray-500 mt-1">Select the lecture hall you want information about</p>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-semibold text-gray-700">
+              Lecture Hall <span className="text-red-500">*</span>
+            </label>
+            {searchQuery && (
+              <div className="flex items-center gap-2">
+                {searchLoading && <Loader2 className="h-4 w-4 animate-spin text-blue-600" />}
+                {selectedHallId && !searchLoading && (
+                  <Check className="h-4 w-4 text-green-600" />
+                )}
+                {!selectedHallId && searchQuery && !searchLoading && (
+                  <X className="h-4 w-4 text-amber-600" />
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <input
+              id="hallSearch"
+              type="text"
+              value={searchQuery}
+              onChange={handleInputChange}
+              onFocus={() => searchQuery && setShowDropdown(true)}
+              placeholder="Enter lecture hall code (e.g., A0103, G1210)"
+              className={`w-full px-4 py-2 bg-white text-gray-900 border rounded-lg focus:outline-none focus:ring-2 transition ${
+                selectedHallId
+                  ? 'border-green-300 focus:ring-green-500'
+                  : searchQuery && hallCodeValidation.error
+                    ? 'border-amber-300 focus:ring-amber-500'
+                    : 'border-slate-300 focus:ring-[#2E6F95]'
+              }`}
+            />
+
+            {/* Help Text */}
+            {searchQuery && hallCodeValidation.error && (
+              <div className="flex items-center gap-1 mt-1">
+                <Info className="h-3.5 w-3.5 text-amber-600" />
+                <p className="text-xs text-amber-700">{hallCodeValidation.error}</p>
+              </div>
+            )}
+
+            {/* Dropdown */}
+            {showDropdown && filteredHalls.length > 0 && (
+              <div className="absolute top-12 left-0 right-0 bg-white border border-slate-300 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                {filteredHalls.map((hall, index) => (
+                  <button
+                    key={hall.hall_id}
+                    type="button"
+                    onClick={() => handleSelectHall(hall)}
+                    className={`w-full px-4 py-2.5 text-left transition ${
+                      index === highlightedIndex
+                        ? 'bg-blue-50 border-l-4 border-[#2E6F95]'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="font-medium text-gray-900">{hall.hall_name}</div>
+                    <div className="text-xs text-gray-600">
+                      {hall.building && `${hall.building}`}
+                      {hall.floor && ` • Floor ${hall.floor}`}
+                      {hall.capacity && ` • Capacity: ${hall.capacity}`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-gray-500 mt-1">
+            {selectedHallId
+              ? '✓ Hall selected'
+              : 'Type to search for a lecture hall'}
+          </p>
         </div>
 
         {/* Note */}
@@ -190,7 +315,7 @@ export default function RequestForm({
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={loading || hallsLoading || !selectedHallId}
+          disabled={loading || !selectedHallId}
           className="w-full px-4 py-2 bg-[#2E6F95] text-white font-semibold rounded-lg hover:bg-[#255B79] disabled:bg-gray-400 disabled:cursor-not-allowed transition flex items-center justify-center gap-2"
         >
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}

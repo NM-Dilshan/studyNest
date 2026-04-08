@@ -5,6 +5,8 @@ import Link from 'next/link'
 import HeaderStudentID from '@/components/HeaderStudentID'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { MapPin } from 'lucide-react'
+import { useLocationTracking } from '@/hooks/useLocationTracking'
 
 interface User {
   user_id: string
@@ -24,6 +26,10 @@ interface MainHeaderProps {
 export default function MainHeader({ showAuthActions = true, showStudentId = true }: MainHeaderProps) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
+  const [gpsEnabled, setGpsEnabled] = useState(false)
+
+  // Location tracking for GPS
+  const location = useLocationTracking(user?.user_id || null, true)
 
   useEffect(() => {
     let parsedUser: User | null = null
@@ -38,6 +44,11 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
 
     const timer = setTimeout(() => {
       setUser(parsedUser)
+      // Check if GPS is enabled for this user
+      if (parsedUser) {
+        const gpsStatus = localStorage.getItem(`gpsEnabled_${parsedUser.user_id}`)
+        setGpsEnabled(gpsStatus === 'true')
+      }
     }, 0)
 
     return () => clearTimeout(timer)
@@ -47,6 +58,36 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
     e.preventDefault()
     localStorage.removeItem('user')
     router.push('/login/signIN')
+  }
+
+  const toggleGPS = async () => {
+    if (!user || !location) return
+
+    try {
+      if (gpsEnabled) {
+        // Disable GPS
+        if (location.stopTracking && typeof location.stopTracking === 'function') {
+          location.stopTracking()
+        }
+        if (location.revokePermission && typeof location.revokePermission === 'function') {
+          await location.revokePermission()
+        }
+        localStorage.removeItem(`gpsEnabled_${user.user_id}`)
+        setGpsEnabled(false)
+      } else {
+        // Enable GPS
+        if (location.requestPermission && typeof location.requestPermission === 'function') {
+          await location.requestPermission()
+          if (location.startTracking && typeof location.startTracking === 'function') {
+            location.startTracking()
+          }
+          localStorage.setItem(`gpsEnabled_${user.user_id}`, 'true')
+          setGpsEnabled(true)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle GPS:', err)
+    }
   }
 
   const isVolunteer = user?.role === 'volunteer'
@@ -106,6 +147,22 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
 
           {/* User Info & Actions */}
           <div className="flex items-center space-x-3 ml-auto">
+            {/* GPS Toggle Button */}
+            {user && (
+              <button
+                onClick={toggleGPS}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md font-medium transition-all border ${
+                  gpsEnabled
+                    ? 'bg-blue-100 border-blue-300 text-blue-700 hover:bg-blue-200'
+                    : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={gpsEnabled ? 'GPS is active' : 'Enable GPS location'}
+              >
+                <MapPin className={`w-4 h-4 ${gpsEnabled ? 'text-blue-600' : 'text-gray-600'}`} />
+                <span className="hidden lg:inline text-xs">{gpsEnabled ? 'GPS On' : 'GPS Off'}</span>
+              </button>
+            )}
+
             {/* Student/User ID - Hidden on very small screens */}
             <div className="hidden lg:block border-r border-gray-200 pr-3">
               <HeaderStudentID />

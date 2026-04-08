@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { calculateOccupancy } from '@/lib/geofence'
+import { calculateOccupancy, determineCrowdStatus } from '@/lib/geofence'
 
 /**
  * GET /api/study-areas
@@ -20,45 +20,46 @@ export async function GET() {
       },
     })
 
-    // Enhance each area with occupancy calculations
-    const enrichedAreas = areas.map((area) => {
-      const currentCount = area.area_occupancy?.current_count || 0
-      const capacity = area.capacity || 100
-      const occupancy = calculateOccupancy(currentCount, capacity)
+    // Return data in format expected by frontend
+    const formattedAreas = areas.map((area) => {
+      const occupancy = area.area_occupancy
+      const currentCount = occupancy?.current_count || 0
+      const capacity = area.capacity || 50
+      const availableSeats = Math.max(0, capacity - currentCount)
+      const occupancyPercentage = capacity > 0 ? (currentCount / capacity) * 100 : 0
+      const crowdStatus = determineCrowdStatus(occupancyPercentage)
 
       return {
-        id: area.study_area_id,
-        name: area.area_name,
+        study_area_id: area.study_area_id,
+        area_name: area.area_name,
         building: area.building,
         floor: area.floor,
         capacity: area.capacity,
         latitude: area.latitude,
         longitude: area.longitude,
-        radiusMeters: area.radius_meters || 20,
-        facilities: {
-          wifi: area.wifi,
-          chargingPorts: area.charging_ports,
-          silentZone: area.silent_zone,
-          ac: area.ac,
-        },
-        ...occupancy,
-        lastUpdated: area.area_occupancy?.updated_at || area.created_at,
+        radius_meters: area.radius_meters || 20,
+        wifi: area.wifi,
+        charging_ports: area.charging_ports,
+        silent_zone: area.silent_zone,
+        ac: area.ac,
+        area_status: area.area_status,
+        is_active: area.is_active,
+        created_at: area.created_at,
+        area_occupancy: occupancy ? {
+          occupancy_id: occupancy.study_area_id,
+          study_area_id: occupancy.study_area_id,
+          current_count: currentCount,
+          available_seats: availableSeats,
+          occupancy_percentage: occupancyPercentage,
+          crowd_status: crowdStatus,
+          updated_at: occupancy.updated_at,
+        } : null,
       }
     })
 
     return NextResponse.json({
       success: true,
-      areas: enrichedAreas,
-      totalAreas: enrichedAreas.length,
-      lowCrowdCount: enrichedAreas.filter(
-        (a) => a.crowdStatus === 'Low Crowd'
-      ).length,
-      mediumCrowdCount: enrichedAreas.filter(
-        (a) => a.crowdStatus === 'Medium Crowd'
-      ).length,
-      highCrowdCount: enrichedAreas.filter(
-        (a) => a.crowdStatus === 'High Crowd'
-      ).length,
+      areas: formattedAreas,
     })
   } catch (error) {
     console.error('Error fetching study areas:', error)

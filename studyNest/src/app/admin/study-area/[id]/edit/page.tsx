@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -9,13 +9,6 @@ import {
   Building2,
   Layers3,
   Users,
-  Wifi,
-  PlugZap,
-  VolumeX,
-  Wind,
-  CheckCircle2,
-  AlertCircle,
-  Plus,
   MapPin,
 } from 'lucide-react'
 import {
@@ -31,13 +24,18 @@ import {
 } from '@/lib/validation/studyAreaValidation'
 import DeviceLocationPicker from '@/components/admin/DeviceLocationPicker'
 
-export default function AddStudyAreaPage() {
+export default function EditStudyAreaPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const params = useParams()
+  const { id } = params
+
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
+
   const [location, setLocation] = useState({
     latitude: null as number | null,
     longitude: null as number | null,
@@ -63,6 +61,68 @@ export default function AddStudyAreaPage() {
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2E6F95] focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/10'
 
+  // Fetch study area data on mount
+  useEffect(() => {
+    if (!id) {
+      setError('Study area ID is required')
+      setLoading(false)
+      return
+    }
+
+    const fetchStudyArea = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`/api/study-areas/${id}`)
+
+        if (!response.ok) {
+          let errorMessage = 'Failed to fetch study area'
+          try {
+            const data = await response.json()
+            errorMessage = data.error || errorMessage
+          } catch (parseError) {
+            errorMessage = `Server error: ${response.status} ${response.statusText}`
+          }
+          setError(errorMessage)
+          setLoading(false)
+          return
+        }
+
+        const data = await response.json()
+        const area = data.area
+
+        // Set form data
+        setFormData({
+          area_name: area.name || '',
+          building: area.building || '',
+          floor: area.floor ? String(area.floor) : '',
+          capacity: area.capacity ? String(area.capacity) : '',
+          latitude: String(area.latitude || '0'),
+          longitude: String(area.longitude || '0'),
+          radius_meters: String(area.radiusMeters || '20'),
+          area_status: 'available',
+          wifi: area.facilities?.wifi || false,
+          charging_ports: area.facilities?.chargingPorts || false,
+          silent_zone: area.facilities?.silentZone || false,
+          ac: area.facilities?.ac || false,
+        })
+
+        // Set location state
+        setLocation({
+          latitude: area.latitude,
+          longitude: area.longitude,
+          source: 'manual',
+          radius: area.radiusMeters || 20,
+        })
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStudyArea()
+  }, [id])
+
   // Real-time field validation
   const validateField = (name: string, value: any): string | null => {
     switch (name) {
@@ -86,13 +146,11 @@ export default function AddStudyAreaPage() {
     const checked = (e.target as HTMLInputElement).checked
     const newValue = type === 'checkbox' ? checked : value
 
-    // Update form data
     setFormData((prev) => ({
       ...prev,
       [name]: newValue,
     }))
 
-    // Real-time validation - only if field has been touched
     if (touchedFields[name]) {
       const error = validateField(name, newValue)
       setFieldErrors((prev) => {
@@ -110,13 +168,11 @@ export default function AddStudyAreaPage() {
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
 
-    // Mark field as touched
     setTouchedFields((prev) => ({
       ...prev,
       [name]: true,
     }))
 
-    // Validate on blur
     const error = validateField(name, value)
     setFieldErrors((prev) => {
       const updated = { ...prev }
@@ -134,13 +190,11 @@ export default function AddStudyAreaPage() {
     setError('')
     setMessage('')
 
-    // Validate location is selected
     if (!location.latitude || !location.longitude) {
       setError('Location must be selected on the map')
       return
     }
 
-    // Mark all fields as touched
     setTouchedFields({
       area_name: true,
       building: true,
@@ -148,15 +202,13 @@ export default function AddStudyAreaPage() {
       capacity: true,
     })
 
-    // Update formData with location values and dynamic radius
     const updatedFormData: StudyAreaFormData = {
       ...formData,
       latitude: String(location.latitude),
       longitude: String(location.longitude),
-      radius_meters: String(location.radius), // Use radius from location picker
+      radius_meters: String(location.radius),
     }
 
-    // Validate form data
     const validationResult = validateFormData(updatedFormData)
 
     if (!validationResult.isValid) {
@@ -172,13 +224,12 @@ export default function AddStudyAreaPage() {
     setFieldErrors({})
 
     try {
-      setLoading(true)
+      setSubmitting(true)
 
-      // Convert form data to API payload
       const payload = formDataToPayload(updatedFormData)
 
-      const response = await fetch('/api/study-areas', {
-        method: 'POST',
+      const response = await fetch(`/api/study-areas/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -188,17 +239,16 @@ export default function AddStudyAreaPage() {
       const responseData = await response.json()
 
       if (!response.ok) {
-        // Handle server validation errors
         if (responseData.errors) {
           setFieldErrors(responseData.errors)
           setError(responseData.error || 'Please fix the validation errors below')
         } else {
-          setError(responseData.error || 'Failed to create study area. Please try again.')
+          setError(responseData.error || 'Failed to update study area. Please try again.')
         }
         return
       }
 
-      setMessage('✓ Study area created successfully!')
+      setMessage('✓ Study area updated successfully!')
       setFieldErrors({})
 
       setTimeout(() => {
@@ -209,8 +259,19 @@ export default function AddStudyAreaPage() {
         err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6F95]"></div>
+          <p className="text-slate-600 mt-4">Loading study area...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -241,7 +302,7 @@ export default function AddStudyAreaPage() {
                 StudyNest Admin
               </p>
               <h1 className="text-base font-bold text-slate-900 sm:text-lg">
-                Add Study Area
+                Edit Study Area
               </h1>
             </div>
           </div>
@@ -258,12 +319,24 @@ export default function AddStudyAreaPage() {
       <main className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h2 className="text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
-            Add New Study Area
+            Update Study Area
           </h2>
           <p className="mt-2 max-w-2xl text-sm font-medium text-slate-500 sm:text-base">
-            Create a study space with location details, capacity, features, and current availability.
+            Modify location details, capacity, features, and availability information.
           </p>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl">
+            <p className="text-rose-700 text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        {message && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+            <p className="text-emerald-700 text-sm font-medium">{message}</p>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Main Info */}
@@ -354,6 +427,7 @@ export default function AddStudyAreaPage() {
                   onChange={handleChange}
                   onBlur={handleBlur}
                   min="1"
+                  max="2000"
                   placeholder="e.g., 50"
                   className={`${inputClass} ${touchedFields.capacity && fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
@@ -366,17 +440,17 @@ export default function AddStudyAreaPage() {
             </div>
           </div>
 
-          {/* Location */}
+          {/* Location & Radius */}
           <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
             <div className="mb-8 flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2E6F95]/10 text-[#2E6F95]">
                 <MapPin size={20} />
               </div>
-              <h3 className="text-lg font-bold text-slate-800">Location</h3>
+              <h3 className="text-lg font-bold text-slate-800">Location & Radius</h3>
             </div>
 
             <p className="mb-6 text-sm font-medium text-slate-500">
-              Select a location for this study area. Click on the map to place a marker or use your device location.
+              Update the location for this study area. Click on the map to move the marker or adjust the radius.
             </p>
 
             <DeviceLocationPicker
@@ -387,85 +461,46 @@ export default function AddStudyAreaPage() {
 
           {/* Features */}
           <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
-            <div className="mb-8 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2E6F95]/10 text-[#2E6F95]">
-                <Plus size={20} />
-              </div>
+            <div className="mb-8">
               <h3 className="text-lg font-bold text-slate-800">Available Features</h3>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <FeatureToggle
-                name="wifi"
-                label="WiFi Available"
-                checked={formData.wifi}
-                onChange={handleChange}
-                icon={Wifi}
-              />
-              <FeatureToggle
-                name="charging_ports"
-                label="Charging Ports"
-                checked={formData.charging_ports}
-                onChange={handleChange}
-                icon={PlugZap}
-              />
-              <FeatureToggle
-                name="silent_zone"
-                label="Silent Zone"
-                checked={formData.silent_zone}
-                onChange={handleChange}
-                icon={VolumeX}
-              />
-              <FeatureToggle
-                name="ac"
-                label="Air Conditioning"
-                checked={formData.ac}
-                onChange={handleChange}
-                icon={Wind}
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {[
+                { name: 'wifi', label: 'WiFi Available' },
+                { name: 'charging_ports', label: 'Charging Ports' },
+                { name: 'silent_zone', label: 'Silent Zone' },
+                { name: 'ac', label: 'Air Conditioning' },
+              ].map((feature) => (
+                <label
+                  key={feature.name}
+                  className="group relative flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 transition hover:border-[#2E6F95]/30 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    name={feature.name}
+                    checked={formData[feature.name as keyof typeof formData] as boolean}
+                    onChange={handleChange}
+                    className="h-5 w-5 rounded-full border-slate-300 text-[#2E6F95] accent-[#2E6F95]"
+                  />
+                  <span className="text-sm font-medium text-slate-700">{feature.label}</span>
+                </label>
+              ))}
             </div>
           </div>
 
-          {/* Alerts */}
-          {error && (
-            <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-bold text-rose-700 shadow-sm">
-              <AlertCircle size={18} className="mt-0.5 shrink-0" />
-              <div>
-                <p>{error}</p>
-                {Object.keys(fieldErrors).length > 1 && (
-                  <ul className="mt-2 ml-2 space-y-1 text-[11px]">
-                    {Object.entries(fieldErrors).map(([field, msg]) => (
-                      <li key={field} className="list-disc">
-                        {msg}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-          )}
-
-          {message && (
-            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-bold text-emerald-700 shadow-sm">
-              <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
-              <span>{message}</span>
-            </div>
-          )}
-
-          {/* Buttons */}
-          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:gap-4">
+          {/* Actions */}
+          <div className="flex gap-3 pt-4">
             <button
               type="submit"
-              disabled={loading}
-              className="inline-flex min-h-[54px] flex-1 items-center justify-center gap-3 rounded-2xl bg-[#2E6F95] px-6 py-4 text-sm font-black uppercase tracking-widest text-white shadow-xl shadow-[#2E6F95]/20 transition-all hover:-translate-y-0.5 hover:shadow-[#2E6F95]/35 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submitting}
+              className="flex-1 rounded-2xl bg-[#2E6F95] py-3 px-6 text-sm font-black uppercase tracking-widest text-white transition hover:bg-[#1f4a63] disabled:bg-slate-400"
             >
-              {loading ? 'Creating...' : 'Create Study Area'}
-              <Plus size={18} />
+              {submitting ? 'Updating...' : '✓ Save Changes'}
             </button>
-
             <Link
               href="/admin/study-area"
-              className="inline-flex min-h-[54px] flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700"
+              className="flex-1 rounded-2xl border border-slate-200 bg-white py-3 px-6 text-center text-sm font-black uppercase tracking-widest text-slate-700 transition hover:bg-slate-50"
             >
               Cancel
             </Link>
@@ -473,48 +508,5 @@ export default function AddStudyAreaPage() {
         </form>
       </main>
     </div>
-  )
-}
-
-interface FeatureToggleProps {
-  name: string
-  label: string
-  checked: boolean
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  icon: React.ComponentType<{ size?: number; className?: string }>
-}
-
-function FeatureToggle({
-  name,
-  label,
-  checked,
-  onChange,
-  icon: Icon,
-}: FeatureToggleProps) {
-  return (
-    <label
-      className={`relative flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition-all ${
-        checked
-          ? 'border-[#2E6F95] bg-[#2E6F95]/5 text-[#2E6F95]'
-          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50'
-      }`}
-    >
-      <input
-        type="checkbox"
-        name={name}
-        checked={checked}
-        onChange={onChange}
-        className="absolute inset-0 opacity-0 cursor-pointer"
-      />
-      <div
-        className={`flex h-10 w-10 items-center justify-center rounded-xl ${
-          checked ? 'bg-[#2E6F95]/10' : 'bg-slate-100'
-        }`}
-      >
-        <Icon size={18} />
-      </div>
-      <span className="text-sm font-semibold">{label}</span>
-      {checked && <div className="ml-auto h-2.5 w-2.5 rounded-full bg-[#2E6F95]" />}
-    </label>
   )
 }
