@@ -50,6 +50,7 @@ export async function GET(
         subject_name: slot.subject_name,
         group_name: slot.group_name,
         lecturer_name: slot.lecturer_name,
+        raw_hall_name: slot.raw_hall_name,
         is_reserved: slot.is_reserved,
         created_at: slot.created_at?.toISOString(),
         hall_name: slot.lecture_halls?.hall_name,
@@ -108,6 +109,7 @@ export async function PUT(
     if (body.subject_name !== undefined) updateData.subject_name = body.subject_name || null;
     if (body.group_name !== undefined) updateData.group_name = body.group_name || null;
     if (body.lecturer_name !== undefined) updateData.lecturer_name = body.lecturer_name || null;
+    if (body.raw_hall_name !== undefined) updateData.raw_hall_name = body.raw_hall_name || null;
     if (body.is_reserved !== undefined) updateData.is_reserved = body.is_reserved;
     if (body.academic_year !== undefined) updateData.academic_year = body.academic_year ? parseInt(body.academic_year) : null;
     if (body.semester !== undefined) updateData.semester = body.semester ? parseInt(body.semester) : null;
@@ -132,6 +134,7 @@ export async function PUT(
         subject_name: updated.subject_name,
         group_name: updated.group_name,
         lecturer_name: updated.lecturer_name,
+        raw_hall_name: updated.raw_hall_name,
         is_reserved: updated.is_reserved,
         created_at: updated.created_at?.toISOString(),
       },

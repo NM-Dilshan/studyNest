@@ -235,9 +235,16 @@ export default function TimetableManager() {
                               {slot.hall_name}
                             </span>
                           ) : (
-                            <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium">
-                              Unassigned
-                            </span>
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium w-fit">
+                                Unassigned
+                              </span>
+                              {slot.raw_hall_name && (
+                                <span className="text-[11px] text-slate-500 italic pl-1">
+                                  CSV: <strong className="text-slate-700">{slot.raw_hall_name}</strong>
+                                </span>
+                              )}
+                            </div>
                           )}
                         </td>
 
