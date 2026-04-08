@@ -16,6 +16,48 @@ import {
 import { useRouter } from 'next/navigation'
 import MainHeader from '@/components/MainHeader'
 
+const buildingConfig: Record<
+  string,
+  { blocks: string[]; floors: (string | number)[] }
+> = {
+  'New Building': {
+    blocks: ['G', 'F'],
+    floors: Array.from({ length: 14 }, (_, i) => i + 1),
+  },
+  'Main Building': {
+    blocks: ['A', 'B'],
+    floors: ['B', '1', '2', '3', '4', '5', '6', '7', '8'],
+  },
+}
+
+interface LectureHall {
+  hall_id: string
+  hall_name: string
+  building: string
+  block: string
+  floor: string | number
+}
+
+interface StudyArea {
+  study_area_id: string
+  area_name: string
+  building?: string
+}
+
+const normalizeStudyArea = (raw: Record<string, unknown>): StudyArea => ({
+  study_area_id: String(raw.study_area_id ?? raw.id ?? ''),
+  area_name: String(raw.area_name ?? raw.areaName ?? raw.name ?? 'Unnamed Area'),
+  building: String(raw.building ?? ''),
+})
+
+const normalizeLectureHall = (raw: Record<string, unknown>): LectureHall => ({
+  hall_id: String(raw.hall_id ?? raw.id ?? ''),
+  hall_name: String(raw.hall_name ?? raw.hallName ?? raw.name ?? 'Unnamed Hall'),
+  building: String(raw.building ?? ''),
+  block: String(raw.block ?? ''),
+  floor: String(raw.floor ?? ''),
+})
+
 export default function ComplaintsPage() {
   const router = useRouter()
   const photoInputRef = useRef<HTMLInputElement | null>(null)
@@ -23,24 +65,7 @@ export default function ComplaintsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [user, setUser] = useState<{ studentId: string } | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [checkingAuth, setCheckingAuth] = useState(true)
   const [mounted, setMounted] = useState(false)
-
-  const buildingConfig: Record<
-    string,
-    { blocks: string[]; floors: (string | number)[] }
-  > = {
-    'New Building': {
-      blocks: ['G', 'F'],
-      floors: Array.from({ length: 14 }, (_, i) => i + 1),
-    },
-    'Main Building': {
-      blocks: ['A', 'B'],
-      floors: ['B', '1', '2', '3', '4', '5', '6', '7', '8'],
-    },
-  }
 
   const [formData, setFormData] = useState({
     building: '',
@@ -56,25 +81,6 @@ export default function ComplaintsPage() {
   })
 
   const [buildings, setBuildings] = useState<string[]>([])
-  interface LectureHall {
-    hall_id: string
-    hall_name: string
-    building: string
-    block: string
-    floor: string | number
-  }
-
-  interface StudyArea {
-    study_area_id: string
-    area_name: string
-    building?: string
-  }
-
-  const normalizeStudyArea = (raw: Record<string, unknown>): StudyArea => ({
-    study_area_id: String(raw.study_area_id ?? raw.id ?? ''),
-    area_name: String(raw.area_name ?? raw.areaName ?? raw.name ?? 'Unnamed Area'),
-    building: String(raw.building ?? ''),
-  })
 
   const [hallLocations, setHallLocations] = useState<LectureHall[]>([])
   const [studyAreaLocations, setStudyAreaLocations] = useState<StudyArea[]>([])
@@ -84,6 +90,31 @@ export default function ComplaintsPage() {
   const [lectureHallsData, setLectureHallsData] = useState<LectureHall[]>([])
   const [studyAreasData, setStudyAreasData] = useState<StudyArea[]>([])
   const [loadingStep2, setLoadingStep2] = useState(false)
+
+  const parseApiResponse = async <T,>(response: Response, endpoint: string) => {
+    const status = response.status
+    const contentType = response.headers.get('content-type') || ''
+    const rawText = await response.text()
+
+    console.debug(`[ComplaintsPage] ${endpoint} -> status: ${status}`)
+    console.debug(`[ComplaintsPage] ${endpoint} -> body preview:`, rawText.slice(0, 300))
+
+    if (!contentType.includes('application/json')) {
+      console.error(
+        `[ComplaintsPage] ${endpoint} returned non-JSON response. ` +
+          `content-type=${contentType || 'unknown'}`
+      )
+      return { ok: false, status, data: null as T | null, rawText }
+    }
+
+    try {
+      const data = rawText ? (JSON.parse(rawText) as T) : (null as T | null)
+      return { ok: response.ok, status, data, rawText }
+    } catch (error) {
+      console.error(`[ComplaintsPage] Failed to parse JSON from ${endpoint}:`, error)
+      return { ok: false, status, data: null as T | null, rawText }
+    }
+  }
 
   const studyAreaBuildings = useMemo(
     () =>
@@ -142,25 +173,68 @@ export default function ComplaintsPage() {
   }
 
   useEffect(() => {
-    const studentId = localStorage.getItem('studentId')
-    if (studentId) {
-      setUser({ studentId })
-      setIsAuthenticated(true)
-    }
-
-    setCheckingAuth(false)
-    setMounted(true)
-    fetchBuildings()
-  }, [])
-
-  useEffect(() => {
-    if (step === 1) {
+    const loadInitialOptions = async () => {
       setLoadingStep2(true)
-      Promise.all([fetchAllLectureHalls(), fetchAllStudyAreas()]).finally(() => {
+      try {
+        const buildingsRes = await fetch('/api/buildings')
+        const buildingsParsed = await parseApiResponse<{ success?: boolean; data?: string[] }>(
+          buildingsRes,
+          '/api/buildings'
+        )
+        if (buildingsParsed.data?.success) {
+          setBuildings(buildingsParsed.data.data || [])
+        }
+
+        const [hallsRes, areasRes] = await Promise.all([
+          fetch('/api/lecture-halls'),
+          fetch('/api/study-areas'),
+        ])
+
+        const hallsParsed = await parseApiResponse<
+          { success?: boolean; halls?: Record<string, unknown>[]; data?: Record<string, unknown>[] }
+        >(hallsRes, '/api/lecture-halls')
+
+        const areasParsed = await parseApiResponse<
+          { success?: boolean; areas?: Record<string, unknown>[]; data?: Record<string, unknown>[] }
+        >(areasRes, '/api/study-areas')
+
+        const hallsData = hallsParsed.data
+        const areasData = areasParsed.data
+
+        if (!hallsData || !areasData) {
+          setError('Failed to load locations. Please refresh and try again.')
+          return
+        }
+
+        if (hallsData.success || Array.isArray(hallsData)) {
+          const rawHalls = Array.isArray(hallsData)
+            ? hallsData
+            : hallsData.halls || hallsData.data || []
+          const halls = rawHalls
+            .map((hall: Record<string, unknown>) => normalizeLectureHall(hall))
+            .filter((hall: LectureHall) => Boolean(hall.hall_id))
+          setLectureHallsData(halls)
+        }
+
+        if (areasData.success || Array.isArray(areasData)) {
+          const rawAreas = Array.isArray(areasData)
+            ? areasData
+            : areasData.areas || areasData.data || []
+          const areas = rawAreas.map((area: Record<string, unknown>) =>
+            normalizeStudyArea(area)
+          )
+          setStudyAreasData(areas)
+        }
+      } catch (err) {
+        console.error('Error loading form options:', err)
+      } finally {
         setLoadingStep2(false)
-      })
+      }
     }
-  }, [step])
+
+    setMounted(true)
+    loadInitialOptions()
+  }, [])
 
   useEffect(() => {
     if (formData.building && buildingConfig[formData.building]) {
@@ -168,47 +242,6 @@ export default function ComplaintsPage() {
       setAvailableFloors(buildingConfig[formData.building].floors)
     }
   }, [formData.building])
-
-  const fetchBuildings = async () => {
-    try {
-      const response = await fetch('/api/buildings')
-      const data = await response.json()
-      if (data.success) {
-        setBuildings(data.data || [])
-      }
-    } catch (err) {
-      console.error('Error fetching buildings:', err)
-    }
-  }
-
-  const fetchAllLectureHalls = async () => {
-    try {
-      const response = await fetch('/api/lecture-halls')
-      const data = await response.json()
-      if (data.success || Array.isArray(data)) {
-        const halls = Array.isArray(data) ? data : data.data || []
-        setLectureHallsData(halls)
-      }
-    } catch (err) {
-      console.error('Error fetching lecture halls:', err)
-    }
-  }
-
-  const fetchAllStudyAreas = async () => {
-    try {
-      const response = await fetch('/api/study-areas')
-      const data = await response.json()
-      if (data.success || Array.isArray(data)) {
-        const rawAreas = Array.isArray(data) ? data : data.data || []
-        const areas = rawAreas.map((area: Record<string, unknown>) =>
-          normalizeStudyArea(area)
-        )
-        setStudyAreasData(areas)
-      }
-    } catch (err) {
-      console.error('Error fetching study areas:', err)
-    }
-  }
 
   const fetchStudyAreasByBuilding = async (buildingName: string) => {
     setLoadingData(true)
@@ -229,9 +262,13 @@ export default function ComplaintsPage() {
       const response = await fetch(
         `/api/study-areas/by-building/${encodeURIComponent(buildingName)}`
       )
-      const data = await response.json()
-      if (data.success) {
-        const normalized = (data.data || []).map(
+      const endpoint = `/api/study-areas/by-building/${encodeURIComponent(buildingName)}`
+      const parsed = await parseApiResponse<
+        { success?: boolean; data?: Record<string, unknown>[] }
+      >(response, endpoint)
+
+      if (parsed.data?.success) {
+        const normalized = (parsed.data.data || []).map(
           (area: Record<string, unknown>) => normalizeStudyArea(area)
         )
         setStudyAreaLocations(normalized)
@@ -252,8 +289,8 @@ export default function ComplaintsPage() {
     try {
       const filtered = lectureHallsData.filter(
         (h) =>
-          h.building === buildingName &&
-          h.block === block &&
+          h.building.trim().toLowerCase() === buildingName.trim().toLowerCase() &&
+          h.block.trim().toLowerCase() === block.trim().toLowerCase() &&
           String(h.floor) === String(floor)
       )
       setHallLocations(filtered)
@@ -291,21 +328,17 @@ export default function ComplaintsPage() {
     setFormData((prev) => ({
       ...prev,
       complaintType: type,
+      building: '',
       block: '',
       floor: '',
       locationId: '',
       locationName: '',
     }))
 
-    // If building is already selected, immediately load matching study areas.
-    if (type === 'study_area' && formData.building) {
-      const filtered = studyAreasData.filter(
-        (area) =>
-          (area.building || '').trim().toLowerCase() ===
-          formData.building.trim().toLowerCase()
-      )
-      setStudyAreaLocations(filtered)
-    }
+    setHallLocations([])
+    setStudyAreaLocations([])
+
+    // Building is intentionally reset to keep step flow consistent across type switches.
   }
 
   const handleBlockChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -498,7 +531,12 @@ export default function ComplaintsPage() {
       return
     }
 
-    const studentId = localStorage.getItem('studentId') || 'anonymous'
+    const studentId = (localStorage.getItem('studentId') || '').trim()
+
+    if (!studentId || studentId.toLowerCase() === 'anonymous') {
+      setError('Invalid student session. Please log in again.')
+      return
+    }
 
     const selectedLectureHall =
       formData.complaintType === 'lecture_hall'
@@ -527,10 +565,15 @@ export default function ComplaintsPage() {
 
     setLoading(true)
     try {
+      const hallId =
+        formData.complaintType === 'lecture_hall' ? normalizedLocationId : null
+      const studyAreaId =
+        formData.complaintType === 'study_area' ? normalizedLocationId : null
+
       const payload = {
         student_id: studentId,
-        [formData.complaintType === 'lecture_hall' ? 'hall_id' : 'study_area_id']:
-          normalizedLocationId,
+        hall_id: hallId,
+        study_area_id: studyAreaId,
         issue_category: formData.issueCategory,
         description: formData.description,
         photo_url: formData.photoUrl || null,
@@ -543,10 +586,18 @@ export default function ComplaintsPage() {
         body: JSON.stringify(payload),
       })
 
-      const data = await response.json()
+      const parsed = await parseApiResponse<
+        { success?: boolean; error?: string; message?: string }
+      >(response, '/api/complaints')
 
-      if (!response.ok) {
-        setError(data.error || 'Failed to submit complaint')
+      const data = parsed.data
+
+      if (!parsed.ok || !data) {
+        const fallbackError =
+          !parsed.rawText || parsed.rawText.startsWith('<!DOCTYPE')
+            ? 'API returned HTML instead of JSON. Check API route path and server logs.'
+            : 'Failed to submit complaint'
+        setError(data?.error || fallbackError)
         return
       }
 
@@ -850,7 +901,7 @@ export default function ComplaintsPage() {
                           <option value="">-- Select a lecture hall --</option>
                           {hallLocations.map((loc) => (
                             <option key={loc.hall_id} value={loc.hall_id}>
-                              {loc.hall_name}
+                              {loc.hall_name} ({loc.building})
                             </option>
                           ))}
                         </select>

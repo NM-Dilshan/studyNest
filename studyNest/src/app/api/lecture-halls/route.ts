@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import type { Prisma } from '@/generated/prisma/client'
-import { prisma } from '../../../lib/prisma'
+
+async function getPrismaClient() {
+  try {
+    const prismaModule = await import('../../../lib/prisma')
+    return prismaModule.prisma
+  } catch (error) {
+    console.error('Failed to initialize Prisma client for /api/lecture-halls:', error)
+    return null
+  }
+}
 
 const VALID_STATUSES = new Set([
   'available',
@@ -62,10 +70,21 @@ function normalizeStatus(value: unknown): string {
  */
 export async function GET(request: NextRequest) {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const activeOnly = searchParams.get('activeOnly') !== 'false'
 
-    const query: Prisma.lecture_hallsFindManyArgs = {
+    const query = {
       select: {
         hall_id: true,
         hall_name: true,
@@ -118,6 +137,17 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     const body = (await request.json()) as LectureHallPayload
     const hallName = String(body.hall_name || '').trim()
     const building = String(body.building || '').trim()
