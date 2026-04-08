@@ -180,29 +180,15 @@ export default function AddLectureHallPage() {
     setMessage('');
     setLoading(true);
 
-    const parsedFloor = Number.parseInt(String(formData.floor), 10);
-    const parsedCapacity = Number.parseInt(String(formData.capacity), 10);
-
-    const payload = {
-      hall_name: formData.hall_name,
-      building: formData.building,
-      block: formData.block,
-      floor: Number.isNaN(parsedFloor) ? null : parsedFloor,
-      hall_number: formData.hall_number,
-      capacity: Number.isNaN(parsedCapacity) ? null : parsedCapacity,
-      hall_type: formData.hall_type,
-      maintenance_status: formData.maintenance_status || 'available',
-      projector: Boolean(formData.projector),
-      wifi: Boolean(formData.wifi),
-      ac: Boolean(formData.ac),
-      whiteboard: Boolean(formData.whiteboard),
-    };
-
     try {
       const response = await fetch('/api/lecture-halls', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...formData,
+          capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
+          floor: isNaN(Number(formData.floor)) ? formData.floor : parseInt(formData.floor, 10),
+        }),
       });
 
       const data = await response.json().catch(() => null);

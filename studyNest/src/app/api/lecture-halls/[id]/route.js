@@ -1,29 +1,5 @@
 import { prisma } from '@/lib/prisma'
 
-const VALID_STATUSES = new Set([
-  'available',
-  'under_maintenance',
-  'reserved_exam',
-  'reserved_event',
-  'closed',
-])
-
-function toBoolean(value) {
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase()
-    return normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on'
-  }
-  if (typeof value === 'number') return value === 1
-  return false
-}
-
-function toNullableInt(value) {
-  if (value == null || value === '') return null
-  const parsed = Number.parseInt(String(value), 10)
-  return Number.isNaN(parsed) ? null : parsed
-}
-
 // GET single lecture hall
 export async function GET(request, { params }) {
   try {
@@ -87,10 +63,6 @@ export async function PUT(request, { params }) {
     }
 
     const body = await request.json()
-    const maintenanceStatusRaw = String(body?.maintenance_status || 'available').trim()
-    const maintenanceStatus = VALID_STATUSES.has(maintenanceStatusRaw)
-      ? maintenanceStatusRaw
-      : 'available'
 
     // Validation
     if (!body.hall_name || body.hall_name.trim() === '') {
@@ -141,16 +113,14 @@ export async function PUT(request, { params }) {
       data: {
         hall_name: body.hall_name,
         building: body.building || null,
-        block: body.block || null,
-        hall_number: body.hall_number || null,
-        floor: toNullableInt(body.floor),
-        capacity: toNullableInt(body.capacity),
+        floor: body.floor ? parseInt(body.floor) : null,
+        capacity: body.capacity ? parseInt(body.capacity) : null,
         hall_type: body.hall_type || 'lecture_hall',
-        projector: toBoolean(body.projector),
-        wifi: toBoolean(body.wifi),
-        ac: toBoolean(body.ac),
-        whiteboard: toBoolean(body.whiteboard),
-        maintenance_status: maintenanceStatus,
+        projector: body.projector || false,
+        wifi: body.wifi || false,
+        ac: body.ac || false,
+        whiteboard: body.whiteboard || false,
+        maintenance_status: body.maintenance_status || 'available',
       },
     })
 
