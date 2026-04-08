@@ -2,21 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 
+function jsonError(message: string, status = 500) {
+  return NextResponse.json({ success: false, error: message }, { status });
+}
+
+function jsonSuccess(payload: Record<string, unknown>, status = 200) {
+  return NextResponse.json({ success: true, ...payload }, { status });
+}
+
+async function parseBody(request: NextRequest) {
+  try {
+    return await request.json();
+  } catch {
+    throw new Error('Request body must be valid JSON');
+  }
+}
+
 /**
  * POST /api/auth/signin
  * Sign in a user with email or student ID and password
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    let { email, studentId, password } = body;
+    const body = await parseBody(request);
+    let { email, studentId } = body;
+    const { password } = body;
 
     // Validate required fields
     if ((!email && !studentId) || !password) {
-      return NextResponse.json(
-        { error: 'Email/Student ID and password are required' },
-        { status: 400 }
-      );
+      return jsonError('Email/Student ID and password are required', 400);
     }
 
     // Normalize inputs (convert to uppercase for case-insensitive matching)
@@ -66,47 +80,36 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid email/ID or password' },
-        { status: 401 }
-      );
+      return jsonError('Invalid email/ID or password', 401);
     }
 
     // Check if user is active
     if (!user.is_active) {
-      return NextResponse.json(
-        { error: 'Account is inactive' },
-        { status: 403 }
-      );
+      return jsonError('Account is inactive', 403);
     }
 
     // Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return NextResponse.json(
-        { error: 'Invalid email/ID or password' },
-        { status: 401 }
-      );
+      return jsonError('Invalid email/ID or password', 401);
     }
 
     // Remove password from response
     const { password: _, ...userWithoutPassword } = user;
 
-    return NextResponse.json(
+    return jsonSuccess(
       {
         message: 'Sign in successful',
         user: userWithoutPassword,
       },
-      { status: 200 }
+      200
     );
   } catch (error) {
-    console.error('Sign in error:', error);
-
-    return NextResponse.json(
-      { error: 'Failed to sign in. Please try again.' },
-      { status: 500 }
-    );
+    console.error('[POST /api/auth/signin] error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to sign in. Please try again.';
+    const status = message === 'Request body must be valid JSON' ? 400 : 500;
+    return jsonError(message, status);
   }
 }
 

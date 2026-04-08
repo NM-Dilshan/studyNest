@@ -3,8 +3,7 @@
 import MainHeader from '@/components/MainHeader'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
 interface User {
   user_id: string
@@ -14,28 +13,25 @@ interface User {
   role: 'student' | 'volunteer' | 'admin'
 }
 
-export default function AboutPage() {
-  const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        setUser(JSON.parse(userData))
-      } catch (error) {
-        console.error('Failed to parse user:', error)
-      }
-    }
-    setIsLoading(false)
-  }, [])
-
-  const handleLogout = (e: React.FormEvent) => {
-    e.preventDefault()
-    localStorage.removeItem('user')
-    router.push('/login/signIN')
+function readUserFromStorage(): User | null {
+  try {
+    const raw = localStorage.getItem('user')
+    return raw ? (JSON.parse(raw) as User) : null
+  } catch (error) {
+    console.error('Failed to parse user:', error)
+    return null
   }
+}
+
+export default function AboutPage() {
+  const user = useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener('storage', onStoreChange)
+      return () => window.removeEventListener('storage', onStoreChange)
+    },
+    () => readUserFromStorage(),
+    () => null
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">

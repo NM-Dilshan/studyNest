@@ -61,9 +61,13 @@ export function useSuitabilityScores() {
         score += facilityScore;
 
         // Free-now bonus
-        if (hall.is_free_now) {
+        const canBookNow = hall.can_book_now ?? hall.is_free_now;
+        if (canBookNow) {
           score += 10;
           breakdown.free_now = 10;
+        } else {
+          score -= 5;
+          breakdown.free_now = 0;
         }
 
         // Clamp score between 0 and 100
@@ -74,8 +78,9 @@ export function useSuitabilityScores() {
 
       setError(null);
       return scores;
-    } catch (err: any) {
-      setError(err.message || 'Failed to compute scores');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to compute scores';
+      setError(message);
       return [];
     } finally {
       setLoading(false);

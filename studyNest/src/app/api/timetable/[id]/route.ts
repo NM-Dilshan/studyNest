@@ -50,6 +50,7 @@ export async function GET(
         subject_name: slot.subject_name,
         group_name: slot.group_name,
         lecturer_name: slot.lecturer_name,
+        raw_hall_name: slot.raw_hall_name,
         is_reserved: slot.is_reserved,
         created_at: slot.created_at?.toISOString(),
         hall_name: slot.lecture_halls?.hall_name,
@@ -100,6 +101,7 @@ export async function PUT(
 
     // Build update data
     const updateData: any = {};
+    if (body.hall_id !== undefined) updateData.hall_id = body.hall_id || null; // null = Unassigned
     if (body.day_of_week !== undefined) updateData.day_of_week = body.day_of_week;
     if (body.start_time !== undefined) updateData.start_time = new Date(`1970-01-01T${body.start_time}Z`);
     if (body.end_time !== undefined) updateData.end_time = new Date(`1970-01-01T${body.end_time}Z`);
@@ -107,6 +109,7 @@ export async function PUT(
     if (body.subject_name !== undefined) updateData.subject_name = body.subject_name || null;
     if (body.group_name !== undefined) updateData.group_name = body.group_name || null;
     if (body.lecturer_name !== undefined) updateData.lecturer_name = body.lecturer_name || null;
+    if (body.raw_hall_name !== undefined) updateData.raw_hall_name = body.raw_hall_name || null;
     if (body.is_reserved !== undefined) updateData.is_reserved = body.is_reserved;
     if (body.academic_year !== undefined) updateData.academic_year = body.academic_year ? parseInt(body.academic_year) : null;
     if (body.semester !== undefined) updateData.semester = body.semester ? parseInt(body.semester) : null;
@@ -131,6 +134,7 @@ export async function PUT(
         subject_name: updated.subject_name,
         group_name: updated.group_name,
         lecturer_name: updated.lecturer_name,
+        raw_hall_name: updated.raw_hall_name,
         is_reserved: updated.is_reserved,
         created_at: updated.created_at?.toISOString(),
       },
@@ -154,9 +158,16 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const timetableId = parseInt(id);
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'Timetable ID is required' },
+        { status: 400 }
+      );
+    }
 
-    if (isNaN(timetableId)) {
+    const timetableId = Number(id);
+
+    if (!Number.isInteger(timetableId) || timetableId <= 0) {
       return NextResponse.json(
         { success: false, error: 'Invalid timetable ID' },
         { status: 400 }
@@ -183,6 +194,14 @@ export async function DELETE(
       message: 'Timetable slot deleted successfully',
     });
   } catch (error: any) {
+    // Fallback guard for race conditions where record is deleted between find and delete.
+    if (error?.code === 'P2025') {
+      return NextResponse.json(
+        { success: false, error: 'Timetable slot not found' },
+        { status: 404 }
+      );
+    }
+
     console.error('Error deleting timetable slot:', error);
     return NextResponse.json(
       { success: false, error: error?.message || 'Failed to delete timetable slot' },

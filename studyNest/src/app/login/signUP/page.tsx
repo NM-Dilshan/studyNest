@@ -5,6 +5,8 @@ import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle2, ArrowRight, UserCir
 import Link from 'next/link';
 import Image from 'next/image'; 
 import { useRouter } from 'next/navigation';
+import AuthMainHeader from '@/components/auth/AuthMainHeader';
+import { isEmailJsConfigured, sendSignUpVerificationCodeEmail } from '@/lib/email/sendEmail';
 
 
 // Typing Animation Component
@@ -131,8 +133,19 @@ export default function SignUp(): React.ReactElement {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [emailStatus, setEmailStatus] = useState('');
+  const [verificationStep, setVerificationStep] = useState(false);
+  const [sentVerificationCode, setSentVerificationCode] = useState('');
+  const [enteredVerificationCode, setEnteredVerificationCode] = useState('');
+  const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
+  const [verificationTargetEmail, setVerificationTargetEmail] = useState('');
+  const [verificationTargetIt, setVerificationTargetIt] = useState('');
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const passwordStrength = calculatePasswordStrength(formData.password);
+
+  const generateVerificationCode = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name } = e.target;
@@ -177,6 +190,12 @@ export default function SignUp(): React.ReactElement {
   const handleSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setEmailStatus('');
+
+    if (!isEmailJsConfigured()) {
+      setError('Email verification service is not configured. Please set NEXT_PUBLIC_EMAILJS_PUBLIC_KEY in .env.local and restart the app.');
+      return;
+    }
     
     // Validate all fields
     const studentIdError = validateStudentId(formData.studentId);
@@ -208,6 +227,53 @@ export default function SignUp(): React.ReactElement {
     setLoading(true);
 
     try {
+      if (!verificationStep) {
+        const code = generateVerificationCode();
+        const mailResult = await sendSignUpVerificationCodeEmail(formData.email, formData.studentId, code);
+
+        if (!mailResult.ok) {
+          setError(mailResult.error || 'Failed to send verification code email.');
+          setLoading(false);
+          return;
+        }
+
+        setSentVerificationCode(code);
+        setVerificationTargetEmail(formData.email);
+        setVerificationTargetIt(formData.studentId);
+        setVerificationExpiresAt(Date.now() + 10 * 60 * 1000);
+        setVerificationStep(true);
+        setEmailStatus('Verification code sent to your email. Enter the code to complete sign up.');
+        setLoading(false);
+        return;
+      }
+
+      if (!enteredVerificationCode.trim()) {
+        setError('Please enter the verification code sent to your email.');
+        setLoading(false);
+        return;
+      }
+
+      if (verificationExpiresAt && Date.now() > verificationExpiresAt) {
+        setError('Verification code expired. Please resend a new code.');
+        setLoading(false);
+        return;
+      }
+
+      if (
+        verificationTargetEmail !== formData.email ||
+        verificationTargetIt !== formData.studentId
+      ) {
+        setError('Email or IT number changed. Please resend verification code.');
+        setLoading(false);
+        return;
+      }
+
+      if (enteredVerificationCode.trim() !== sentVerificationCode) {
+        setError('Incorrect verification code. Please try again.');
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -222,6 +288,8 @@ export default function SignUp(): React.ReactElement {
         return;
       }
 
+      setEmailStatus('Email verified and account created successfully.');
+
       setSuccess(true);
       setTimeout(() => { router.push('/login/signIN'); }, 2000);
     } catch {
@@ -230,8 +298,35 @@ export default function SignUp(): React.ReactElement {
     }
   };
 
+  const handleResendCode = async () => {
+    setError('');
+    setEmailStatus('');
+
+    if (!formData.email || !formData.studentId) {
+      setError('Email and IT number are required to resend code.');
+      return;
+    }
+
+    setLoading(true);
+    const code = generateVerificationCode();
+    const mailResult = await sendSignUpVerificationCodeEmail(formData.email, formData.studentId, code);
+    setLoading(false);
+
+    if (!mailResult.ok) {
+      setError(mailResult.error || 'Failed to resend verification code.');
+      return;
+    }
+
+    setSentVerificationCode(code);
+    setVerificationTargetEmail(formData.email);
+    setVerificationTargetIt(formData.studentId);
+    setVerificationExpiresAt(Date.now() + 10 * 60 * 1000);
+    setEmailStatus('New verification code sent to your email.');
+  };
+
   return (
     <div className="min-h-screen bg-[#FBFDFD] antialiased">
+      <AuthMainHeader />
       <div className="flex items-center justify-center px-4 py-6 md:py-8">
         <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
         
@@ -280,6 +375,7 @@ export default function SignUp(): React.ReactElement {
 
             {error && <div className="mb-6 p-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl text-xs font-bold animate-shake">{error}</div>}
             {success && <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl text-xs font-bold flex items-center gap-2"> <CheckCircle2 size={16}/> Success! Account Created.</div>}
+            {emailStatus && <div className="mb-6 p-4 bg-sky-50 text-sky-700 border border-sky-100 rounded-2xl text-xs font-bold">{emailStatus}</div>}
 
             <form onSubmit={handleSignUp} className="space-y-4">
               {/* Row 1: Role and ID */}
@@ -427,12 +523,42 @@ export default function SignUp(): React.ReactElement {
                 />
               </div>
 
+              {verificationStep && (
+                <div className="rounded-2xl border border-[#2E6F95]/20 bg-[#2E6F95]/5 p-4">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">
+                    Email Verification Code
+                  </label>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={enteredVerificationCode}
+                    onChange={(e) => setEnteredVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    placeholder="Enter 6-digit code"
+                    className="mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-[#2E6F95] focus:ring-4 focus:ring-[#2E6F95]/10"
+                  />
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold text-slate-500">
+                      Code sent to {verificationTargetEmail || formData.email}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleResendCode}
+                      disabled={loading}
+                      className="text-xs font-black text-[#2E6F95] hover:underline disabled:opacity-60"
+                    >
+                      Resend Code
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full mt-4 py-4 bg-[#2E6F95] text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl shadow-[#2E6F95]/20 hover:shadow-[#2E6F95]/40 hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
               >
-                {loading ? 'Creating Account...' : 'Register Now'}
+                {loading ? 'Processing...' : verificationStep ? 'Verify & Create Account' : 'Send Verification Code'}
                 <ArrowRight size={18} />
               </button>
             </form>

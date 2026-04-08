@@ -317,6 +317,14 @@ export default function AdminComplaintsPage() {
     (c) => (c.priority || getPriority(c.complaint_count || 0)) === 'High'
   )
 
+  const handleHallSummaryClick = (hallId: string) => {
+    setActiveTab('complaints')
+    setHallFilter(hallId)
+    setStatusFilter('')
+    setStudyAreaFilter('')
+    setSearchQuery('')
+  }
+
   const studyAreaSummary: StudyAreaSummary[] = Object.values(
     complaints.reduce((acc, complaint) => {
       const studyAreaId = complaint.study_area_id
@@ -724,10 +732,20 @@ export default function AdminComplaintsPage() {
                           return (
                             <tr
                               key={hall.hall_id}
-                              className={`${idx !== arr.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50`}
+                              className={`${idx !== arr.length - 1 ? 'border-b border-gray-100' : ''} cursor-pointer hover:bg-blue-50`}
+                              onClick={() => handleHallSummaryClick(hall.hall_id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  handleHallSummaryClick(hall.hall_id)
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`View complaints for ${hall.hall_name}`}
                             >
                               <td className="px-5 py-4">
-                                <p className="text-sm font-semibold text-gray-900">{hall.hall_name}</p>
+                                <p className="text-sm font-semibold text-blue-700 hover:underline">{hall.hall_name}</p>
                               </td>
                               <td className="px-5 py-4">
                                 <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">

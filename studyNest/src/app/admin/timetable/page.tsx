@@ -1,6 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { Calendar, Trash2, Plus, ArrowLeft, Pencil } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Calendar, Trash2, Plus, Pencil, Search } from 'lucide-react';
 import { TimetableSlot, LectureHall } from '../../../types/halls';
 import { timetableService } from '../../../services/timetableService';
 import { hallService } from '../../../services/hallService';
@@ -12,6 +12,8 @@ export default function TimetableManager() {
   const [selectedHallId, setSelectedHallId] = useState<string>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
   const [filterSemester, setFilterSemester] = useState<number | ''>('');
+  const [hallSearchQuery, setHallSearchQuery] = useState('');
+  const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingSlot, setEditingSlot] = useState<TimetableSlot | undefined>();
@@ -24,8 +26,6 @@ export default function TimetableManager() {
   useEffect(() => {
     if (selectedHallId) {
       loadSlots(selectedHallId);
-    } else {
-      setSlots([]);
     }
   }, [selectedHallId, filterYear, filterSemester]);
 
@@ -34,7 +34,8 @@ export default function TimetableManager() {
       const data = await hallService.getLectureHalls();
       setHalls(data);
       if (data.length > 0 && !selectedHallId) {
-        setSelectedHallId(data[0].id);
+        // Default to 'all' instead of the first hall to show everything initially
+        setSelectedHallId('all');
       }
     } catch (err: any) {
       console.error(err);
@@ -48,10 +49,14 @@ export default function TimetableManager() {
     try {
       setLoading(true);
       setError(null);
+      const isUnassigned = hallId === 'unassigned';
+      const actualHallId = (hallId === 'all' || isUnassigned) ? undefined : hallId;
+      
       const data = await timetableService.getTimetable(
-        hallId,
+        actualHallId,
         filterYear || undefined,
-        filterSemester || undefined
+        filterSemester || undefined,
+        isUnassigned
       );
       setSlots(data);
     } catch (err: any) {
@@ -81,50 +86,66 @@ export default function TimetableManager() {
     }
   };
 
+  const selectedHallName = halls.find((h) => h.id === selectedHallId)?.name;
+
+  const filteredSlots = useMemo(() => {
+    const hallQ = hallSearchQuery.trim().toLowerCase();
+    const sessionQ = sessionSearchQuery.trim().toLowerCase();
+
+    return slots.filter((slot) => {
+      const hallLabel = `${slot.hall_name || ''} ${halls.find((h) => h.id === slot.hall_id)?.name || ''} ${slot.raw_hall_name || ''}`.toLowerCase();
+      const sessionLabel = `${slot.subject_code || ''} ${slot.subject_name || ''} ${slot.group_name || ''} ${slot.lecturer_name || ''}`.toLowerCase();
+
+      const hallMatch = !hallQ || hallLabel.includes(hallQ);
+      const sessionMatch = !sessionQ || sessionLabel.includes(sessionQ);
+      return hallMatch && sessionMatch;
+    });
+  }, [slots, halls, hallSearchQuery, sessionSearchQuery]);
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 p-6 md:p-10 relative overflow-hidden text-neutral-900 dark:text-neutral-100">
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-500/10 dark:bg-blue-600/10 rounded-full mix-blend-multiply filter blur-3xl opacity-70" />
+    <div className="min-h-screen bg-gray-50 p-6 md:p-10 relative overflow-hidden text-gray-900">
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-100 rounded-full blur-3xl opacity-50" />
       
       <div className="max-w-7xl mx-auto relative z-10">
-        <div className="flex items-center gap-4 mb-8">
-          <button className="p-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-xl transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </button>
+        <div className="mb-8">
           <div>
             <h1 className="text-3xl font-bold">Timetable Management</h1>
-            <p className="text-neutral-500 dark:text-neutral-400 mt-1">Manage scheduled classes and blocked times</p>
+            <p className="text-gray-600 mt-1">Manage scheduled classes and blocked times</p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 text-sm font-medium border border-red-100 dark:border-red-500/20">
+          <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-sm font-medium border border-red-200">
             {error}
           </div>
         )}
 
-        <div className="bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-white/40 dark:border-white/10 p-6 rounded-3xl shadow-sm mb-8">
+        <div className="bg-white border border-gray-200 p-6 rounded-3xl shadow-sm mb-8">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-end">
             <div className="w-full md:w-1/3">
-              <label className="block text-sm font-medium mb-2 text-neutral-700 dark:text-neutral-300">Select Lecture Hall</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700">Select Lecture Hall</label>
               <select 
                 value={selectedHallId}
                 onChange={(e) => setSelectedHallId(e.target.value)}
-                className="w-full bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm"
+                className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm"
               >
-                <option value="" disabled>Select a hall...</option>
-                {halls.map(h => (
-                  <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
-                ))}
+                <option value="all">All Lecture Sessions</option>
+                <option value="unassigned">Unassigned Sessions (Missing Halls)</option>
+                <optgroup label="Filter by Specific Hall">
+                  {halls.map(h => (
+                    <option key={h.id} value={h.id}>{h.name} - {h.building}</option>
+                  ))}
+                </optgroup>
               </select>
             </div>
 
             <div className="flex gap-3 w-full md:w-auto">
               <div>
-                <label className="block text-xs font-medium mb-1.5 text-neutral-500 dark:text-neutral-400">Year</label>
+                <label className="block text-xs font-medium mb-1.5 text-gray-600">Year</label>
                 <select
                   value={filterYear}
                   onChange={(e) => setFilterYear(e.target.value ? parseInt(e.target.value) : '')}
-                  className="bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm text-sm min-w-[100px]"
+                  className="bg-white border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm min-w-[100px]"
                 >
                   <option value="">All Years</option>
                   {[1, 2, 3, 4].map(y => (
@@ -133,11 +154,11 @@ export default function TimetableManager() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1.5 text-neutral-500 dark:text-neutral-400">Semester</label>
+                <label className="block text-xs font-medium mb-1.5 text-gray-600">Semester</label>
                 <select
                   value={filterSemester}
                   onChange={(e) => setFilterSemester(e.target.value ? parseInt(e.target.value) : '')}
-                  className="bg-white/60 dark:bg-neutral-800/80 border border-white/20 dark:border-white/5 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-blue-500 text-neutral-900 dark:text-white shadow-sm text-sm min-w-[100px]"
+                  className="bg-white border border-gray-300 rounded-xl px-3 py-3 outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm min-w-[100px]"
                 >
                   <option value="">All Sem</option>
                   {[1, 2].map(s => (
@@ -155,54 +176,108 @@ export default function TimetableManager() {
               <Plus className="w-4 h-4" /> Add Slot / CSV
             </button>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-gray-600">Search Lecture Hall</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={hallSearchQuery}
+                  onChange={(e) => setHallSearchQuery(e.target.value)}
+                  placeholder="e.g. F1308, New Building, G1101"
+                  className="w-full pl-9 pr-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1.5 text-gray-600">Search Lecture Session</label>
+              <div className="relative">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={sessionSearchQuery}
+                  onChange={(e) => setSessionSearchQuery(e.target.value)}
+                  placeholder="e.g. IT3010, NDM, Tutorial, lecturer name"
+                  className="w-full pl-9 pr-3 py-3 bg-white border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 text-gray-900 shadow-sm text-sm"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"/></div>
         ) : (
-          <div className="bg-white/60 dark:bg-neutral-900/60 backdrop-blur-xl border border-white/40 dark:border-white/10 rounded-3xl shadow-sm overflow-hidden p-1">
+          <div className="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden p-1">
+            <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 text-sm text-gray-600">
+              Showing sessions for:{' '}
+              <span className="font-semibold text-gray-900">
+                {selectedHallName || 'Selected Lecture Hall'}
+              </span>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-neutral-100/50 dark:bg-neutral-800/50 border-b border-neutral-200 dark:border-neutral-800">
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Year / Sem</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Day</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Time</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Subject</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Group</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium">Lecturer</th>
-                    <th className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400 font-medium text-right">Actions</th>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Year / Sem</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Day</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Time</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Lecture Hall</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Subject</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Group</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium">Lecturer</th>
+                    <th className="px-5 py-4 text-sm text-gray-600 font-medium text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {slots.length === 0 ? (
+                  {filteredSlots.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-12 text-center text-neutral-500 dark:text-neutral-400">
+                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                         <Calendar className="w-10 h-10 opacity-50 mx-auto mb-3" />
-                        No timetable slots found for this hall.
+                        No timetable slots found for current filters.
                       </td>
                     </tr>
                   ) : (
-                    slots.map(slot => (
-                      <tr key={slot.id} className="border-b border-neutral-100 dark:border-neutral-800/50 hover:bg-white/40 dark:hover:bg-neutral-800/40 transition-colors">
+                    filteredSlots.map(slot => (
+                      <tr key={slot.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                         <td className="px-5 py-4 text-sm">
                           {slot.academic_year && slot.semester ? (
-                            <span className="inline-flex px-2 py-0.5 bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded-md text-xs font-medium border border-purple-100 dark:border-purple-500/20">
+                            <span className="inline-flex px-2 py-0.5 bg-purple-50 text-purple-700 rounded-md text-xs font-medium border border-purple-100">
                               Y{slot.academic_year} S{slot.semester}
                             </span>
                           ) : (
                             <span className="text-neutral-400">-</span>
                           )}
                         </td>
-                        <td className="px-5 py-4 font-medium text-neutral-800 dark:text-neutral-200">{slot.day_of_week}</td>
-                        <td className="px-5 py-4 text-neutral-600 dark:text-neutral-400">
-                          <span className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-sm font-mono border border-neutral-200 dark:border-neutral-700">{slot.start_time.substring(0,5)}</span>
+                        <td className="px-5 py-4 font-medium text-gray-800">{slot.day_of_week}</td>
+                        <td className="px-5 py-4 text-gray-600">
+                          <span className="bg-gray-100 px-2 py-1 rounded text-sm font-mono border border-gray-200">{slot.start_time.substring(0,5)}</span>
                           <span className="mx-2 opacity-50">-</span>
-                          <span className="bg-neutral-100 dark:bg-neutral-800 px-2 py-1 rounded text-sm font-mono border border-neutral-200 dark:border-neutral-700">{slot.end_time.substring(0,5)}</span>
+                          <span className="bg-gray-100 px-2 py-1 rounded text-sm font-mono border border-gray-200">{slot.end_time.substring(0,5)}</span>
+                        </td>
+                        <td className="px-5 py-4 text-sm">
+                          {slot.hall_name || halls.find((h) => h.id === slot.hall_id)?.name ? (
+                            <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                              {slot.hall_name || halls.find((h) => h.id === slot.hall_id)?.name}
+                            </span>
+                          ) : (
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-medium w-fit">
+                                Unassigned
+                              </span>
+                              {slot.raw_hall_name && (
+                                <span className="text-[11px] text-slate-500 italic pl-1">
+                                  CSV: <strong className="text-slate-700">{slot.raw_hall_name}</strong>
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <div>
-                            <span className="inline-flex px-2 py-1 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-md text-sm font-medium border border-blue-100 dark:border-blue-500/20">
+                            <span className="inline-flex px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-sm font-medium border border-blue-100">
                               {slot.subject_code || 'N/A'}
                             </span>
                             {slot.subject_name && (
@@ -210,23 +285,23 @@ export default function TimetableManager() {
                             )}
                           </div>
                         </td>
-                        <td className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                        <td className="px-5 py-4 text-sm text-gray-600">
                           {slot.group_name || '-'}
                         </td>
-                        <td className="px-5 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                        <td className="px-5 py-4 text-sm text-gray-600">
                           {slot.lecturer_name || '-'}
                         </td>
                         <td className="px-5 py-4 text-right flex items-center justify-end gap-1">
                           <button 
                             onClick={() => { setEditingSlot(slot); setShowForm(true); }}
-                            className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 rounded-lg transition-colors inline-block"
+                            className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors inline-block"
                             title="Edit Slot"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => handleDelete(slot.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors inline-block"
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors inline-block"
                             title="Delete Slot"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -252,17 +327,17 @@ export default function TimetableManager() {
       )}
 
       {deleteConfirmId !== null && (
-        <div className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 border border-white/40 dark:border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-sm w-full text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-50 dark:bg-red-500/10 flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-[0_8px_30px_rgb(0,0,0,0.12)] max-w-sm w-full text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-50 flex items-center justify-center">
               <Trash2 className="w-6 h-6 text-red-500" />
             </div>
-            <h3 className="text-lg font-bold mb-2 text-neutral-900 dark:text-white">Delete Slot?</h3>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">Are you sure you want to delete this timetable slot? This action cannot be undone.</p>
+            <h3 className="text-lg font-bold mb-2 text-gray-900">Delete Slot?</h3>
+            <p className="text-sm text-gray-500 mb-6">Are you sure you want to delete this timetable slot? This action cannot be undone.</p>
             <div className="flex gap-3">
               <button 
                 onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 py-2.5 rounded-xl font-medium border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                className="flex-1 py-2.5 rounded-xl font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>

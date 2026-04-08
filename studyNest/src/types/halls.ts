@@ -24,7 +24,7 @@ export interface LectureHall {
 
 export interface TimetableSlot {
   id: number;
-  hall_id: string;
+  hall_id: string | null;
   academic_year: number | null;
   semester: number | null;
   day_of_week: string;           // 'Monday', 'Tuesday', etc.
@@ -34,6 +34,7 @@ export interface TimetableSlot {
   subject_name: string | null;
   group_name: string | null;
   lecturer_name: string | null;
+  raw_hall_name: string | null;
   is_reserved: boolean;
   created_at: string;
   hall_name?: string | null;
@@ -42,6 +43,13 @@ export interface TimetableSlot {
 
 export interface FreeHallResult extends LectureHall {
   is_free_now: boolean;
+  can_book_now?: boolean;
+  current_status?: 'free_now' | 'occupied_by_timetable' | 'blocked_by_maintenance';
+  blocked_reason?: string | null;
+  occupied_until?: string | null;
+  free_until?: string | null;
+  next_free_start?: string | null;
+  next_free_end?: string | null;
   score?: number;
   distance_km?: number | null;
 }

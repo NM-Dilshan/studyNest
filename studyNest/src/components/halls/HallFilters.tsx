@@ -1,22 +1,19 @@
 import React from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { NearMeToggle } from '../location/NearMeToggle';
 
 export interface FilterState {
   searchQuery: string;
   minCapacity: number;
+  status: 'all' | 'free' | 'occupied' | 'blocked';
 }
 
 interface HallFiltersProps {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
-  nearMeActive: boolean;
-  onNearMeToggle: (active: boolean) => void;
-  isLocationLoading?: boolean;
   onOpenPreferences: () => void;
 }
 
-export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, isLocationLoading, onOpenPreferences }: HallFiltersProps) {
+export function HallFilters({ filters, onChange, onOpenPreferences }: HallFiltersProps) {
   return (
     <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full rounded-[24px] border border-slate-200 border-l-4 border-l-[#2E6F95] bg-[#F8FBFD] p-4 shadow-sm shadow-slate-100/60">
       
@@ -46,12 +43,17 @@ export function HallFilters({ filters, onChange, nearMeActive, onNearMeToggle, i
           <option value={200}>200+ Seats</option>
         </select>
 
-        {/* Near Me Toggle */}
-        <NearMeToggle 
-          isActive={nearMeActive} 
-          onToggle={onNearMeToggle} 
-          isLoading={isLocationLoading} 
-        />
+        {/* Status filter */}
+        <select
+          value={filters.status}
+          onChange={(e) => onChange({ ...filters, status: e.target.value as FilterState['status'] })}
+          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
+        >
+          <option value="all">All Status</option>
+          <option value="free">Free Now</option>
+          <option value="occupied">Occupied</option>
+          <option value="blocked">Blocked</option>
+        </select>
 
         {/* Preferences Toggle */}
         <button 

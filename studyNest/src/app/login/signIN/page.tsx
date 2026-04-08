@@ -5,6 +5,7 @@ import { Mail, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image'; 
 import { useRouter } from 'next/navigation';
+import AuthMainHeader from '@/components/auth/AuthMainHeader';
 
 interface SignInResponse {
   user?: {
@@ -122,6 +123,7 @@ export default function SignIn(): React.ReactElement {
 
   return (
     <div className="min-h-screen bg-[#FBFDFD] antialiased">
+      <AuthMainHeader />
       <div className="flex items-center justify-center px-4 py-6 md:py-8">
         <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
         
@@ -209,7 +211,7 @@ export default function SignIn(): React.ReactElement {
                   <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="w-4 h-4 rounded border-slate-200 accent-[#2E6F95]" />
                   <span className="text-xs font-bold text-slate-400 group-hover:text-slate-600 transition-colors">Remember device</span>
                 </label>
-                <Link href="#" className="text-xs font-black text-[#2E6F95] hover:underline uppercase tracking-tighter">Recover Key</Link>
+                <Link href="/login/forgot-password" className="text-xs font-black text-[#2E6F95] hover:underline uppercase tracking-tighter">Recover Key</Link>
               </div>
 
               <button
@@ -249,4 +251,3 @@ export default function SignIn(): React.ReactElement {
     </div>
   );
 }
-

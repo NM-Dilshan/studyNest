@@ -1,8 +1,27 @@
-import { prisma } from '@/lib/prisma'
+async function getPrismaClient() {
+  try {
+    const prismaModule = await import('@/lib/prisma')
+    return prismaModule.prisma
+  } catch (error) {
+    console.error('Failed to initialize Prisma client for /api/complaints:', error)
+    return null
+  }
+}
 
 // GET all complaints or filter by studentId
 export async function GET(request) {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return Response.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     // Get studentId from query parameters
     const { searchParams } = new URL(request.url)
     const studentId = searchParams.get('studentId')
@@ -49,6 +68,17 @@ export async function GET(request) {
 // POST create complaint
 export async function POST(request) {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return Response.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
 
     const isUuid = (value) =>
@@ -141,11 +171,11 @@ export async function POST(request) {
     }
 
     // Validation
-    if (!body.student_id) {
+    if (!body.student_id || String(body.student_id).trim().toLowerCase() === 'anonymous') {
       return Response.json(
         {
           success: false,
-          error: 'Student ID is required',
+          error: 'Valid student ID is required',
         },
         { status: 400 }
       )

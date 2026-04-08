@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/components/Sidebar'
 import AdminHeader from '@/components/AdminHeader'
+import AdminChatWidget from '@/components/admin-chat/AdminChatWidget'
 import { SearchProvider } from '@/contexts/SearchContext'
 import { NotificationProvider } from '@/contexts/NotificationContext'
 import { ReactNode } from 'react'
@@ -26,6 +27,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             {/* Page Content */}
             <div className="flex-1 overflow-auto">{children}</div>
           </main>
+
+          <AdminChatWidget />
         </div>
       </SearchProvider>
     </NotificationProvider>

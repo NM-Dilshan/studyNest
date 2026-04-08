@@ -38,11 +38,10 @@ model complaints {
 
 model favorite_halls {
   favorite_hall_id Int           @id @default(autoincrement())
-  student_id       String        @db.Uuid
+  student_id       String
   hall_id          String        @db.Uuid
   created_at       DateTime?     @default(now()) @db.Timestamp(6)
   lecture_halls    lecture_halls @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
-  users            users         @relation(fields: [student_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 
   @@unique([student_id, hall_id])
 }
@@ -146,20 +145,21 @@ model study_areas {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model timetable {
-  timetable_id  Int           @id @default(autoincrement())
-  hall_id       String        @db.Uuid
+  timetable_id  Int            @id @default(autoincrement())
+  hall_id       String?        @db.Uuid
   academic_year Int?
   semester      Int?
-  day_of_week   String        @db.VarChar(10)
-  start_time    DateTime      @db.Time(6)
-  end_time      DateTime      @db.Time(6)
-  subject_code  String?       @db.VarChar(20)
-  subject_name  String?       @db.VarChar(100)
-  group_name    String?       @db.VarChar(50)
-  lecturer_name String?       @db.VarChar(100)
-  is_reserved   Boolean?      @default(true)
-  created_at    DateTime?     @default(now()) @db.Timestamp(6)
-  lecture_halls lecture_halls @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+  day_of_week   String         @db.VarChar(10)
+  start_time    DateTime       @db.Time(6)
+  end_time      DateTime       @db.Time(6)
+  subject_code  String?        @db.VarChar(20)
+  subject_name  String?        @db.VarChar(100)
+  group_name    String?        @db.VarChar(50)
+  lecturer_name String?        @db.VarChar(100)
+  raw_hall_name String?        @db.VarChar(100)
+  is_reserved   Boolean?       @default(true)
+  created_at    DateTime?      @default(now()) @db.Timestamp(6)
+  lecture_halls lecture_halls? @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -192,7 +192,6 @@ model users {
   department                                              String?                        @db.VarChar(50)
   complaint_updates                                       complaint_updates[]
   complaints                                              complaints[]
-  favorite_halls                                          favorite_halls[]
   favorite_study_areas                                    favorite_study_areas[]
   notifications                                           notifications[]
   update_request_pings                                    update_request_pings[]
