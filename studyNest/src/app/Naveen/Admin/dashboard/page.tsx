@@ -33,22 +33,23 @@ interface ComplaintItem {
   };
 }
 
-// Data
-const lectureHallsData = [
-  { name: "Hall A101", usage: 148 },
-  { name: "Hall B205", usage: 132 },
-  { name: "Hall C301", usage: 118 },
-  { name: "Hall D102", usage: 96 },
-  { name: "Hall A205", usage: 74 },
-];
+interface TopUsageItem {
+  name: string;
+  usage: number;
+}
 
-const studyAreasData = [
-  { name: "Main Library", usage: 245 },
-  { name: "Science Library", usage: 210 },
-  { name: "Student Center", usage: 178 },
-  { name: "Engineering Study", usage: 125 },
-  { name: "24/7 Study Hall", usage: 110 },
-];
+interface DashboardSummaryResponse {
+  success?: boolean;
+  summary?: {
+    activeSpaces: number;
+    activeHalls: number;
+    activeStudyAreas: number;
+    totalVolunteers: number;
+    activeVolunteersToday: number;
+  };
+  topLectureHalls?: TopUsageItem[];
+  topStudyAreas?: TopUsageItem[];
+}
 
 const peakHoursData = [
   { hour: "8AM", students: 30 },
@@ -187,6 +188,39 @@ const ChartCard = ({
 export default function AdminDashboard() {
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse["summary"] | null>(null);
+  const [topLectureHalls, setTopLectureHalls] = useState<TopUsageItem[]>([]);
+  const [topStudyAreas, setTopStudyAreas] = useState<TopUsageItem[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardSummary = async () => {
+      try {
+        setSummaryLoading(true);
+        const response = await fetch("/api/admin/dashboard/summary");
+        const data = (await response.json()) as DashboardSummaryResponse;
+
+        if (response.ok && data.success && data.summary) {
+          setDashboardSummary(data.summary);
+          setTopLectureHalls(Array.isArray(data.topLectureHalls) ? data.topLectureHalls : []);
+          setTopStudyAreas(Array.isArray(data.topStudyAreas) ? data.topStudyAreas : []);
+        } else {
+          setDashboardSummary(null);
+          setTopLectureHalls([]);
+          setTopStudyAreas([]);
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard summary:", error);
+        setDashboardSummary(null);
+        setTopLectureHalls([]);
+        setTopStudyAreas([]);
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
+    fetchDashboardSummary();
+  }, []);
 
   useEffect(() => {
     const fetchComplaints = async () => {
@@ -274,16 +308,20 @@ export default function AdminDashboard() {
           />
           <SummaryCard
             title="Active Spaces"
-            value="42"
-            description="18 halls, 24 areas"
+            value={summaryLoading ? "..." : dashboardSummary?.activeSpaces ?? 0}
+            description={
+              summaryLoading
+                ? "Loading..."
+                : `${dashboardSummary?.activeHalls ?? 0} halls, ${dashboardSummary?.activeStudyAreas ?? 0} areas`
+            }
             icon={<MapPin className="w-10 h-10" />}
           />
           <SummaryCard
             title="Volunteers"
-            value="156"
+            value={summaryLoading ? "..." : dashboardSummary?.totalVolunteers ?? 0}
             description=""
             icon={<Users className="w-10 h-10" />}
-            trend="+8 active today"
+            trend={summaryLoading ? undefined : `+${dashboardSummary?.activeVolunteersToday ?? 0} active today`}
             trendPositive={true}
           />
         </div>
@@ -292,29 +330,41 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <ChartCard title="Most Used Lecture Halls" subtitle="This week's statistics">
             <div style={{ width: '100%', height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={lectureHallsData} margin={{ top: 10, right: 30, left: 90, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 160]} stroke="#9ca3af" />
-                  <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 13, fill: "#6b7280" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Bar dataKey="usage" fill="#7FB89B" radius={[0, 8, 8, 0]} barSize={24} />
-                </BarChart>
-              </ResponsiveContainer>
+              {summaryLoading ? (
+                <p className="text-sm font-medium text-gray-500 py-8">Loading lecture hall usage...</p>
+              ) : topLectureHalls.length === 0 ? (
+                <p className="text-sm font-medium text-gray-500 py-8">No lecture hall usage data available</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart layout="vertical" data={topLectureHalls} margin={{ top: 10, right: 30, left: 90, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                    <XAxis type="number" stroke="#9ca3af" />
+                    <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 13, fill: "#6b7280" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
+                    <Bar dataKey="usage" fill="#7FB89B" radius={[0, 8, 8, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </ChartCard>
 
           <ChartCard title="Most Used Study Areas" subtitle="This week's statistics">
             <div style={{ width: '100%', height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={studyAreasData} margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 260]} stroke="#9ca3af" />
-                  <YAxis type="category" dataKey="name" width={115} tick={{ fontSize: 13, fill: "#6b7280" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Bar dataKey="usage" fill="#2E6F95" radius={[0, 8, 8, 0]} barSize={24} />
-                </BarChart>
-              </ResponsiveContainer>
+              {summaryLoading ? (
+                <p className="text-sm font-medium text-gray-500 py-8">Loading study area usage...</p>
+              ) : topStudyAreas.length === 0 ? (
+                <p className="text-sm font-medium text-gray-500 py-8">No study area usage data available</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart layout="vertical" data={topStudyAreas} margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
+                    <XAxis type="number" stroke="#9ca3af" />
+                    <YAxis type="category" dataKey="name" width={115} tick={{ fontSize: 13, fill: "#6b7280" }} />
+                    <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
+                    <Bar dataKey="usage" fill="#2E6F95" radius={[0, 8, 8, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </ChartCard>
         </div>

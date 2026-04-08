@@ -1,8 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const runtime = 'nodejs'
+
+type LectureHallListItem = {
+  hall_id: string
+  hall_name: string
+  building: string | null
+  block: string | null
+  floor: number | null
+}
+
+function jsonError(message: string, status = 500, details?: unknown) {
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      ...(details ? { details } : {}),
+    },
+    { status }
+  )
+}
+
 async function getPrismaClient() {
   try {
-    const prismaModule = await import('../../../lib/prisma')
+    const prismaModule = await import('@/lib/prisma')
     return prismaModule.prisma
   } catch (error) {
     console.error('Failed to initialize Prisma client for /api/lecture-halls:', error)
@@ -72,62 +93,38 @@ export async function GET(request: NextRequest) {
   try {
     const prisma = await getPrismaClient()
     if (!prisma) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Database is not configured. Check DATABASE_URL environment variable.',
-        },
-        { status: 500 }
-      )
+      return jsonError('Database is not configured. Check DATABASE_URL environment variable.', 500)
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = request.nextUrl
     const activeOnly = searchParams.get('activeOnly') !== 'false'
 
-    const query = {
+    const halls = (await prisma.lecture_halls.findMany({
+      where: activeOnly ? { is_active: true } : undefined,
       select: {
         hall_id: true,
         hall_name: true,
         building: true,
         block: true,
         floor: true,
-        hall_number: true,
-        capacity: true,
-        hall_type: true,
-        projector: true,
-        wifi: true,
-        ac: true,
-        whiteboard: true,
-        maintenance_status: true,
-        is_active: true,
-        created_at: true,
       },
-      orderBy: [
-        { building: 'asc' },
-        { floor: 'asc' },
-        { hall_name: 'asc' },
-      ],
-    }
+      orderBy: [{ building: 'asc' }, { floor: 'asc' }, { hall_name: 'asc' }],
+    })) as LectureHallListItem[]
 
-    if (activeOnly) {
-      query.where = {
-        is_active: true,
-      }
-    }
-
-    const halls = await prisma.lecture_halls.findMany(query)
-
+    // Keep both keys for frontend compatibility: data.halls || data.data
     return NextResponse.json({
       success: true,
-      count: halls.length,
       halls,
+      data: halls,
+      count: halls.length,
     })
   } catch (error) {
-    console.error('Error fetching lecture halls:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch lecture halls' },
-      { status: 500 }
-    )
+    console.error('Error in GET /api/lecture-halls:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error,
+    })
+    return jsonError('Failed to fetch lecture halls', 500)
   }
 }
 
@@ -139,13 +136,7 @@ export async function POST(request: NextRequest) {
   try {
     const prisma = await getPrismaClient()
     if (!prisma) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Database is not configured. Check DATABASE_URL environment variable.',
-        },
-        { status: 500 }
-      )
+      return jsonError('Database is not configured. Check DATABASE_URL environment variable.', 500)
     }
 
     const body = (await request.json()) as LectureHallPayload
@@ -215,10 +206,11 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error creating lecture hall:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create lecture hall' },
-      { status: 500 }
-    )
+    console.error('Error in POST /api/lecture-halls:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      error,
+    })
+    return jsonError(error instanceof Error ? error.message : 'Failed to create lecture hall', 500)
   }
 }

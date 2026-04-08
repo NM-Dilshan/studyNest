@@ -1,13 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { calculateOccupancy } from '@/lib/geofence'
+import { Prisma } from '@/generated/prisma/client'
+
+type StudyAreaUpdatePayload = {
+  name?: unknown
+  building?: unknown
+  floor?: unknown
+  capacity?: unknown
+  latitude?: unknown
+  longitude?: unknown
+  radiusMeters?: unknown
+  facilities?: {
+    wifi?: unknown
+    chargingPorts?: unknown
+    silentZone?: unknown
+    ac?: unknown
+  } | null
+}
+
+const toOptionalInteger = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || value === '') return undefined
+  const parsed = Number.parseInt(String(value), 10)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+const toOptionalFloat = (value: unknown): number | undefined => {
+  if (value === undefined || value === null || value === '') return undefined
+  const parsed = Number.parseFloat(String(value))
+  return Number.isFinite(parsed) ? parsed : undefined
+}
 
 /**
  * GET /api/study-areas/[id]
  * Get detailed information for a specific study area
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -64,7 +93,7 @@ export async function GET(
         study_area_id: id,
         updated_at: {
           gte: new Date(Date.now() - 5 * 60 * 1000),
-        } as any,
+        },
       },
     })
 
@@ -92,7 +121,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
+    const body = (await request.json()) as StudyAreaUpdatePayload
     const {
       name,
       building,
@@ -105,28 +134,33 @@ export async function PUT(
     } = body
 
     // Build update data object, handling type conversions
-    const updateData: any = {}
+    const updateData: Prisma.study_areasUpdateInput = {}
     
     if (name !== undefined && name !== null) {
-      updateData.area_name = name
+      updateData.area_name = String(name)
     }
     if (building !== undefined && building !== null) {
-      updateData.building = building
+      updateData.building = String(building)
     }
-    if (floor !== undefined && floor !== null) {
-      updateData.floor = parseInt(String(floor), 10)
+    const parsedFloor = toOptionalInteger(floor)
+    if (parsedFloor !== undefined) {
+      updateData.floor = parsedFloor
     }
-    if (capacity !== undefined && capacity !== null) {
-      updateData.capacity = parseInt(String(capacity), 10)
+    const parsedCapacity = toOptionalInteger(capacity)
+    if (parsedCapacity !== undefined) {
+      updateData.capacity = parsedCapacity
     }
-    if (latitude !== undefined && latitude !== null) {
-      updateData.latitude = parseFloat(String(latitude))
+    const parsedLatitude = toOptionalFloat(latitude)
+    if (parsedLatitude !== undefined) {
+      updateData.latitude = parsedLatitude
     }
-    if (longitude !== undefined && longitude !== null) {
-      updateData.longitude = parseFloat(String(longitude))
+    const parsedLongitude = toOptionalFloat(longitude)
+    if (parsedLongitude !== undefined) {
+      updateData.longitude = parsedLongitude
     }
-    if (radiusMeters !== undefined && radiusMeters !== null) {
-      updateData.radius_meters = parseInt(String(radiusMeters), 10)
+    const parsedRadius = toOptionalInteger(radiusMeters)
+    if (parsedRadius !== undefined) {
+      updateData.radius_meters = parsedRadius
     }
     if (facilities) {
       updateData.wifi = facilities.wifi === true

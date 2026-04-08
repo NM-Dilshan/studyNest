@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { calculateOccupancy, determineCrowdStatus } from '@/lib/geofence'
+import { determineCrowdStatus } from '@/lib/geofence'
+
+async function getPrismaClient() {
+  try {
+    const prismaModule = await import('@/lib/prisma')
+    return prismaModule.prisma
+  } catch (error) {
+    console.error('Failed to initialize Prisma client for /api/study-areas:', error)
+    return null
+  }
+}
 
 /**
  * GET /api/study-areas
@@ -8,21 +17,54 @@ import { calculateOccupancy, determineCrowdStatus } from '@/lib/geofence'
  */
 export async function GET() {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     const areas = await prisma.study_areas.findMany({
       where: {
         is_active: true,
-      },
-      include: {
-        area_occupancy: true,
       },
       orderBy: {
         area_name: 'asc',
       },
     })
 
+    // Some environments may not have area_occupancy fully migrated yet.
+    // Treat occupancy as optional so the endpoint stays available.
+    let occupancyMap = new Map<string, { current_count: number; updated_at: Date | null }>()
+    try {
+      const occupancyRows = await prisma.area_occupancy.findMany({
+        select: {
+          study_area_id: true,
+          current_count: true,
+          updated_at: true,
+        },
+      })
+
+      occupancyMap = new Map(
+        occupancyRows.map((row) => [
+          row.study_area_id,
+          {
+            current_count: row.current_count ?? 0,
+            updated_at: row.updated_at ?? null,
+          },
+        ])
+      )
+    } catch (occupancyError) {
+      console.warn('area_occupancy lookup failed; continuing without occupancy data:', occupancyError)
+    }
+
     // Return data in format expected by frontend
     const formattedAreas = areas.map((area) => {
-      const occupancy = area.area_occupancy
+      const occupancy = occupancyMap.get(area.study_area_id)
       const currentCount = occupancy?.current_count || 0
       const capacity = area.capacity || 50
       const availableSeats = Math.max(0, capacity - currentCount)
@@ -64,7 +106,11 @@ export async function GET() {
   } catch (error) {
     console.error('Error fetching study areas:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch study areas' },
+      {
+        success: false,
+        error: 'Failed to fetch study areas',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }
@@ -77,6 +123,17 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const prisma = await getPrismaClient()
+    if (!prisma) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Database is not configured. Check DATABASE_URL environment variable.',
+        },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
     const {
       name,
@@ -234,14 +291,21 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Initialize occupancy record
-    await prisma.area_occupancy.create({
-      data: {
-        study_area_id: newArea.study_area_id,
-        current_count: 0,
-        updated_at: new Date(),
-      },
-    })
+    // Initialize occupancy record when available; do not fail area creation if this table isn't ready.
+    try {
+      await prisma.area_occupancy.create({
+        data: {
+          study_area_id: newArea.study_area_id,
+          current_count: 0,
+          updated_at: new Date(),
+        },
+      })
+    } catch (occupancyCreateError) {
+      console.warn(
+        `Study area ${newArea.study_area_id} created without area_occupancy row:`,
+        occupancyCreateError
+      )
+    }
 
     return NextResponse.json(
       {
@@ -282,6 +346,7 @@ export async function POST(request: NextRequest) {
       {
         success: false,
         error: 'Failed to create study area. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     )

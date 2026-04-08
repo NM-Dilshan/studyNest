@@ -200,10 +200,11 @@ export function filterActiveLocations(
  * @returns Current occupancy count
  */
 export function calculateOccupancy(
-  activeLocations: LocationTrackingData[],
-  _capacity?: number
-): number {
-  return activeLocations.length;
+  currentCount: number,
+  capacity: number,
+  previousCount?: number
+): OccupancyDetails {
+  return generateOccupancyDetails(currentCount, capacity, previousCount);
 }
 
 /**

@@ -16,20 +16,6 @@ import {
 import { useRouter } from 'next/navigation'
 import MainHeader from '@/components/MainHeader'
 
-const buildingConfig: Record<
-  string,
-  { blocks: string[]; floors: (string | number)[] }
-> = {
-  'New Building': {
-    blocks: ['G', 'F'],
-    floors: Array.from({ length: 14 }, (_, i) => i + 1),
-  },
-  'Main Building': {
-    blocks: ['A', 'B'],
-    floors: ['B', '1', '2', '3', '4', '5', '6', '7', '8'],
-  },
-}
-
 interface LectureHall {
   hall_id: string
   hall_name: string
@@ -58,6 +44,21 @@ const normalizeLectureHall = (raw: Record<string, unknown>): LectureHall => ({
   floor: String(raw.floor ?? ''),
 })
 
+const floorSortValue = (value: string | number): number => {
+  const text = String(value).trim().toUpperCase()
+  if (text === 'B' || text === 'BASEMENT') return -1
+  const parsed = Number.parseInt(text, 10)
+  return Number.isNaN(parsed) ? Number.MAX_SAFE_INTEGER : parsed
+}
+
+const formatFloorLabel = (value: string | number): string => {
+  const text = String(value).trim().toUpperCase()
+  if (text === 'B' || text === 'BASEMENT') return 'B'
+  const parsed = Number.parseInt(text, 10)
+  if (Number.isNaN(parsed)) return text
+  return String(parsed).padStart(2, '0')
+}
+
 export default function ComplaintsPage() {
   const router = useRouter()
   const photoInputRef = useRef<HTMLInputElement | null>(null)
@@ -80,13 +81,9 @@ export default function ComplaintsPage() {
     studentId: '',
   })
 
-  const [buildings, setBuildings] = useState<string[]>([])
-
   const [hallLocations, setHallLocations] = useState<LectureHall[]>([])
   const [studyAreaLocations, setStudyAreaLocations] = useState<StudyArea[]>([])
   const [loadingData, setLoadingData] = useState(false)
-  const [availableFloors, setAvailableFloors] = useState<(string | number)[]>([])
-  const [availableBlocks, setAvailableBlocks] = useState<string[]>([])
   const [lectureHallsData, setLectureHallsData] = useState<LectureHall[]>([])
   const [studyAreasData, setStudyAreasData] = useState<StudyArea[]>([])
   const [loadingStep2, setLoadingStep2] = useState(false)
@@ -129,7 +126,51 @@ export default function ComplaintsPage() {
   )
 
   const buildingOptions =
-    formData.complaintType === 'study_area' ? studyAreaBuildings : buildings
+    formData.complaintType === 'study_area'
+      ? studyAreaBuildings
+      : Array.from(
+          new Set(
+            lectureHallsData
+              .map((hall) => hall.building.trim())
+              .filter((building) => Boolean(building))
+          )
+        ).sort((a, b) => a.localeCompare(b))
+
+  const availableBlocks = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          lectureHallsData
+            .filter(
+              (hall) =>
+                hall.building.trim().toLowerCase() ===
+                formData.building.trim().toLowerCase()
+            )
+            .map((hall) => hall.block.trim())
+            .filter((block) => Boolean(block))
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    [lectureHallsData, formData.building]
+  )
+
+  const availableFloors = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          lectureHallsData
+            .filter(
+              (hall) =>
+                hall.building.trim().toLowerCase() ===
+                  formData.building.trim().toLowerCase() &&
+                hall.block.trim().toLowerCase() ===
+                  formData.block.trim().toLowerCase()
+            )
+            .map((hall) => String(hall.floor).trim())
+            .filter((floor) => Boolean(floor))
+        )
+      ).sort((a, b) => floorSortValue(a) - floorSortValue(b)),
+    [lectureHallsData, formData.building, formData.block]
+  )
 
   const issueCategories = [
     'Noise',
@@ -176,15 +217,6 @@ export default function ComplaintsPage() {
     const loadInitialOptions = async () => {
       setLoadingStep2(true)
       try {
-        const buildingsRes = await fetch('/api/buildings')
-        const buildingsParsed = await parseApiResponse<{ success?: boolean; data?: string[] }>(
-          buildingsRes,
-          '/api/buildings'
-        )
-        if (buildingsParsed.data?.success) {
-          setBuildings(buildingsParsed.data.data || [])
-        }
-
         const [hallsRes, areasRes] = await Promise.all([
           fetch('/api/lecture-halls'),
           fetch('/api/study-areas'),
@@ -235,13 +267,6 @@ export default function ComplaintsPage() {
     setMounted(true)
     loadInitialOptions()
   }, [])
-
-  useEffect(() => {
-    if (formData.building && buildingConfig[formData.building]) {
-      setAvailableBlocks(buildingConfig[formData.building].blocks)
-      setAvailableFloors(buildingConfig[formData.building].floors)
-    }
-  }, [formData.building])
 
   const fetchStudyAreasByBuilding = async (buildingName: string) => {
     setLoadingData(true)
@@ -872,7 +897,7 @@ export default function ComplaintsPage() {
                       <option value="">-- Select a floor --</option>
                       {availableFloors.map((floor) => (
                         <option key={floor} value={floor}>
-                          {floor}
+                                          {formatFloorLabel(floor)}
                         </option>
                       ))}
                     </select>
