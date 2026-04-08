@@ -7,7 +7,7 @@ export const hallService = {
     if (!json.success) throw new Error(json.error || 'Failed to fetch lecture halls');
 
     // Map from DB field names to LectureHall type
-    return (json.data || []).map((hall: any) => ({
+    return (json.data || json.halls || []).map((hall: any) => ({
       id: hall.hall_id,
       name: hall.hall_name,
       building: hall.building || '',
