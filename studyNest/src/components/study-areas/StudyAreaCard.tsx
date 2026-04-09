@@ -6,7 +6,7 @@
 
 'use client';
 
-import { CrowdStatus, getCrowdEmoji } from '@/lib/geofence';
+import { CrowdStatus } from '@/lib/geofence';
 import { Users, Clock, Wifi, Volume2, Coffee, Zap } from 'lucide-react';
 
 interface Feature {
@@ -42,7 +42,21 @@ export function StudyAreaCard({
   capacity,
   features,
 }: StudyAreaCardProps) {
-  const crowdIndicator = getCrowdEmoji(crowdStatus);
+  // Get colors based on crowd status
+  const getCrowdColors = (status: CrowdStatus) => {
+    switch (status) {
+      case 'Low Crowd':
+        return { bgColor: 'bg-green-100', color: 'text-green-700' };
+      case 'Medium Crowd':
+        return { bgColor: 'bg-yellow-100', color: 'text-yellow-700' };
+      case 'High Crowd':
+        return { bgColor: 'bg-red-100', color: 'text-red-700' };
+      default:
+        return { bgColor: 'bg-gray-100', color: 'text-gray-700' };
+    }
+  };
+
+  const crowdIndicator = getCrowdColors(crowdStatus);
   const minutesAgo = Math.floor((Date.now() - lastUpdated.getTime()) / 60000);
   const updatedText = minutesAgo === 0 ? 'just now' : `${minutesAgo}m ago`;
 

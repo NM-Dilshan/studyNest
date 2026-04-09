@@ -77,6 +77,39 @@ export function isPointInsideCircular(
 }
 
 /**
+ * Check if a location is inside a study area (convenience method)
+ * @param studentLatitude - Student's current latitude
+ * @param studentLongitude - Student's current longitude
+ * @param areaLatitude - Study area center latitude
+ * @param areaLongitude - Study area center longitude
+ * @param radiusMeters - Study area radius in meters (default 20)
+ * @returns true if location is inside the area, false otherwise
+ */
+export function isInsideStudyArea(
+  studentLatitude: number,
+  studentLongitude: number,
+  areaLatitude: number,
+  areaLongitude: number,
+  radiusMeters: number = 20
+): boolean {
+  const studentPoint: LocationPoint = {
+    latitude: studentLatitude,
+    longitude: studentLongitude,
+  };
+
+  const geofence: CircularGeofence = {
+    type: 'circle',
+    center: {
+      latitude: areaLatitude,
+      longitude: areaLongitude,
+    },
+    radiusMeters,
+  };
+
+  return isPointInsideCircular(studentPoint, geofence);
+}
+
+/**
  * Ray casting algorithm: Check if a point is inside a polygon
  * @param point - Point to check
  * @param polygon - Polygon geofence boundary
@@ -202,8 +235,31 @@ export function filterActiveLocations(
 export function calculateOccupancy(
   activeLocations: LocationTrackingData[],
   _capacity?: number
-): number {
-  return activeLocations.length;
+): number;
+
+/**
+ * Calculate occupancy details from count and capacity
+ * @param currentCount - Current number of people
+ * @param capacity - Total capacity
+ * @returns OccupancyDetails object
+ */
+export function calculateOccupancy(
+  currentCount: number,
+  capacity: number
+): OccupancyDetails;
+
+export function calculateOccupancy(
+  activeLocationsOrCount: LocationTrackingData[] | number,
+  capacity?: number
+): number | OccupancyDetails {
+  // If first param is an array, use old logic
+  if (Array.isArray(activeLocationsOrCount)) {
+    return activeLocationsOrCount.length;
+  }
+
+  // If first param is a number, return occupancy details
+  const currentCount = activeLocationsOrCount;
+  return generateOccupancyDetails(currentCount, capacity || 0, undefined);
 }
 
 /**
