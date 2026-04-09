@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle } from 'lucide-react'
+import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import RequestForm from '@/components/hall-requests/RequestForm'
 import MyRequestsList from '@/components/hall-requests/MyRequestsList'
@@ -45,12 +46,14 @@ export default function RequestsPage() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6F95] mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+      <AppBackground>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6F95] mx-auto mb-4" />
+            <p className="text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
+      </AppBackground>
     )
   }
 
@@ -64,9 +67,9 @@ export default function RequestsPage() {
   }
 
   return (
-    <>
+    <AppBackground>
       <MainHeader />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <main className="min-h-screen">
         <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Page Header */}
         <div className="mb-8">
@@ -127,7 +130,7 @@ export default function RequestsPage() {
           </div>
         </div>
       </div>
-    </main>
-    </>
-  )
+      </main>
+    </AppBackground>
+    )
 }

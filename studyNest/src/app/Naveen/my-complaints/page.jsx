@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Filter, Search, Trash2, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 
 export default function MyComplaintsPage() {
@@ -130,7 +131,7 @@ export default function MyComplaintsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-slate-900 font-sans relative overflow-hidden">
+    <AppBackground>
       <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
         <svg width="100%" height="100%" aria-hidden="true">
           <pattern id="complaints-grid" width="38" height="38" patternUnits="userSpaceOnUse">
@@ -273,7 +274,7 @@ export default function MyComplaintsPage() {
           </AnimatePresence>
         </div>
       </main>
-    </div>
+    </AppBackground>
   )
 }
 

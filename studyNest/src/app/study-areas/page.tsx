@@ -9,16 +9,17 @@
  * - Privacy-safe aggregated data only
  */
 
-'use client';
+'use client'
 
-import { useEffect, useState, useCallback } from 'react';
-import MainHeader from '@/components/MainHeader';
-import { useLocationTracking } from '@/hooks/useLocationTracking';
-import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard';
-import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary';
-import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap';
-import { determineCrowdStatus, CrowdStatus } from '@/lib/geofence';
-import { Loader, AlertCircle } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react'
+import AppBackground from '@/components/AppBackground'
+import MainHeader from '@/components/MainHeader'
+import { useLocationTracking } from '@/hooks/useLocationTracking'
+import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard'
+import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary'
+import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap'
+import { determineCrowdStatus, CrowdStatus } from '@/lib/geofence'
+import { Loader, AlertCircle } from 'lucide-react'
 
 interface StudyAreaData {
   study_area_id: string;
@@ -191,7 +192,7 @@ export default function StudyAreaFinderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <AppBackground>
       {/* Header Component */}
       <MainHeader />
 
@@ -297,6 +298,6 @@ export default function StudyAreaFinderPage() {
           </p>
         </div>
       </main>
-    </div>
-  );
+    </AppBackground>
+  )
 }

@@ -1,11 +1,12 @@
-'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { RefreshCw, Sparkles } from 'lucide-react';
-import { HallFilters, FilterState } from '../../../components/halls/HallFilters';
-import { HallCard } from '../../../components/halls/HallCard';
-import { PreferencesPanel } from '../../../components/preferences/PreferencesPanel';
-import { FreeFavouritesButton } from '../../../components/favourites/FreeFavouritesButton';
-import { UsageInsightChip } from '../../../components/insights/UsageInsightChip';
+'use client'
+import React, { useState, useMemo, useEffect } from 'react'
+import { RefreshCw, Sparkles } from 'lucide-react'
+import AppBackground from '@/components/AppBackground'
+import { HallFilters, FilterState } from '../../../components/halls/HallFilters'
+import { HallCard } from '../../../components/halls/HallCard'
+import { PreferencesPanel } from '../../../components/preferences/PreferencesPanel'
+import { FreeFavouritesButton } from '../../../components/favourites/FreeFavouritesButton'
+import { UsageInsightChip } from '../../../components/insights/UsageInsightChip'
 
 // Hooks
 import { useFreeHalls } from '../../../hooks/useFreeHalls';
@@ -246,7 +247,7 @@ export default function FreeHallFinder() {
   }, [displayHalls]);
 
   return (
-    <div className="min-h-screen bg-[#FBFDFD] text-slate-900 relative overflow-hidden">
+    <AppBackground>
       <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
         <svg width="100%" height="100%" aria-hidden="true">
           <pattern id="hall-grid" width="36" height="36" patternUnits="userSpaceOnUse">
@@ -401,6 +402,6 @@ export default function FreeHallFinder() {
         onSave={updatePreferences}
         isLoading={prefsLoading}
       />
-    </div>
-  );
+    </AppBackground>
+  )
 }

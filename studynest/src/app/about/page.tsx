@@ -1,9 +1,10 @@
-'use client';
+'use client'
 
+import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState } from 'react'
 
 interface User {
   user_id: string
@@ -13,28 +14,23 @@ interface User {
   role: 'student' | 'volunteer' | 'admin'
 }
 
-function readUserFromStorage(): User | null {
-  try {
-    const raw = localStorage.getItem('user')
-    return raw ? (JSON.parse(raw) as User) : null
-  } catch (error) {
-    console.error('Failed to parse user:', error)
-    return null
-  }
-}
-
 export default function AboutPage() {
-  const user = useSyncExternalStore(
-    (onStoreChange) => {
-      window.addEventListener('storage', onStoreChange)
-      return () => window.removeEventListener('storage', onStoreChange)
-    },
-    () => readUserFromStorage(),
-    () => null
-  )
+  const [user, setUser] = useState<User | null>(null)
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user')
+      setUser(raw ? (JSON.parse(raw) as User) : null)
+    } catch (error) {
+      console.error('Failed to parse user:', error)
+      setUser(null)
+    }
+    setIsHydrated(true)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+    <AppBackground>
       {/* Header Component */}
       <MainHeader />
 
@@ -336,6 +332,6 @@ export default function AboutPage() {
           </div>
         </footer>
       </main>
-    </div>
+    </AppBackground>
   )
 }
