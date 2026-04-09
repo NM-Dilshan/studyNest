@@ -1,7 +1,7 @@
 'use client'
 
 import MainHeader from '@/components/MainHeader'
-import SearchBar from '@/components/SearchBar'
+import SearchBar from '../../components/SearchBar'
 import AppBackground from '@/components/AppBackground'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
