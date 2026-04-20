@@ -28,6 +28,14 @@ export async function GET(request) {
     
     console.log('GET /api/complaints - studentId:', studentId)
 
+    // Validate studentId format if provided (should be UUID)
+    if (studentId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(studentId)) {
+      return Response.json(
+        { success: false, error: 'Invalid studentId format. Must be a valid UUID.' },
+        { status: 400 }
+      )
+    }
+
     // Build filter object
     const where = studentId ? { student_id: studentId } : {}
 
