@@ -48,7 +48,6 @@ interface DashboardSummaryResponse {
     activeVolunteersToday: number;
   };
   topLectureHalls?: TopUsageItem[];
-  topStudyAreas?: TopUsageItem[];
 }
 
 const peakHoursData = [
@@ -191,7 +190,6 @@ export default function AdminDashboard() {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse["summary"] | null>(null);
   const [topLectureHalls, setTopLectureHalls] = useState<TopUsageItem[]>([]);
-  const [topStudyAreas, setTopStudyAreas] = useState<TopUsageItem[]>([]);
 
   useEffect(() => {
     const fetchDashboardSummary = async () => {
@@ -203,17 +201,14 @@ export default function AdminDashboard() {
         if (response.ok && data.success && data.summary) {
           setDashboardSummary(data.summary);
           setTopLectureHalls(Array.isArray(data.topLectureHalls) ? data.topLectureHalls : []);
-          setTopStudyAreas(Array.isArray(data.topStudyAreas) ? data.topStudyAreas : []);
         } else {
           setDashboardSummary(null);
           setTopLectureHalls([]);
-          setTopStudyAreas([]);
         }
       } catch (error) {
         console.error("Error fetching dashboard summary:", error);
         setDashboardSummary(null);
         setTopLectureHalls([]);
-        setTopStudyAreas([]);
       } finally {
         setSummaryLoading(false);
       }
@@ -348,21 +343,32 @@ export default function AdminDashboard() {
             </div>
           </ChartCard>
 
-          <ChartCard title="Most Used Study Areas" subtitle="This week's statistics">
+          <ChartCard title="Complaint Status Distribution" subtitle="Current complaint pipeline">
             <div style={{ width: '100%', height: 320 }}>
               {summaryLoading ? (
-                <p className="text-sm font-medium text-gray-500 py-8">Loading study area usage...</p>
-              ) : topStudyAreas.length === 0 ? (
-                <p className="text-sm font-medium text-gray-500 py-8">No study area usage data available</p>
+                <p className="text-sm font-medium text-gray-500 py-8">Loading complaint breakdown...</p>
+              ) : complaintStatusChartData.every((entry) => entry.value === 0) ? (
+                <p className="text-sm font-medium text-gray-500 py-8">No complaint status data available</p>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart layout="vertical" data={topStudyAreas} margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
-                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                    <XAxis type="number" stroke="#9ca3af" />
-                    <YAxis type="category" dataKey="name" width={115} tick={{ fontSize: 13, fill: "#6b7280" }} />
+                  <PieChart>
+                    <Pie
+                      data={complaintStatusChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={95}
+                      innerRadius={55}
+                      paddingAngle={2}
+                    >
+                      {complaintStatusChartData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
                     <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                    <Bar dataKey="usage" fill="#2E6F95" radius={[0, 8, 8, 0]} barSize={24} />
-                  </BarChart>
+                    <Legend verticalAlign="bottom" height={36} />
+                  </PieChart>
                 </ResponsiveContainer>
               )}
             </div>
