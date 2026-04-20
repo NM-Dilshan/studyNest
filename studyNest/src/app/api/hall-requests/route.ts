@@ -132,9 +132,26 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const skip = parseInt(searchParams.get('skip') || '0')
-    const take = parseInt(searchParams.get('take') || '20')
+    
+    // Validate and parse pagination parameters
+    const skipStr = searchParams.get('skip') || '0'
+    const takeStr = searchParams.get('take') || '20'
+    let skip = parseInt(skipStr)
+    let take = parseInt(takeStr)
+    
+    // Ensure valid numeric parameters
+    if (isNaN(skip) || skip < 0) skip = 0
+    if (isNaN(take) || take < 1 || take > 100) take = 20
+    
+    // Validate status parameter
     const status = searchParams.get('status') || 'Pending'
+    const validStatuses = ['Pending', 'Responded', 'Expired', 'Cancelled']
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
+        { status: 400 }
+      )
+    }
 
     const requests = await prisma.hall_requests.findMany({
       where: {
