@@ -29,7 +29,7 @@ export default function AdminHeader() {
   }
 
   return (
-    <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-40">
+    <header className="w-full bg-gradient-to-r from-sky-50 to-blue-50 border-b border-sky-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center justify-between gap-4">
           {/* Search */}

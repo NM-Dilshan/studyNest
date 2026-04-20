@@ -53,6 +53,11 @@ export type lecture_halls = Prisma.lecture_hallsModel
  */
 export type notifications = Prisma.notificationsModel
 /**
+ * Model admin_broadcast_messages
+ * 
+ */
+export type admin_broadcast_messages = Prisma.admin_broadcast_messagesModel
+/**
  * Model study_area_usage_logs
  * This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
  */

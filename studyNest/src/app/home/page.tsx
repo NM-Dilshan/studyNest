@@ -6,7 +6,7 @@ import AppBackground from '@/components/AppBackground'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { MapPin, X, MessageCircle, BookOpen, MapPinIcon, AlertCircle, Clock, User } from 'lucide-react'
+import { MapPin, X, MessageCircle, BookOpen, MapPinIcon, AlertCircle, Clock, User, ChevronLeft, ChevronRight } from 'lucide-react'
 
 type RecentUpdate = {
   type: 'Hall' | 'Study Area'
@@ -15,6 +15,14 @@ type RecentUpdate = {
   occupancy: string
   reporter: string | null | undefined
   time: string
+}
+
+type ActiveAdminMessage = {
+  message_id: number
+  title: string
+  message: string
+  scheduled_at: string
+  created_at?: string | null
 }
 
 interface User {
@@ -32,7 +40,9 @@ export default function HomePage() {
   const [isHydrated, setIsHydrated] = useState(false)
   const [showGPSDialog, setShowGPSDialog] = useState(false)
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'requesting' | 'enabled' | 'denied'>('idle')
-  const [userId, setUserId] = useState<string | null>(null)
+  const [activeAdminMessages, setActiveAdminMessages] = useState<ActiveAdminMessage[]>([])
+  const [activeMessageIndex, setActiveMessageIndex] = useState(0)
+  const [isAdminMessageLoading, setIsAdminMessageLoading] = useState(false)
   
   // Initialize user from localStorage without setState in effect
   const [user] = useState<User | null>(() => {
@@ -91,8 +101,6 @@ export default function HomePage() {
     if (!user) {
       router.push('/login/signIN')
     } else {
-      // Set userId for LocationPermissionBanner
-      setUserId(user.user_id)
       // Show GPS permission dialog after login
       const gpsDialogShown = localStorage.getItem(`gpsDialogShown_${user.user_id}`)
       if (!gpsDialogShown) {
@@ -104,11 +112,49 @@ export default function HomePage() {
     }
   }, [user, router])
 
-  const handleLogout = (e: React.FormEvent) => {
-    e.preventDefault()
-    localStorage.removeItem('user')
-    router.push('/login/signIN')
-  }
+  useEffect(() => {
+    if (!user?.user_id) return
+
+    let isMounted = true
+
+    const fetchLatestAdminMessage = async () => {
+      try {
+        setIsAdminMessageLoading(true)
+        const response = await fetch('/api/admin/messages/active?limit=5')
+        if (!response.ok) return
+
+        const data = await response.json()
+        const messages: ActiveAdminMessage[] = data.messages || []
+
+        if (isMounted) {
+          setActiveAdminMessages(messages)
+          setActiveMessageIndex(0)
+        }
+      } catch (error) {
+        console.error('Failed to fetch admin message:', error)
+      } finally {
+        if (isMounted) {
+          setIsAdminMessageLoading(false)
+        }
+      }
+    }
+
+    fetchLatestAdminMessage()
+
+    return () => {
+      isMounted = false
+    }
+  }, [user?.user_id])
+
+  useEffect(() => {
+    if (activeAdminMessages.length <= 1) return
+
+    const interval = setInterval(() => {
+      setActiveMessageIndex((prev) => (prev + 1) % activeAdminMessages.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [activeAdminMessages.length])
 
   const requestGPSPermission = async () => {
     if (!user) return
@@ -226,6 +272,20 @@ export default function HomePage() {
     return date.toLocaleDateString()
   }
 
+  const currentAdminMessage = activeAdminMessages[activeMessageIndex] || null
+
+  const goToPreviousMessage = () => {
+    if (!activeAdminMessages.length) return
+    setActiveMessageIndex((prev) =>
+      prev === 0 ? activeAdminMessages.length - 1 : prev - 1
+    )
+  }
+
+  const goToNextMessage = () => {
+    if (!activeAdminMessages.length) return
+    setActiveMessageIndex((prev) => (prev + 1) % activeAdminMessages.length)
+  }
+
   return (
     <AppBackground>
       {/* Header Component */}
@@ -315,6 +375,81 @@ export default function HomePage() {
           {/* Search Bar with Autocomplete */}
           <div className="mt-6">
             <SearchBar />
+          </div>
+
+          {/* Admin Message Section */}
+          <div className="mt-6 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/90 to-orange-50/70 p-4 sm:p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <MessageCircle className="w-4 h-4 text-amber-700" />
+                </div>
+                <div>
+                  <h2 className="text-sm sm:text-base font-semibold text-amber-900">Notices</h2>
+                  <p className="text-xs text-amber-700/90">Important Notices... ({activeAdminMessages.length})</p>
+                </div>
+              </div>
+
+              {activeAdminMessages.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={goToPreviousMessage}
+                    className="h-8 w-8 rounded-full border border-amber-200 bg-white/80 text-amber-700 hover:bg-white transition flex items-center justify-center"
+                    aria-label="Previous admin message"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNextMessage}
+                    className="h-8 w-8 rounded-full border border-amber-200 bg-white/80 text-amber-700 hover:bg-white transition flex items-center justify-center"
+                    aria-label="Next admin message"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 rounded-xl bg-white/70 border border-amber-100 p-3 sm:p-4 transition-all duration-500">
+              {isAdminMessageLoading ? (
+                <p className="text-sm text-gray-500">Loading admin message...</p>
+              ) : currentAdminMessage ? (
+                <>
+                  <div className="inline-flex items-center gap-2 mb-2 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-[11px] font-semibold">
+                    LIVE UPDATE
+                  </div>
+                  <p className="text-sm sm:text-base font-medium text-gray-900">{currentAdminMessage.title}</p>
+                  <p className="mt-1 text-sm text-gray-700 leading-relaxed">{currentAdminMessage.message}</p>
+                  <p className="mt-2 text-xs text-gray-500">
+                    {currentAdminMessage.scheduled_at
+                      ? formatTime(currentAdminMessage.scheduled_at)
+                      : 'Recently updated'}
+                  </p>
+
+                  {activeAdminMessages.length > 1 && (
+                    <div className="mt-3 flex items-center gap-1.5">
+                      {activeAdminMessages.map((_, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setActiveMessageIndex(index)}
+                          className={`h-1.5 rounded-full transition-all ${
+                            index === activeMessageIndex
+                              ? 'w-6 bg-amber-500'
+                              : 'w-2 bg-amber-200 hover:bg-amber-300'
+                          }`}
+                          aria-label={`Go to message ${index + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-600">No admin messages right now.</p>
+              )}
+            </div>
           </div>
         </div>
 

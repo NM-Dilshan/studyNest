@@ -648,7 +648,7 @@ export default function ComplaintsPage() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-[#F4F9F8] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-b-2 border-[#2E6F95] mb-4"></div>
           <p className="text-gray-600">Loading...</p>

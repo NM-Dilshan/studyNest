@@ -205,11 +205,10 @@ export type favorite_hallsWhereInput = {
   OR?: Prisma.favorite_hallsWhereInput[]
   NOT?: Prisma.favorite_hallsWhereInput | Prisma.favorite_hallsWhereInput[]
   favorite_hall_id?: Prisma.IntFilter<"favorite_halls"> | number
-  student_id?: Prisma.UuidFilter<"favorite_halls"> | string
+  student_id?: Prisma.StringFilter<"favorite_halls"> | string
   hall_id?: Prisma.UuidFilter<"favorite_halls"> | string
   created_at?: Prisma.DateTimeNullableFilter<"favorite_halls"> | Date | string | null
   lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsScalarRelationFilter, Prisma.lecture_hallsWhereInput>
-  users?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }
 
 export type favorite_hallsOrderByWithRelationInput = {
@@ -218,7 +217,6 @@ export type favorite_hallsOrderByWithRelationInput = {
   hall_id?: Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   lecture_halls?: Prisma.lecture_hallsOrderByWithRelationInput
-  users?: Prisma.usersOrderByWithRelationInput
 }
 
 export type favorite_hallsWhereUniqueInput = Prisma.AtLeast<{
@@ -227,11 +225,10 @@ export type favorite_hallsWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.favorite_hallsWhereInput | Prisma.favorite_hallsWhereInput[]
   OR?: Prisma.favorite_hallsWhereInput[]
   NOT?: Prisma.favorite_hallsWhereInput | Prisma.favorite_hallsWhereInput[]
-  student_id?: Prisma.UuidFilter<"favorite_halls"> | string
+  student_id?: Prisma.StringFilter<"favorite_halls"> | string
   hall_id?: Prisma.UuidFilter<"favorite_halls"> | string
   created_at?: Prisma.DateTimeNullableFilter<"favorite_halls"> | Date | string | null
   lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsScalarRelationFilter, Prisma.lecture_hallsWhereInput>
-  users?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
 }, "favorite_hall_id" | "student_id_hall_id">
 
 export type favorite_hallsOrderByWithAggregationInput = {
@@ -251,15 +248,15 @@ export type favorite_hallsScalarWhereWithAggregatesInput = {
   OR?: Prisma.favorite_hallsScalarWhereWithAggregatesInput[]
   NOT?: Prisma.favorite_hallsScalarWhereWithAggregatesInput | Prisma.favorite_hallsScalarWhereWithAggregatesInput[]
   favorite_hall_id?: Prisma.IntWithAggregatesFilter<"favorite_halls"> | number
-  student_id?: Prisma.UuidWithAggregatesFilter<"favorite_halls"> | string
+  student_id?: Prisma.StringWithAggregatesFilter<"favorite_halls"> | string
   hall_id?: Prisma.UuidWithAggregatesFilter<"favorite_halls"> | string
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"favorite_halls"> | Date | string | null
 }
 
 export type favorite_hallsCreateInput = {
+  student_id: string
   created_at?: Date | string | null
   lecture_halls: Prisma.lecture_hallsCreateNestedOneWithoutFavorite_hallsInput
-  users: Prisma.usersCreateNestedOneWithoutFavorite_hallsInput
 }
 
 export type favorite_hallsUncheckedCreateInput = {
@@ -270,9 +267,9 @@ export type favorite_hallsUncheckedCreateInput = {
 }
 
 export type favorite_hallsUpdateInput = {
+  student_id?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   lecture_halls?: Prisma.lecture_hallsUpdateOneRequiredWithoutFavorite_hallsNestedInput
-  users?: Prisma.usersUpdateOneRequiredWithoutFavorite_hallsNestedInput
 }
 
 export type favorite_hallsUncheckedUpdateInput = {
@@ -290,6 +287,7 @@ export type favorite_hallsCreateManyInput = {
 }
 
 export type favorite_hallsUpdateManyMutationInput = {
+  student_id?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
@@ -386,51 +384,9 @@ export type favorite_hallsUncheckedUpdateManyWithoutLecture_hallsNestedInput = {
   deleteMany?: Prisma.favorite_hallsScalarWhereInput | Prisma.favorite_hallsScalarWhereInput[]
 }
 
-export type favorite_hallsCreateNestedManyWithoutUsersInput = {
-  create?: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput> | Prisma.favorite_hallsCreateWithoutUsersInput[] | Prisma.favorite_hallsUncheckedCreateWithoutUsersInput[]
-  connectOrCreate?: Prisma.favorite_hallsCreateOrConnectWithoutUsersInput | Prisma.favorite_hallsCreateOrConnectWithoutUsersInput[]
-  createMany?: Prisma.favorite_hallsCreateManyUsersInputEnvelope
-  connect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-}
-
-export type favorite_hallsUncheckedCreateNestedManyWithoutUsersInput = {
-  create?: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput> | Prisma.favorite_hallsCreateWithoutUsersInput[] | Prisma.favorite_hallsUncheckedCreateWithoutUsersInput[]
-  connectOrCreate?: Prisma.favorite_hallsCreateOrConnectWithoutUsersInput | Prisma.favorite_hallsCreateOrConnectWithoutUsersInput[]
-  createMany?: Prisma.favorite_hallsCreateManyUsersInputEnvelope
-  connect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-}
-
-export type favorite_hallsUpdateManyWithoutUsersNestedInput = {
-  create?: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput> | Prisma.favorite_hallsCreateWithoutUsersInput[] | Prisma.favorite_hallsUncheckedCreateWithoutUsersInput[]
-  connectOrCreate?: Prisma.favorite_hallsCreateOrConnectWithoutUsersInput | Prisma.favorite_hallsCreateOrConnectWithoutUsersInput[]
-  upsert?: Prisma.favorite_hallsUpsertWithWhereUniqueWithoutUsersInput | Prisma.favorite_hallsUpsertWithWhereUniqueWithoutUsersInput[]
-  createMany?: Prisma.favorite_hallsCreateManyUsersInputEnvelope
-  set?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  disconnect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  delete?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  connect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  update?: Prisma.favorite_hallsUpdateWithWhereUniqueWithoutUsersInput | Prisma.favorite_hallsUpdateWithWhereUniqueWithoutUsersInput[]
-  updateMany?: Prisma.favorite_hallsUpdateManyWithWhereWithoutUsersInput | Prisma.favorite_hallsUpdateManyWithWhereWithoutUsersInput[]
-  deleteMany?: Prisma.favorite_hallsScalarWhereInput | Prisma.favorite_hallsScalarWhereInput[]
-}
-
-export type favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput = {
-  create?: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput> | Prisma.favorite_hallsCreateWithoutUsersInput[] | Prisma.favorite_hallsUncheckedCreateWithoutUsersInput[]
-  connectOrCreate?: Prisma.favorite_hallsCreateOrConnectWithoutUsersInput | Prisma.favorite_hallsCreateOrConnectWithoutUsersInput[]
-  upsert?: Prisma.favorite_hallsUpsertWithWhereUniqueWithoutUsersInput | Prisma.favorite_hallsUpsertWithWhereUniqueWithoutUsersInput[]
-  createMany?: Prisma.favorite_hallsCreateManyUsersInputEnvelope
-  set?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  disconnect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  delete?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  connect?: Prisma.favorite_hallsWhereUniqueInput | Prisma.favorite_hallsWhereUniqueInput[]
-  update?: Prisma.favorite_hallsUpdateWithWhereUniqueWithoutUsersInput | Prisma.favorite_hallsUpdateWithWhereUniqueWithoutUsersInput[]
-  updateMany?: Prisma.favorite_hallsUpdateManyWithWhereWithoutUsersInput | Prisma.favorite_hallsUpdateManyWithWhereWithoutUsersInput[]
-  deleteMany?: Prisma.favorite_hallsScalarWhereInput | Prisma.favorite_hallsScalarWhereInput[]
-}
-
 export type favorite_hallsCreateWithoutLecture_hallsInput = {
+  student_id: string
   created_at?: Date | string | null
-  users: Prisma.usersCreateNestedOneWithoutFavorite_hallsInput
 }
 
 export type favorite_hallsUncheckedCreateWithoutLecture_hallsInput = {
@@ -470,46 +426,9 @@ export type favorite_hallsScalarWhereInput = {
   OR?: Prisma.favorite_hallsScalarWhereInput[]
   NOT?: Prisma.favorite_hallsScalarWhereInput | Prisma.favorite_hallsScalarWhereInput[]
   favorite_hall_id?: Prisma.IntFilter<"favorite_halls"> | number
-  student_id?: Prisma.UuidFilter<"favorite_halls"> | string
+  student_id?: Prisma.StringFilter<"favorite_halls"> | string
   hall_id?: Prisma.UuidFilter<"favorite_halls"> | string
   created_at?: Prisma.DateTimeNullableFilter<"favorite_halls"> | Date | string | null
-}
-
-export type favorite_hallsCreateWithoutUsersInput = {
-  created_at?: Date | string | null
-  lecture_halls: Prisma.lecture_hallsCreateNestedOneWithoutFavorite_hallsInput
-}
-
-export type favorite_hallsUncheckedCreateWithoutUsersInput = {
-  favorite_hall_id?: number
-  hall_id: string
-  created_at?: Date | string | null
-}
-
-export type favorite_hallsCreateOrConnectWithoutUsersInput = {
-  where: Prisma.favorite_hallsWhereUniqueInput
-  create: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput>
-}
-
-export type favorite_hallsCreateManyUsersInputEnvelope = {
-  data: Prisma.favorite_hallsCreateManyUsersInput | Prisma.favorite_hallsCreateManyUsersInput[]
-  skipDuplicates?: boolean
-}
-
-export type favorite_hallsUpsertWithWhereUniqueWithoutUsersInput = {
-  where: Prisma.favorite_hallsWhereUniqueInput
-  update: Prisma.XOR<Prisma.favorite_hallsUpdateWithoutUsersInput, Prisma.favorite_hallsUncheckedUpdateWithoutUsersInput>
-  create: Prisma.XOR<Prisma.favorite_hallsCreateWithoutUsersInput, Prisma.favorite_hallsUncheckedCreateWithoutUsersInput>
-}
-
-export type favorite_hallsUpdateWithWhereUniqueWithoutUsersInput = {
-  where: Prisma.favorite_hallsWhereUniqueInput
-  data: Prisma.XOR<Prisma.favorite_hallsUpdateWithoutUsersInput, Prisma.favorite_hallsUncheckedUpdateWithoutUsersInput>
-}
-
-export type favorite_hallsUpdateManyWithWhereWithoutUsersInput = {
-  where: Prisma.favorite_hallsScalarWhereInput
-  data: Prisma.XOR<Prisma.favorite_hallsUpdateManyMutationInput, Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersInput>
 }
 
 export type favorite_hallsCreateManyLecture_hallsInput = {
@@ -519,8 +438,8 @@ export type favorite_hallsCreateManyLecture_hallsInput = {
 }
 
 export type favorite_hallsUpdateWithoutLecture_hallsInput = {
+  student_id?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  users?: Prisma.usersUpdateOneRequiredWithoutFavorite_hallsNestedInput
 }
 
 export type favorite_hallsUncheckedUpdateWithoutLecture_hallsInput = {
@@ -535,29 +454,6 @@ export type favorite_hallsUncheckedUpdateManyWithoutLecture_hallsInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
-export type favorite_hallsCreateManyUsersInput = {
-  favorite_hall_id?: number
-  hall_id: string
-  created_at?: Date | string | null
-}
-
-export type favorite_hallsUpdateWithoutUsersInput = {
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lecture_halls?: Prisma.lecture_hallsUpdateOneRequiredWithoutFavorite_hallsNestedInput
-}
-
-export type favorite_hallsUncheckedUpdateWithoutUsersInput = {
-  favorite_hall_id?: Prisma.IntFieldUpdateOperationsInput | number
-  hall_id?: Prisma.StringFieldUpdateOperationsInput | string
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
-export type favorite_hallsUncheckedUpdateManyWithoutUsersInput = {
-  favorite_hall_id?: Prisma.IntFieldUpdateOperationsInput | number
-  hall_id?: Prisma.StringFieldUpdateOperationsInput | string
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-}
-
 
 
 export type favorite_hallsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -566,7 +462,6 @@ export type favorite_hallsSelect<ExtArgs extends runtime.Types.Extensions.Intern
   hall_id?: boolean
   created_at?: boolean
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["favorite_halls"]>
 
 export type favorite_hallsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -575,7 +470,6 @@ export type favorite_hallsSelectCreateManyAndReturn<ExtArgs extends runtime.Type
   hall_id?: boolean
   created_at?: boolean
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["favorite_halls"]>
 
 export type favorite_hallsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -584,7 +478,6 @@ export type favorite_hallsSelectUpdateManyAndReturn<ExtArgs extends runtime.Type
   hall_id?: boolean
   created_at?: boolean
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["favorite_halls"]>
 
 export type favorite_hallsSelectScalar = {
@@ -597,22 +490,18 @@ export type favorite_hallsSelectScalar = {
 export type favorite_hallsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"favorite_hall_id" | "student_id" | "hall_id" | "created_at", ExtArgs["result"]["favorite_halls"]>
 export type favorite_hallsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 export type favorite_hallsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 export type favorite_hallsIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
-  users?: boolean | Prisma.usersDefaultArgs<ExtArgs>
 }
 
 export type $favorite_hallsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "favorite_halls"
   objects: {
     lecture_halls: Prisma.$lecture_hallsPayload<ExtArgs>
-    users: Prisma.$usersPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     favorite_hall_id: number
@@ -1014,7 +903,6 @@ readonly fields: favorite_hallsFieldRefs;
 export interface Prisma__favorite_hallsClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   lecture_halls<T extends Prisma.lecture_hallsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.lecture_hallsDefaultArgs<ExtArgs>>): Prisma.Prisma__lecture_hallsClient<runtime.Types.Result.GetResult<Prisma.$lecture_hallsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  users<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

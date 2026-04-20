@@ -50,6 +50,7 @@ export type TimetableMinAggregateOutputType = {
   subject_name: string | null
   group_name: string | null
   lecturer_name: string | null
+  raw_hall_name: string | null
   is_reserved: boolean | null
   created_at: Date | null
 }
@@ -66,6 +67,7 @@ export type TimetableMaxAggregateOutputType = {
   subject_name: string | null
   group_name: string | null
   lecturer_name: string | null
+  raw_hall_name: string | null
   is_reserved: boolean | null
   created_at: Date | null
 }
@@ -82,6 +84,7 @@ export type TimetableCountAggregateOutputType = {
   subject_name: number
   group_name: number
   lecturer_name: number
+  raw_hall_name: number
   is_reserved: number
   created_at: number
   _all: number
@@ -112,6 +115,7 @@ export type TimetableMinAggregateInputType = {
   subject_name?: true
   group_name?: true
   lecturer_name?: true
+  raw_hall_name?: true
   is_reserved?: true
   created_at?: true
 }
@@ -128,6 +132,7 @@ export type TimetableMaxAggregateInputType = {
   subject_name?: true
   group_name?: true
   lecturer_name?: true
+  raw_hall_name?: true
   is_reserved?: true
   created_at?: true
 }
@@ -144,6 +149,7 @@ export type TimetableCountAggregateInputType = {
   subject_name?: true
   group_name?: true
   lecturer_name?: true
+  raw_hall_name?: true
   is_reserved?: true
   created_at?: true
   _all?: true
@@ -237,7 +243,7 @@ export type timetableGroupByArgs<ExtArgs extends runtime.Types.Extensions.Intern
 
 export type TimetableGroupByOutputType = {
   timetable_id: number
-  hall_id: string
+  hall_id: string | null
   academic_year: number | null
   semester: number | null
   day_of_week: string
@@ -247,6 +253,7 @@ export type TimetableGroupByOutputType = {
   subject_name: string | null
   group_name: string | null
   lecturer_name: string | null
+  raw_hall_name: string | null
   is_reserved: boolean | null
   created_at: Date | null
   _count: TimetableCountAggregateOutputType | null
@@ -276,7 +283,7 @@ export type timetableWhereInput = {
   OR?: Prisma.timetableWhereInput[]
   NOT?: Prisma.timetableWhereInput | Prisma.timetableWhereInput[]
   timetable_id?: Prisma.IntFilter<"timetable"> | number
-  hall_id?: Prisma.UuidFilter<"timetable"> | string
+  hall_id?: Prisma.UuidNullableFilter<"timetable"> | string | null
   academic_year?: Prisma.IntNullableFilter<"timetable"> | number | null
   semester?: Prisma.IntNullableFilter<"timetable"> | number | null
   day_of_week?: Prisma.StringFilter<"timetable"> | string
@@ -286,14 +293,15 @@ export type timetableWhereInput = {
   subject_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   group_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   lecturer_name?: Prisma.StringNullableFilter<"timetable"> | string | null
+  raw_hall_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   is_reserved?: Prisma.BoolNullableFilter<"timetable"> | boolean | null
   created_at?: Prisma.DateTimeNullableFilter<"timetable"> | Date | string | null
-  lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsScalarRelationFilter, Prisma.lecture_hallsWhereInput>
+  lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsNullableScalarRelationFilter, Prisma.lecture_hallsWhereInput> | null
 }
 
 export type timetableOrderByWithRelationInput = {
   timetable_id?: Prisma.SortOrder
-  hall_id?: Prisma.SortOrder
+  hall_id?: Prisma.SortOrderInput | Prisma.SortOrder
   academic_year?: Prisma.SortOrderInput | Prisma.SortOrder
   semester?: Prisma.SortOrderInput | Prisma.SortOrder
   day_of_week?: Prisma.SortOrder
@@ -303,6 +311,7 @@ export type timetableOrderByWithRelationInput = {
   subject_name?: Prisma.SortOrderInput | Prisma.SortOrder
   group_name?: Prisma.SortOrderInput | Prisma.SortOrder
   lecturer_name?: Prisma.SortOrderInput | Prisma.SortOrder
+  raw_hall_name?: Prisma.SortOrderInput | Prisma.SortOrder
   is_reserved?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   lecture_halls?: Prisma.lecture_hallsOrderByWithRelationInput
@@ -313,7 +322,7 @@ export type timetableWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.timetableWhereInput | Prisma.timetableWhereInput[]
   OR?: Prisma.timetableWhereInput[]
   NOT?: Prisma.timetableWhereInput | Prisma.timetableWhereInput[]
-  hall_id?: Prisma.UuidFilter<"timetable"> | string
+  hall_id?: Prisma.UuidNullableFilter<"timetable"> | string | null
   academic_year?: Prisma.IntNullableFilter<"timetable"> | number | null
   semester?: Prisma.IntNullableFilter<"timetable"> | number | null
   day_of_week?: Prisma.StringFilter<"timetable"> | string
@@ -323,14 +332,15 @@ export type timetableWhereUniqueInput = Prisma.AtLeast<{
   subject_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   group_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   lecturer_name?: Prisma.StringNullableFilter<"timetable"> | string | null
+  raw_hall_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   is_reserved?: Prisma.BoolNullableFilter<"timetable"> | boolean | null
   created_at?: Prisma.DateTimeNullableFilter<"timetable"> | Date | string | null
-  lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsScalarRelationFilter, Prisma.lecture_hallsWhereInput>
+  lecture_halls?: Prisma.XOR<Prisma.Lecture_hallsNullableScalarRelationFilter, Prisma.lecture_hallsWhereInput> | null
 }, "timetable_id">
 
 export type timetableOrderByWithAggregationInput = {
   timetable_id?: Prisma.SortOrder
-  hall_id?: Prisma.SortOrder
+  hall_id?: Prisma.SortOrderInput | Prisma.SortOrder
   academic_year?: Prisma.SortOrderInput | Prisma.SortOrder
   semester?: Prisma.SortOrderInput | Prisma.SortOrder
   day_of_week?: Prisma.SortOrder
@@ -340,6 +350,7 @@ export type timetableOrderByWithAggregationInput = {
   subject_name?: Prisma.SortOrderInput | Prisma.SortOrder
   group_name?: Prisma.SortOrderInput | Prisma.SortOrder
   lecturer_name?: Prisma.SortOrderInput | Prisma.SortOrder
+  raw_hall_name?: Prisma.SortOrderInput | Prisma.SortOrder
   is_reserved?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.timetableCountOrderByAggregateInput
@@ -354,7 +365,7 @@ export type timetableScalarWhereWithAggregatesInput = {
   OR?: Prisma.timetableScalarWhereWithAggregatesInput[]
   NOT?: Prisma.timetableScalarWhereWithAggregatesInput | Prisma.timetableScalarWhereWithAggregatesInput[]
   timetable_id?: Prisma.IntWithAggregatesFilter<"timetable"> | number
-  hall_id?: Prisma.UuidWithAggregatesFilter<"timetable"> | string
+  hall_id?: Prisma.UuidNullableWithAggregatesFilter<"timetable"> | string | null
   academic_year?: Prisma.IntNullableWithAggregatesFilter<"timetable"> | number | null
   semester?: Prisma.IntNullableWithAggregatesFilter<"timetable"> | number | null
   day_of_week?: Prisma.StringWithAggregatesFilter<"timetable"> | string
@@ -364,6 +375,7 @@ export type timetableScalarWhereWithAggregatesInput = {
   subject_name?: Prisma.StringNullableWithAggregatesFilter<"timetable"> | string | null
   group_name?: Prisma.StringNullableWithAggregatesFilter<"timetable"> | string | null
   lecturer_name?: Prisma.StringNullableWithAggregatesFilter<"timetable"> | string | null
+  raw_hall_name?: Prisma.StringNullableWithAggregatesFilter<"timetable"> | string | null
   is_reserved?: Prisma.BoolNullableWithAggregatesFilter<"timetable"> | boolean | null
   created_at?: Prisma.DateTimeNullableWithAggregatesFilter<"timetable"> | Date | string | null
 }
@@ -378,14 +390,15 @@ export type timetableCreateInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
-  lecture_halls: Prisma.lecture_hallsCreateNestedOneWithoutTimetableInput
+  lecture_halls?: Prisma.lecture_hallsCreateNestedOneWithoutTimetableInput
 }
 
 export type timetableUncheckedCreateInput = {
   timetable_id?: number
-  hall_id: string
+  hall_id?: string | null
   academic_year?: number | null
   semester?: number | null
   day_of_week: string
@@ -395,6 +408,7 @@ export type timetableUncheckedCreateInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
 }
@@ -409,14 +423,15 @@ export type timetableUpdateInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  lecture_halls?: Prisma.lecture_hallsUpdateOneRequiredWithoutTimetableNestedInput
+  lecture_halls?: Prisma.lecture_hallsUpdateOneWithoutTimetableNestedInput
 }
 
 export type timetableUncheckedUpdateInput = {
   timetable_id?: Prisma.IntFieldUpdateOperationsInput | number
-  hall_id?: Prisma.StringFieldUpdateOperationsInput | string
+  hall_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   academic_year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   semester?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   day_of_week?: Prisma.StringFieldUpdateOperationsInput | string
@@ -426,13 +441,14 @@ export type timetableUncheckedUpdateInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type timetableCreateManyInput = {
   timetable_id?: number
-  hall_id: string
+  hall_id?: string | null
   academic_year?: number | null
   semester?: number | null
   day_of_week: string
@@ -442,6 +458,7 @@ export type timetableCreateManyInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
 }
@@ -456,13 +473,14 @@ export type timetableUpdateManyMutationInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
 
 export type timetableUncheckedUpdateManyInput = {
   timetable_id?: Prisma.IntFieldUpdateOperationsInput | number
-  hall_id?: Prisma.StringFieldUpdateOperationsInput | string
+  hall_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   academic_year?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   semester?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   day_of_week?: Prisma.StringFieldUpdateOperationsInput | string
@@ -472,6 +490,7 @@ export type timetableUncheckedUpdateManyInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -498,6 +517,7 @@ export type timetableCountOrderByAggregateInput = {
   subject_name?: Prisma.SortOrder
   group_name?: Prisma.SortOrder
   lecturer_name?: Prisma.SortOrder
+  raw_hall_name?: Prisma.SortOrder
   is_reserved?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -520,6 +540,7 @@ export type timetableMaxOrderByAggregateInput = {
   subject_name?: Prisma.SortOrder
   group_name?: Prisma.SortOrder
   lecturer_name?: Prisma.SortOrder
+  raw_hall_name?: Prisma.SortOrder
   is_reserved?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -536,6 +557,7 @@ export type timetableMinOrderByAggregateInput = {
   subject_name?: Prisma.SortOrder
   group_name?: Prisma.SortOrder
   lecturer_name?: Prisma.SortOrder
+  raw_hall_name?: Prisma.SortOrder
   is_reserved?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -588,10 +610,6 @@ export type timetableUncheckedUpdateManyWithoutLecture_hallsNestedInput = {
   deleteMany?: Prisma.timetableScalarWhereInput | Prisma.timetableScalarWhereInput[]
 }
 
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
-}
-
 export type timetableCreateWithoutLecture_hallsInput = {
   academic_year?: number | null
   semester?: number | null
@@ -602,6 +620,7 @@ export type timetableCreateWithoutLecture_hallsInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
 }
@@ -617,6 +636,7 @@ export type timetableUncheckedCreateWithoutLecture_hallsInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
 }
@@ -652,7 +672,7 @@ export type timetableScalarWhereInput = {
   OR?: Prisma.timetableScalarWhereInput[]
   NOT?: Prisma.timetableScalarWhereInput | Prisma.timetableScalarWhereInput[]
   timetable_id?: Prisma.IntFilter<"timetable"> | number
-  hall_id?: Prisma.UuidFilter<"timetable"> | string
+  hall_id?: Prisma.UuidNullableFilter<"timetable"> | string | null
   academic_year?: Prisma.IntNullableFilter<"timetable"> | number | null
   semester?: Prisma.IntNullableFilter<"timetable"> | number | null
   day_of_week?: Prisma.StringFilter<"timetable"> | string
@@ -662,6 +682,7 @@ export type timetableScalarWhereInput = {
   subject_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   group_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   lecturer_name?: Prisma.StringNullableFilter<"timetable"> | string | null
+  raw_hall_name?: Prisma.StringNullableFilter<"timetable"> | string | null
   is_reserved?: Prisma.BoolNullableFilter<"timetable"> | boolean | null
   created_at?: Prisma.DateTimeNullableFilter<"timetable"> | Date | string | null
 }
@@ -677,6 +698,7 @@ export type timetableCreateManyLecture_hallsInput = {
   subject_name?: string | null
   group_name?: string | null
   lecturer_name?: string | null
+  raw_hall_name?: string | null
   is_reserved?: boolean | null
   created_at?: Date | string | null
 }
@@ -691,6 +713,7 @@ export type timetableUpdateWithoutLecture_hallsInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -706,6 +729,7 @@ export type timetableUncheckedUpdateWithoutLecture_hallsInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -721,6 +745,7 @@ export type timetableUncheckedUpdateManyWithoutLecture_hallsInput = {
   subject_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   group_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   lecturer_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  raw_hall_name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   is_reserved?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -739,9 +764,10 @@ export type timetableSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   subject_name?: boolean
   group_name?: boolean
   lecturer_name?: boolean
+  raw_hall_name?: boolean
   is_reserved?: boolean
   created_at?: boolean
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }, ExtArgs["result"]["timetable"]>
 
 export type timetableSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -756,9 +782,10 @@ export type timetableSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ext
   subject_name?: boolean
   group_name?: boolean
   lecturer_name?: boolean
+  raw_hall_name?: boolean
   is_reserved?: boolean
   created_at?: boolean
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }, ExtArgs["result"]["timetable"]>
 
 export type timetableSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -773,9 +800,10 @@ export type timetableSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   subject_name?: boolean
   group_name?: boolean
   lecturer_name?: boolean
+  raw_hall_name?: boolean
   is_reserved?: boolean
   created_at?: boolean
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }, ExtArgs["result"]["timetable"]>
 
 export type timetableSelectScalar = {
@@ -790,29 +818,30 @@ export type timetableSelectScalar = {
   subject_name?: boolean
   group_name?: boolean
   lecturer_name?: boolean
+  raw_hall_name?: boolean
   is_reserved?: boolean
   created_at?: boolean
 }
 
-export type timetableOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"timetable_id" | "hall_id" | "academic_year" | "semester" | "day_of_week" | "start_time" | "end_time" | "subject_code" | "subject_name" | "group_name" | "lecturer_name" | "is_reserved" | "created_at", ExtArgs["result"]["timetable"]>
+export type timetableOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"timetable_id" | "hall_id" | "academic_year" | "semester" | "day_of_week" | "start_time" | "end_time" | "subject_code" | "subject_name" | "group_name" | "lecturer_name" | "raw_hall_name" | "is_reserved" | "created_at", ExtArgs["result"]["timetable"]>
 export type timetableInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }
 export type timetableIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }
 export type timetableIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  lecture_halls?: boolean | Prisma.lecture_hallsDefaultArgs<ExtArgs>
+  lecture_halls?: boolean | Prisma.timetable$lecture_hallsArgs<ExtArgs>
 }
 
 export type $timetablePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "timetable"
   objects: {
-    lecture_halls: Prisma.$lecture_hallsPayload<ExtArgs>
+    lecture_halls: Prisma.$lecture_hallsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     timetable_id: number
-    hall_id: string
+    hall_id: string | null
     academic_year: number | null
     semester: number | null
     day_of_week: string
@@ -822,6 +851,7 @@ export type $timetablePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     subject_name: string | null
     group_name: string | null
     lecturer_name: string | null
+    raw_hall_name: string | null
     is_reserved: boolean | null
     created_at: Date | null
   }, ExtArgs["result"]["timetable"]>
@@ -1218,7 +1248,7 @@ readonly fields: timetableFieldRefs;
  */
 export interface Prisma__timetableClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  lecture_halls<T extends Prisma.lecture_hallsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.lecture_hallsDefaultArgs<ExtArgs>>): Prisma.Prisma__lecture_hallsClient<runtime.Types.Result.GetResult<Prisma.$lecture_hallsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  lecture_halls<T extends Prisma.timetable$lecture_hallsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.timetable$lecture_hallsArgs<ExtArgs>>): Prisma.Prisma__lecture_hallsClient<runtime.Types.Result.GetResult<Prisma.$lecture_hallsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1259,6 +1289,7 @@ export interface timetableFieldRefs {
   readonly subject_name: Prisma.FieldRef<"timetable", 'String'>
   readonly group_name: Prisma.FieldRef<"timetable", 'String'>
   readonly lecturer_name: Prisma.FieldRef<"timetable", 'String'>
+  readonly raw_hall_name: Prisma.FieldRef<"timetable", 'String'>
   readonly is_reserved: Prisma.FieldRef<"timetable", 'Boolean'>
   readonly created_at: Prisma.FieldRef<"timetable", 'DateTime'>
 }
@@ -1659,6 +1690,25 @@ export type timetableDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Int
    * Limit how many timetables to delete.
    */
   limit?: number
+}
+
+/**
+ * timetable.lecture_halls
+ */
+export type timetable$lecture_hallsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the lecture_halls
+   */
+  select?: Prisma.lecture_hallsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the lecture_halls
+   */
+  omit?: Prisma.lecture_hallsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.lecture_hallsInclude<ExtArgs> | null
+  where?: Prisma.lecture_hallsWhereInput
 }
 
 /**

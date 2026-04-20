@@ -15,7 +15,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <NotificationProvider>
       <SearchProvider>
-        <div className="flex h-screen bg-[#F4F9F8]">
+        <div className="flex h-screen bg-white">
           {/* Sidebar */}
           <Sidebar />
 

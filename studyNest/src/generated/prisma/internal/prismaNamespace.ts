@@ -391,6 +391,7 @@ export const ModelName = {
   hall_usage_logs: 'hall_usage_logs',
   lecture_halls: 'lecture_halls',
   notifications: 'notifications',
+  admin_broadcast_messages: 'admin_broadcast_messages',
   study_area_usage_logs: 'study_area_usage_logs',
   study_areas: 'study_areas',
   timetable: 'timetable',
@@ -421,7 +422,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "complaint_updates" | "complaints" | "favorite_halls" | "favorite_study_areas" | "hall_usage_logs" | "lecture_halls" | "notifications" | "study_area_usage_logs" | "study_areas" | "timetable" | "update_request_pings" | "users" | "volunteer_hall_updates" | "volunteer_reviews" | "volunteer_scores" | "location_permissions" | "volunteer_study_area_updates" | "area_occupancy" | "live_locations" | "hall_requests" | "hall_request_updates" | "volunteer_feedback"
+    modelProps: "complaint_updates" | "complaints" | "favorite_halls" | "favorite_study_areas" | "hall_usage_logs" | "lecture_halls" | "notifications" | "admin_broadcast_messages" | "study_area_usage_logs" | "study_areas" | "timetable" | "update_request_pings" | "users" | "volunteer_hall_updates" | "volunteer_reviews" | "volunteer_scores" | "location_permissions" | "volunteer_study_area_updates" | "area_occupancy" | "live_locations" | "hall_requests" | "hall_request_updates" | "volunteer_feedback"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -940,6 +941,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.notificationsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.NotificationsCountAggregateOutputType> | number
+        }
+      }
+    }
+    admin_broadcast_messages: {
+      payload: Prisma.$admin_broadcast_messagesPayload<ExtArgs>
+      fields: Prisma.admin_broadcast_messagesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.admin_broadcast_messagesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.admin_broadcast_messagesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        findFirst: {
+          args: Prisma.admin_broadcast_messagesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.admin_broadcast_messagesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        findMany: {
+          args: Prisma.admin_broadcast_messagesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>[]
+        }
+        create: {
+          args: Prisma.admin_broadcast_messagesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        createMany: {
+          args: Prisma.admin_broadcast_messagesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.admin_broadcast_messagesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>[]
+        }
+        delete: {
+          args: Prisma.admin_broadcast_messagesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        update: {
+          args: Prisma.admin_broadcast_messagesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        deleteMany: {
+          args: Prisma.admin_broadcast_messagesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.admin_broadcast_messagesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.admin_broadcast_messagesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>[]
+        }
+        upsert: {
+          args: Prisma.admin_broadcast_messagesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$admin_broadcast_messagesPayload>
+        }
+        aggregate: {
+          args: Prisma.Admin_broadcast_messagesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAdmin_broadcast_messages>
+        }
+        groupBy: {
+          args: Prisma.admin_broadcast_messagesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Admin_broadcast_messagesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.admin_broadcast_messagesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Admin_broadcast_messagesCountAggregateOutputType> | number
         }
       }
     }
@@ -2185,6 +2260,21 @@ export const NotificationsScalarFieldEnum = {
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
 
 
+export const Admin_broadcast_messagesScalarFieldEnum = {
+  message_id: 'message_id',
+  title: 'title',
+  message: 'message',
+  scheduled_at: 'scheduled_at',
+  expires_at: 'expires_at',
+  is_active: 'is_active',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Admin_broadcast_messagesScalarFieldEnum = (typeof Admin_broadcast_messagesScalarFieldEnum)[keyof typeof Admin_broadcast_messagesScalarFieldEnum]
+
+
 export const Study_area_usage_logsScalarFieldEnum = {
   area_usage_id: 'area_usage_id',
   study_area_id: 'study_area_id',
@@ -2230,6 +2320,7 @@ export const TimetableScalarFieldEnum = {
   subject_name: 'subject_name',
   group_name: 'group_name',
   lecturer_name: 'lecturer_name',
+  raw_hall_name: 'raw_hall_name',
   is_reserved: 'is_reserved',
   created_at: 'created_at'
 } as const
@@ -2622,6 +2713,7 @@ export type GlobalOmitConfig = {
   hall_usage_logs?: Prisma.hall_usage_logsOmit
   lecture_halls?: Prisma.lecture_hallsOmit
   notifications?: Prisma.notificationsOmit
+  admin_broadcast_messages?: Prisma.admin_broadcast_messagesOmit
   study_area_usage_logs?: Prisma.study_area_usage_logsOmit
   study_areas?: Prisma.study_areasOmit
   timetable?: Prisma.timetableOmit

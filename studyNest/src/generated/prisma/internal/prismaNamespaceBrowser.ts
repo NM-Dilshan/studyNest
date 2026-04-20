@@ -58,6 +58,7 @@ export const ModelName = {
   hall_usage_logs: 'hall_usage_logs',
   lecture_halls: 'lecture_halls',
   notifications: 'notifications',
+  admin_broadcast_messages: 'admin_broadcast_messages',
   study_area_usage_logs: 'study_area_usage_logs',
   study_areas: 'study_areas',
   timetable: 'timetable',
@@ -184,6 +185,21 @@ export const NotificationsScalarFieldEnum = {
 export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
 
 
+export const Admin_broadcast_messagesScalarFieldEnum = {
+  message_id: 'message_id',
+  title: 'title',
+  message: 'message',
+  scheduled_at: 'scheduled_at',
+  expires_at: 'expires_at',
+  is_active: 'is_active',
+  created_by: 'created_by',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Admin_broadcast_messagesScalarFieldEnum = (typeof Admin_broadcast_messagesScalarFieldEnum)[keyof typeof Admin_broadcast_messagesScalarFieldEnum]
+
+
 export const Study_area_usage_logsScalarFieldEnum = {
   area_usage_id: 'area_usage_id',
   study_area_id: 'study_area_id',
@@ -229,6 +245,7 @@ export const TimetableScalarFieldEnum = {
   subject_name: 'subject_name',
   group_name: 'group_name',
   lecturer_name: 'lecturer_name',
+  raw_hall_name: 'raw_hall_name',
   is_reserved: 'is_reserved',
   created_at: 'created_at'
 } as const

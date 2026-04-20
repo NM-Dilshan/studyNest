@@ -274,7 +274,6 @@ export type usersWhereInput = {
   department?: Prisma.StringNullableFilter<"users"> | string | null
   complaint_updates?: Prisma.Complaint_updatesListRelationFilter
   complaints?: Prisma.ComplaintsListRelationFilter
-  favorite_halls?: Prisma.Favorite_hallsListRelationFilter
   favorite_study_areas?: Prisma.Favorite_study_areasListRelationFilter
   notifications?: Prisma.NotificationsListRelationFilter
   update_request_pings?: Prisma.Update_request_pingsListRelationFilter
@@ -303,7 +302,6 @@ export type usersOrderByWithRelationInput = {
   department?: Prisma.SortOrderInput | Prisma.SortOrder
   complaint_updates?: Prisma.complaint_updatesOrderByRelationAggregateInput
   complaints?: Prisma.complaintsOrderByRelationAggregateInput
-  favorite_halls?: Prisma.favorite_hallsOrderByRelationAggregateInput
   favorite_study_areas?: Prisma.favorite_study_areasOrderByRelationAggregateInput
   notifications?: Prisma.notificationsOrderByRelationAggregateInput
   update_request_pings?: Prisma.update_request_pingsOrderByRelationAggregateInput
@@ -335,7 +333,6 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   department?: Prisma.StringNullableFilter<"users"> | string | null
   complaint_updates?: Prisma.Complaint_updatesListRelationFilter
   complaints?: Prisma.ComplaintsListRelationFilter
-  favorite_halls?: Prisma.Favorite_hallsListRelationFilter
   favorite_study_areas?: Prisma.Favorite_study_areasListRelationFilter
   notifications?: Prisma.NotificationsListRelationFilter
   update_request_pings?: Prisma.Update_request_pingsListRelationFilter
@@ -402,7 +399,6 @@ export type usersCreateInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -431,7 +427,6 @@ export type usersUncheckedCreateInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -460,7 +455,6 @@ export type usersUpdateInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -489,7 +483,6 @@ export type usersUncheckedUpdateInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -632,20 +625,6 @@ export type usersUpdateOneRequiredWithoutComplaintsNestedInput = {
   upsert?: Prisma.usersUpsertWithoutComplaintsInput
   connect?: Prisma.usersWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutComplaintsInput, Prisma.usersUpdateWithoutComplaintsInput>, Prisma.usersUncheckedUpdateWithoutComplaintsInput>
-}
-
-export type usersCreateNestedOneWithoutFavorite_hallsInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutFavorite_hallsInput, Prisma.usersUncheckedCreateWithoutFavorite_hallsInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutFavorite_hallsInput
-  connect?: Prisma.usersWhereUniqueInput
-}
-
-export type usersUpdateOneRequiredWithoutFavorite_hallsNestedInput = {
-  create?: Prisma.XOR<Prisma.usersCreateWithoutFavorite_hallsInput, Prisma.usersUncheckedCreateWithoutFavorite_hallsInput>
-  connectOrCreate?: Prisma.usersCreateOrConnectWithoutFavorite_hallsInput
-  upsert?: Prisma.usersUpsertWithoutFavorite_hallsInput
-  connect?: Prisma.usersWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutFavorite_hallsInput, Prisma.usersUpdateWithoutFavorite_hallsInput>, Prisma.usersUncheckedUpdateWithoutFavorite_hallsInput>
 }
 
 export type usersCreateNestedOneWithoutFavorite_study_areasInput = {
@@ -824,7 +803,6 @@ export type usersCreateWithoutComplaint_updatesInput = {
   created_at?: Date | string | null
   department?: string | null
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -852,7 +830,6 @@ export type usersUncheckedCreateWithoutComplaint_updatesInput = {
   created_at?: Date | string | null
   department?: string | null
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -896,7 +873,6 @@ export type usersUpdateWithoutComplaint_updatesInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -924,7 +900,6 @@ export type usersUncheckedUpdateWithoutComplaint_updatesInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -952,7 +927,6 @@ export type usersCreateWithoutComplaintsInput = {
   created_at?: Date | string | null
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -980,7 +954,6 @@ export type usersUncheckedCreateWithoutComplaintsInput = {
   created_at?: Date | string | null
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -1024,7 +997,6 @@ export type usersUpdateWithoutComplaintsInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -1052,135 +1024,6 @@ export type usersUncheckedUpdateWithoutComplaintsInput = {
   created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
-  notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
-  update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
-  volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedUpdateManyWithoutUsersNestedInput
-  volunteer_reviews_volunteer_reviews_student_idTousers?: Prisma.volunteer_reviewsUncheckedUpdateManyWithoutUsers_volunteer_reviews_student_idTousersNestedInput
-  volunteer_reviews_volunteer_reviews_volunteer_idTousers?: Prisma.volunteer_reviewsUncheckedUpdateManyWithoutUsers_volunteer_reviews_volunteer_idTousersNestedInput
-  volunteer_scores?: Prisma.volunteer_scoresUncheckedUpdateOneWithoutUsersNestedInput
-  volunteer_study_area_updates?: Prisma.volunteer_study_area_updatesUncheckedUpdateManyWithoutUsersNestedInput
-  hall_requests_requester?: Prisma.hall_requestsUncheckedUpdateManyWithoutRequesterNestedInput
-  hall_request_updates_responder?: Prisma.hall_request_updatesUncheckedUpdateManyWithoutResponderNestedInput
-  volunteer_feedback_given?: Prisma.volunteer_feedbackUncheckedUpdateManyWithoutGiven_byNestedInput
-}
-
-export type usersCreateWithoutFavorite_hallsInput = {
-  user_id?: string
-  student_id?: string | null
-  volunteer_id?: string | null
-  name: string
-  email: string
-  mobile?: string | null
-  password: string
-  role: string
-  is_active?: boolean | null
-  reputation_score?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  created_at?: Date | string | null
-  department?: string | null
-  complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
-  complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
-  notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
-  update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
-  volunteer_hall_updates?: Prisma.volunteer_hall_updatesCreateNestedManyWithoutUsersInput
-  volunteer_reviews_volunteer_reviews_student_idTousers?: Prisma.volunteer_reviewsCreateNestedManyWithoutUsers_volunteer_reviews_student_idTousersInput
-  volunteer_reviews_volunteer_reviews_volunteer_idTousers?: Prisma.volunteer_reviewsCreateNestedManyWithoutUsers_volunteer_reviews_volunteer_idTousersInput
-  volunteer_scores?: Prisma.volunteer_scoresCreateNestedOneWithoutUsersInput
-  volunteer_study_area_updates?: Prisma.volunteer_study_area_updatesCreateNestedManyWithoutUsersInput
-  hall_requests_requester?: Prisma.hall_requestsCreateNestedManyWithoutRequesterInput
-  hall_request_updates_responder?: Prisma.hall_request_updatesCreateNestedManyWithoutResponderInput
-  volunteer_feedback_given?: Prisma.volunteer_feedbackCreateNestedManyWithoutGiven_byInput
-}
-
-export type usersUncheckedCreateWithoutFavorite_hallsInput = {
-  user_id?: string
-  student_id?: string | null
-  volunteer_id?: string | null
-  name: string
-  email: string
-  mobile?: string | null
-  password: string
-  role: string
-  is_active?: boolean | null
-  reputation_score?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  created_at?: Date | string | null
-  department?: string | null
-  complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
-  complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
-  notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
-  update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
-  volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedCreateNestedManyWithoutUsersInput
-  volunteer_reviews_volunteer_reviews_student_idTousers?: Prisma.volunteer_reviewsUncheckedCreateNestedManyWithoutUsers_volunteer_reviews_student_idTousersInput
-  volunteer_reviews_volunteer_reviews_volunteer_idTousers?: Prisma.volunteer_reviewsUncheckedCreateNestedManyWithoutUsers_volunteer_reviews_volunteer_idTousersInput
-  volunteer_scores?: Prisma.volunteer_scoresUncheckedCreateNestedOneWithoutUsersInput
-  volunteer_study_area_updates?: Prisma.volunteer_study_area_updatesUncheckedCreateNestedManyWithoutUsersInput
-  hall_requests_requester?: Prisma.hall_requestsUncheckedCreateNestedManyWithoutRequesterInput
-  hall_request_updates_responder?: Prisma.hall_request_updatesUncheckedCreateNestedManyWithoutResponderInput
-  volunteer_feedback_given?: Prisma.volunteer_feedbackUncheckedCreateNestedManyWithoutGiven_byInput
-}
-
-export type usersCreateOrConnectWithoutFavorite_hallsInput = {
-  where: Prisma.usersWhereUniqueInput
-  create: Prisma.XOR<Prisma.usersCreateWithoutFavorite_hallsInput, Prisma.usersUncheckedCreateWithoutFavorite_hallsInput>
-}
-
-export type usersUpsertWithoutFavorite_hallsInput = {
-  update: Prisma.XOR<Prisma.usersUpdateWithoutFavorite_hallsInput, Prisma.usersUncheckedUpdateWithoutFavorite_hallsInput>
-  create: Prisma.XOR<Prisma.usersCreateWithoutFavorite_hallsInput, Prisma.usersUncheckedCreateWithoutFavorite_hallsInput>
-  where?: Prisma.usersWhereInput
-}
-
-export type usersUpdateToOneWithWhereWithoutFavorite_hallsInput = {
-  where?: Prisma.usersWhereInput
-  data: Prisma.XOR<Prisma.usersUpdateWithoutFavorite_hallsInput, Prisma.usersUncheckedUpdateWithoutFavorite_hallsInput>
-}
-
-export type usersUpdateWithoutFavorite_hallsInput = {
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  student_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  volunteer_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  password?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.StringFieldUpdateOperationsInput | string
-  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  reputation_score?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
-  complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
-  notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
-  update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
-  volunteer_hall_updates?: Prisma.volunteer_hall_updatesUpdateManyWithoutUsersNestedInput
-  volunteer_reviews_volunteer_reviews_student_idTousers?: Prisma.volunteer_reviewsUpdateManyWithoutUsers_volunteer_reviews_student_idTousersNestedInput
-  volunteer_reviews_volunteer_reviews_volunteer_idTousers?: Prisma.volunteer_reviewsUpdateManyWithoutUsers_volunteer_reviews_volunteer_idTousersNestedInput
-  volunteer_scores?: Prisma.volunteer_scoresUpdateOneWithoutUsersNestedInput
-  volunteer_study_area_updates?: Prisma.volunteer_study_area_updatesUpdateManyWithoutUsersNestedInput
-  hall_requests_requester?: Prisma.hall_requestsUpdateManyWithoutRequesterNestedInput
-  hall_request_updates_responder?: Prisma.hall_request_updatesUpdateManyWithoutResponderNestedInput
-  volunteer_feedback_given?: Prisma.volunteer_feedbackUpdateManyWithoutGiven_byNestedInput
-}
-
-export type usersUncheckedUpdateWithoutFavorite_hallsInput = {
-  user_id?: Prisma.StringFieldUpdateOperationsInput | string
-  student_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  volunteer_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  name?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  password?: Prisma.StringFieldUpdateOperationsInput | string
-  role?: Prisma.StringFieldUpdateOperationsInput | string
-  is_active?: Prisma.NullableBoolFieldUpdateOperationsInput | boolean | null
-  reputation_score?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  created_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
-  complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -1209,7 +1052,6 @@ export type usersCreateWithoutFavorite_study_areasInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesCreateNestedManyWithoutUsersInput
@@ -1237,7 +1079,6 @@ export type usersUncheckedCreateWithoutFavorite_study_areasInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedCreateNestedManyWithoutUsersInput
@@ -1281,7 +1122,6 @@ export type usersUpdateWithoutFavorite_study_areasInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUpdateManyWithoutUsersNestedInput
@@ -1309,7 +1149,6 @@ export type usersUncheckedUpdateWithoutFavorite_study_areasInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedUpdateManyWithoutUsersNestedInput
@@ -1337,7 +1176,6 @@ export type usersCreateWithoutNotificationsInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesCreateNestedManyWithoutUsersInput
@@ -1365,7 +1203,6 @@ export type usersUncheckedCreateWithoutNotificationsInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedCreateNestedManyWithoutUsersInput
@@ -1409,7 +1246,6 @@ export type usersUpdateWithoutNotificationsInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUpdateManyWithoutUsersNestedInput
@@ -1437,7 +1273,6 @@ export type usersUncheckedUpdateWithoutNotificationsInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedUpdateManyWithoutUsersNestedInput
@@ -1465,7 +1300,6 @@ export type usersCreateWithoutUpdate_request_pingsInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesCreateNestedManyWithoutUsersInput
@@ -1493,7 +1327,6 @@ export type usersUncheckedCreateWithoutUpdate_request_pingsInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedCreateNestedManyWithoutUsersInput
@@ -1537,7 +1370,6 @@ export type usersUpdateWithoutUpdate_request_pingsInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUpdateManyWithoutUsersNestedInput
@@ -1565,7 +1397,6 @@ export type usersUncheckedUpdateWithoutUpdate_request_pingsInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   volunteer_hall_updates?: Prisma.volunteer_hall_updatesUncheckedUpdateManyWithoutUsersNestedInput
@@ -1593,7 +1424,6 @@ export type usersCreateWithoutVolunteer_hall_updatesInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -1621,7 +1451,6 @@ export type usersUncheckedCreateWithoutVolunteer_hall_updatesInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -1665,7 +1494,6 @@ export type usersUpdateWithoutVolunteer_hall_updatesInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -1693,7 +1521,6 @@ export type usersUncheckedUpdateWithoutVolunteer_hall_updatesInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -1721,7 +1548,6 @@ export type usersCreateWithoutVolunteer_reviews_volunteer_reviews_student_idTous
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -1749,7 +1575,6 @@ export type usersUncheckedCreateWithoutVolunteer_reviews_volunteer_reviews_stude
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -1782,7 +1607,6 @@ export type usersCreateWithoutVolunteer_reviews_volunteer_reviews_volunteer_idTo
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -1810,7 +1634,6 @@ export type usersUncheckedCreateWithoutVolunteer_reviews_volunteer_reviews_volun
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -1854,7 +1677,6 @@ export type usersUpdateWithoutVolunteer_reviews_volunteer_reviews_student_idTous
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -1882,7 +1704,6 @@ export type usersUncheckedUpdateWithoutVolunteer_reviews_volunteer_reviews_stude
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -1921,7 +1742,6 @@ export type usersUpdateWithoutVolunteer_reviews_volunteer_reviews_volunteer_idTo
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -1949,7 +1769,6 @@ export type usersUncheckedUpdateWithoutVolunteer_reviews_volunteer_reviews_volun
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -1977,7 +1796,6 @@ export type usersCreateWithoutVolunteer_scoresInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -2005,7 +1823,6 @@ export type usersUncheckedCreateWithoutVolunteer_scoresInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -2049,7 +1866,6 @@ export type usersUpdateWithoutVolunteer_scoresInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -2077,7 +1893,6 @@ export type usersUncheckedUpdateWithoutVolunteer_scoresInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -2105,7 +1920,6 @@ export type usersCreateWithoutVolunteer_study_area_updatesInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -2133,7 +1947,6 @@ export type usersUncheckedCreateWithoutVolunteer_study_area_updatesInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -2177,7 +1990,6 @@ export type usersUpdateWithoutVolunteer_study_area_updatesInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -2205,7 +2017,6 @@ export type usersUncheckedUpdateWithoutVolunteer_study_area_updatesInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -2233,7 +2044,6 @@ export type usersCreateWithoutHall_requests_requesterInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -2261,7 +2071,6 @@ export type usersUncheckedCreateWithoutHall_requests_requesterInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -2305,7 +2114,6 @@ export type usersUpdateWithoutHall_requests_requesterInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -2333,7 +2141,6 @@ export type usersUncheckedUpdateWithoutHall_requests_requesterInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -2361,7 +2168,6 @@ export type usersCreateWithoutHall_request_updates_responderInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -2389,7 +2195,6 @@ export type usersUncheckedCreateWithoutHall_request_updates_responderInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -2433,7 +2238,6 @@ export type usersUpdateWithoutHall_request_updates_responderInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -2461,7 +2265,6 @@ export type usersUncheckedUpdateWithoutHall_request_updates_responderInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -2489,7 +2292,6 @@ export type usersCreateWithoutVolunteer_feedback_givenInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsCreateNestedManyWithoutUsersInput
@@ -2517,7 +2319,6 @@ export type usersUncheckedCreateWithoutVolunteer_feedback_givenInput = {
   department?: string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedCreateNestedManyWithoutUsersInput
   complaints?: Prisma.complaintsUncheckedCreateNestedManyWithoutUsersInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedCreateNestedManyWithoutUsersInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedCreateNestedManyWithoutUsersInput
   notifications?: Prisma.notificationsUncheckedCreateNestedManyWithoutUsersInput
   update_request_pings?: Prisma.update_request_pingsUncheckedCreateNestedManyWithoutUsersInput
@@ -2561,7 +2362,6 @@ export type usersUpdateWithoutVolunteer_feedback_givenInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUpdateManyWithoutUsersNestedInput
@@ -2589,7 +2389,6 @@ export type usersUncheckedUpdateWithoutVolunteer_feedback_givenInput = {
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   complaint_updates?: Prisma.complaint_updatesUncheckedUpdateManyWithoutUsersNestedInput
   complaints?: Prisma.complaintsUncheckedUpdateManyWithoutUsersNestedInput
-  favorite_halls?: Prisma.favorite_hallsUncheckedUpdateManyWithoutUsersNestedInput
   favorite_study_areas?: Prisma.favorite_study_areasUncheckedUpdateManyWithoutUsersNestedInput
   notifications?: Prisma.notificationsUncheckedUpdateManyWithoutUsersNestedInput
   update_request_pings?: Prisma.update_request_pingsUncheckedUpdateManyWithoutUsersNestedInput
@@ -2610,7 +2409,6 @@ export type usersUncheckedUpdateWithoutVolunteer_feedback_givenInput = {
 export type UsersCountOutputType = {
   complaint_updates: number
   complaints: number
-  favorite_halls: number
   favorite_study_areas: number
   notifications: number
   update_request_pings: number
@@ -2626,7 +2424,6 @@ export type UsersCountOutputType = {
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   complaint_updates?: boolean | UsersCountOutputTypeCountComplaint_updatesArgs
   complaints?: boolean | UsersCountOutputTypeCountComplaintsArgs
-  favorite_halls?: boolean | UsersCountOutputTypeCountFavorite_hallsArgs
   favorite_study_areas?: boolean | UsersCountOutputTypeCountFavorite_study_areasArgs
   notifications?: boolean | UsersCountOutputTypeCountNotificationsArgs
   update_request_pings?: boolean | UsersCountOutputTypeCountUpdate_request_pingsArgs
@@ -2661,13 +2458,6 @@ export type UsersCountOutputTypeCountComplaint_updatesArgs<ExtArgs extends runti
  */
 export type UsersCountOutputTypeCountComplaintsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.complaintsWhereInput
-}
-
-/**
- * UsersCountOutputType without action
- */
-export type UsersCountOutputTypeCountFavorite_hallsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.favorite_hallsWhereInput
 }
 
 /**
@@ -2756,7 +2546,6 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   department?: boolean
   complaint_updates?: boolean | Prisma.users$complaint_updatesArgs<ExtArgs>
   complaints?: boolean | Prisma.users$complaintsArgs<ExtArgs>
-  favorite_halls?: boolean | Prisma.users$favorite_hallsArgs<ExtArgs>
   favorite_study_areas?: boolean | Prisma.users$favorite_study_areasArgs<ExtArgs>
   notifications?: boolean | Prisma.users$notificationsArgs<ExtArgs>
   update_request_pings?: boolean | Prisma.users$update_request_pingsArgs<ExtArgs>
@@ -2820,7 +2609,6 @@ export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   complaint_updates?: boolean | Prisma.users$complaint_updatesArgs<ExtArgs>
   complaints?: boolean | Prisma.users$complaintsArgs<ExtArgs>
-  favorite_halls?: boolean | Prisma.users$favorite_hallsArgs<ExtArgs>
   favorite_study_areas?: boolean | Prisma.users$favorite_study_areasArgs<ExtArgs>
   notifications?: boolean | Prisma.users$notificationsArgs<ExtArgs>
   update_request_pings?: boolean | Prisma.users$update_request_pingsArgs<ExtArgs>
@@ -2842,7 +2630,6 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   objects: {
     complaint_updates: Prisma.$complaint_updatesPayload<ExtArgs>[]
     complaints: Prisma.$complaintsPayload<ExtArgs>[]
-    favorite_halls: Prisma.$favorite_hallsPayload<ExtArgs>[]
     favorite_study_areas: Prisma.$favorite_study_areasPayload<ExtArgs>[]
     notifications: Prisma.$notificationsPayload<ExtArgs>[]
     update_request_pings: Prisma.$update_request_pingsPayload<ExtArgs>[]
@@ -3264,7 +3051,6 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   readonly [Symbol.toStringTag]: "PrismaPromise"
   complaint_updates<T extends Prisma.users$complaint_updatesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$complaint_updatesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$complaint_updatesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   complaints<T extends Prisma.users$complaintsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$complaintsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$complaintsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  favorite_halls<T extends Prisma.users$favorite_hallsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$favorite_hallsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$favorite_hallsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   favorite_study_areas<T extends Prisma.users$favorite_study_areasArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$favorite_study_areasArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$favorite_study_areasPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   notifications<T extends Prisma.users$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$notificationsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   update_request_pings<T extends Prisma.users$update_request_pingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$update_request_pingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$update_request_pingsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3755,30 +3541,6 @@ export type users$complaintsArgs<ExtArgs extends runtime.Types.Extensions.Intern
   take?: number
   skip?: number
   distinct?: Prisma.ComplaintsScalarFieldEnum | Prisma.ComplaintsScalarFieldEnum[]
-}
-
-/**
- * users.favorite_halls
- */
-export type users$favorite_hallsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the favorite_halls
-   */
-  select?: Prisma.favorite_hallsSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the favorite_halls
-   */
-  omit?: Prisma.favorite_hallsOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.favorite_hallsInclude<ExtArgs> | null
-  where?: Prisma.favorite_hallsWhereInput
-  orderBy?: Prisma.favorite_hallsOrderByWithRelationInput | Prisma.favorite_hallsOrderByWithRelationInput[]
-  cursor?: Prisma.favorite_hallsWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.Favorite_hallsScalarFieldEnum | Prisma.Favorite_hallsScalarFieldEnum[]
 }
 
 /**

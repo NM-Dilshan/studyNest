@@ -44,16 +44,12 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
       }
     }
 
-    const timer = setTimeout(() => {
-      setUser(parsedUser)
-      // Check if GPS is enabled for this user
-      if (parsedUser) {
-        const gpsStatus = localStorage.getItem(`gpsEnabled_${parsedUser.user_id}`)
-        setGpsEnabled(gpsStatus === 'true')
-      }
-    }, 0)
-
-    return () => clearTimeout(timer)
+    setUser(parsedUser)
+    // Check if GPS is enabled for this user
+    if (parsedUser) {
+      const gpsStatus = localStorage.getItem(`gpsEnabled_${parsedUser.user_id}`)
+      setGpsEnabled(gpsStatus === 'true')
+    }
   }, [])
 
   const handleLogout = (e: React.FormEvent) => {
@@ -95,9 +91,10 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
   const isVolunteer = user?.role === 'volunteer'
 
   return (
-    <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+    <>
+      <header className="fixed top-0 inset-x-0 bg-gradient-to-r from-sky-50 to-blue-50 border-b border-sky-100 shadow-sm z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
           {/* Logo & Branding */}
           <Link href="/home" className="flex items-center space-x-2 flex-shrink-0 hover:opacity-80 transition">
             <Image 
@@ -195,8 +192,10 @@ export default function MainHeader({ showAuthActions = true, showStudentId = tru
               </Link>
             )}
           </div>
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <div className="h-16" aria-hidden="true" />
+    </>
   )
 }

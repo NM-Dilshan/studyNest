@@ -285,7 +285,7 @@ export default function AdminDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F4F9F8]">
+    <div className="min-h-screen bg-white">
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
 

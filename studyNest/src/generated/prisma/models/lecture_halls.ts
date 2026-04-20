@@ -688,10 +688,12 @@ export type lecture_hallsCreateNestedOneWithoutTimetableInput = {
   connect?: Prisma.lecture_hallsWhereUniqueInput
 }
 
-export type lecture_hallsUpdateOneRequiredWithoutTimetableNestedInput = {
+export type lecture_hallsUpdateOneWithoutTimetableNestedInput = {
   create?: Prisma.XOR<Prisma.lecture_hallsCreateWithoutTimetableInput, Prisma.lecture_hallsUncheckedCreateWithoutTimetableInput>
   connectOrCreate?: Prisma.lecture_hallsCreateOrConnectWithoutTimetableInput
   upsert?: Prisma.lecture_hallsUpsertWithoutTimetableInput
+  disconnect?: Prisma.lecture_hallsWhereInput | boolean
+  delete?: Prisma.lecture_hallsWhereInput | boolean
   connect?: Prisma.lecture_hallsWhereUniqueInput
   update?: Prisma.XOR<Prisma.XOR<Prisma.lecture_hallsUpdateToOneWithWhereWithoutTimetableInput, Prisma.lecture_hallsUpdateWithoutTimetableInput>, Prisma.lecture_hallsUncheckedUpdateWithoutTimetableInput>
 }
