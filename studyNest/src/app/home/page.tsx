@@ -5,7 +5,6 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, BarChart3, BellRing, Clock3, MapPin, Radar, Send } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
-import SearchBar from "@/components/SearchBar";
 import AppBackground from "@/components/AppBackground";
 import AnimatedSection from "@/components/ui/AnimatedSection";
 import PageHeader from "@/components/ui/PageHeader";
@@ -316,11 +315,7 @@ export default function HomePage() {
             </div>
           </AnimatedSection>
 
-          <AnimatedSection className="mt-7">
-            <GlassCard className="p-4">
-              <SearchBar />
-            </GlassCard>
-          </AnimatedSection>
+ 
 
           <AnimatedSection className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" delay={0.05}>
             <StatCard title="Live Updates" value={recentUpdates.length} helper="Community status pulses" icon={<Activity className="h-5 w-5" />} />
