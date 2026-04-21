@@ -14,6 +14,13 @@ type StudyAreaCardMapPreviewProps = {
   radiusMeters: number
   currentCount: number
   crowdTone: CrowdTone
+  insideUsers?: {
+    id: string
+    label: string
+    joinedAt: number
+    latitude: number
+    longitude: number
+  }[]
   userLocation?: {
     latitude: number
     longitude: number
@@ -46,12 +53,14 @@ export default function StudyAreaCardMapPreview({
   radiusMeters,
   currentCount,
   crowdTone,
+  insideUsers = [],
   userLocation,
 }: StudyAreaCardMapPreviewProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const zoneMarkerRef = useRef<L.Marker | null>(null)
   const userMarkerRef = useRef<L.CircleMarker | null>(null)
+  const insideUserMarkersRef = useRef<L.CircleMarker[]>([])
   const zoneCircleRef = useRef<L.Circle | null>(null)
 
   const userInsideZone = useMemo(() => {
@@ -86,6 +95,8 @@ export default function StudyAreaCardMapPreview({
 
     if (zoneMarkerRef.current) mapRef.current.removeLayer(zoneMarkerRef.current)
     if (userMarkerRef.current) mapRef.current.removeLayer(userMarkerRef.current)
+    insideUserMarkersRef.current.forEach((marker) => mapRef.current?.removeLayer(marker))
+    insideUserMarkersRef.current = []
     if (zoneCircleRef.current) mapRef.current.removeLayer(zoneCircleRef.current)
 
     const color = toneColors[crowdTone]
@@ -120,6 +131,25 @@ export default function StudyAreaCardMapPreview({
         .addTo(mapRef.current)
     }
 
+    insideUsers.forEach((user, index) => {
+      const marker = L.circleMarker([user.latitude, user.longitude], {
+        radius: 5,
+        color: '#0f766e',
+        fillColor: '#2dd4bf',
+        fillOpacity: 0.95,
+        weight: 2,
+      })
+        .bindTooltip(user.label, {
+          direction: 'top',
+          opacity: 0.9,
+          offset: [0, -4],
+        })
+        .bindPopup(`<strong>${user.label}</strong><br/><em>Live inside user ${index + 1}</em>`)
+        .addTo(mapRef.current)
+
+      insideUserMarkersRef.current.push(marker)
+    })
+
     mapRef.current.setView([latitude, longitude], 18)
 
     return () => {
@@ -128,7 +158,7 @@ export default function StudyAreaCardMapPreview({
         mapRef.current = null
       }
     }
-  }, [areaName, crowdTone, latitude, longitude, radiusMeters, userInsideZone, userLocation])
+  }, [areaName, crowdTone, insideUsers, latitude, longitude, radiusMeters, userInsideZone, userLocation])
 
   return (
     <div className="relative">

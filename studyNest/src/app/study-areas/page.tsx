@@ -5,7 +5,7 @@ import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import { useLocationTracking } from '@/hooks/useLocationTracking'
 import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary'
-import { CrowdStatus, haversineDistance } from '@/lib/geofence'
+import { CrowdStatus } from '@/lib/geofence'
 import { AlertCircle, RefreshCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -69,6 +69,9 @@ interface InsideUser {
   id: string
   label: string
   joinedAt: number
+  study_area_id?: string | null
+  latitude: number
+  longitude: number
 }
 
 const calculateOccupancy = (count: number, capacity: number) => {
@@ -82,14 +85,6 @@ const calculateOccupancy = (count: number, capacity: number) => {
     availableSeats,
     occupancyPercentage,
   }
-}
-
-const anonymizeUserLabel = (userId: string) => {
-  const seed = userId
-    .split('')
-    .reduce((sum, char) => sum + char.charCodeAt(0), 0)
-
-  return `User ${((seed % 999) + 1).toString()}`
 }
 
 const getCrowdStatusFromPercentage = (occupancyPercentage: number): CrowdStatus => {
@@ -110,7 +105,7 @@ export default function StudyAreaFinderPage() {
   const [buildingFilter, setBuildingFilter] = useState('all')
   const [featureFilter, setFeatureFilter] = useState<FeatureFilter>('all')
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [insideUsersByLocation, setInsideUsersByLocation] = useState<Record<string, InsideUser[]>>({})
+  const [liveStudents, setLiveStudents] = useState<InsideUser[]>([])
 
   const location = useLocationTracking(userId, true)
 
@@ -134,12 +129,29 @@ export default function StudyAreaFinderPage() {
   const fetchData = useCallback(async () => {
     try {
       setIsRefreshing(true)
-      const response = await fetch('/api/study-areas')
+      const [response, liveResponse] = await Promise.all([
+        fetch('/api/study-areas'),
+        fetch('/api/study-areas/live'),
+      ])
       if (!response.ok) throw new Error('Failed to fetch')
+      if (!liveResponse.ok) throw new Error('Failed to fetch live locations')
 
       const data = await response.json()
+      const liveData = await liveResponse.json()
       const areas: StudyAreaApiResponse[] = data.areas || []
       setStudyAreas(areas)
+      setLiveStudents(
+        Array.isArray(liveData.students)
+          ? liveData.students.map((student: any, index: number) => ({
+              id: student.user_id || `live-${index}`,
+              label: `User ${index + 1}`,
+              joinedAt: student.updated_at ? new Date(student.updated_at).getTime() : Date.now(),
+              latitude: student.latitude,
+              longitude: student.longitude,
+              study_area_id: student.study_area_id,
+            }))
+          : []
+      )
 
       const occupancyMap = new Map<string, OccupancyData>()
       const occupancyList: OccupancyData[] = []
@@ -183,6 +195,7 @@ export default function StudyAreaFinderPage() {
     } catch (fetchError) {
       console.error('Error fetching data:', fetchError)
       setError('Failed to load study areas')
+      setLiveStudents([])
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -227,89 +240,6 @@ export default function StudyAreaFinderPage() {
       longitude: location.currentLocation.longitude,
     }
   }, [location.currentLocation])
-
-  const handleUserEnter = useCallback((locationId: string, user: InsideUser) => {
-    setInsideUsersByLocation((previous) => {
-      const locationUsers = previous[locationId] || []
-      const alreadyInside = locationUsers.some((existingUser) => existingUser.id === user.id)
-
-      if (alreadyInside) {
-        return previous
-      }
-
-      return {
-        ...previous,
-        [locationId]: [...locationUsers, user],
-      }
-    })
-  }, [])
-
-  const handleUserLeave = useCallback((locationId: string, userIdToRemove: string) => {
-    setInsideUsersByLocation((previous) => {
-      const locationUsers = previous[locationId] || []
-      const updatedUsers = locationUsers.filter((existingUser) => existingUser.id !== userIdToRemove)
-
-      if (updatedUsers.length === locationUsers.length) {
-        return previous
-      }
-
-      if (updatedUsers.length === 0) {
-        const { [locationId]: _removed, ...rest } = previous
-        return rest
-      }
-
-      return {
-        ...previous,
-        [locationId]: updatedUsers,
-      }
-    })
-  }, [])
-
-  useEffect(() => {
-    if (!userId || !currentUserLocation) return
-
-    const liveUser: InsideUser = {
-      id: userId,
-      label: anonymizeUserLabel(userId),
-      joinedAt: Date.now(),
-    }
-
-    studyAreas.forEach((area) => {
-      const latitude = area.lat ?? area.latitude
-      const longitude = area.lng ?? area.longitude
-
-      if (typeof latitude !== 'number' || typeof longitude !== 'number') {
-        return
-      }
-
-      const distance = haversineDistance(
-        { latitude, longitude },
-        {
-          latitude: currentUserLocation.latitude,
-          longitude: currentUserLocation.longitude,
-        }
-      )
-
-      const isInside = distance <= (area.radius_meters || 20)
-      const areaUsers = insideUsersByLocation[area.study_area_id] || []
-      const alreadyInside = areaUsers.some((existingUser) => existingUser.id === userId)
-
-      if (isInside && !alreadyInside) {
-        handleUserEnter(area.study_area_id, liveUser)
-      }
-
-      if (!isInside && alreadyInside) {
-        handleUserLeave(area.study_area_id, userId)
-      }
-    })
-  }, [
-    currentUserLocation,
-    handleUserEnter,
-    handleUserLeave,
-    insideUsersByLocation,
-    studyAreas,
-    userId,
-  ])
 
   const availableBuildings = useMemo(() => {
     const unique = new Set<string>()
@@ -359,9 +289,16 @@ export default function StudyAreaFinderPage() {
       const occupancy = occupancyData.get(area.study_area_id)
       const latitude = area.lat ?? area.latitude
       const longitude = area.lng ?? area.longitude
-      const baseCurrentCount = occupancy?.current_count || 0
-      const insideUsers = insideUsersByLocation[area.study_area_id] || []
-      const occupancySummary = calculateOccupancy(baseCurrentCount + insideUsers.length, area.capacity)
+      const insideUsers = liveStudents
+        .filter((student) => student.study_area_id === area.study_area_id)
+        .map((student) => ({
+          id: student.id,
+          label: student.label,
+          joinedAt: student.joinedAt,
+          latitude: student.latitude,
+          longitude: student.longitude,
+        }))
+      const occupancySummary = calculateOccupancy(insideUsers.length, area.capacity)
       const crowdStatus = getCrowdStatusFromPercentage(occupancySummary.occupancyPercentage)
 
       return {
@@ -387,7 +324,7 @@ export default function StudyAreaFinderPage() {
         },
       }
     })
-  }, [filteredAreas, insideUsersByLocation, occupancyData])
+  }, [filteredAreas, liveStudents, occupancyData])
 
   const handleResetFilters = () => {
     setSearchTerm('')

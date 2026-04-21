@@ -24,6 +24,8 @@ export interface StudyAreaGridItem {
     id: string;
     label: string;
     joinedAt: number;
+    latitude: number;
+    longitude: number;
   }[];
   features?: {
     wifi?: boolean;
