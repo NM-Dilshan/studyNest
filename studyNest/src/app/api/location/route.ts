@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { isPointInsideCircular, calculateOccupancy, type LocationPoint, type CircularGeofence } from '@/lib/geofence'
+import { isPointInsideCircular, type LocationPoint, type CircularGeofence } from '@/lib/geofence'
 
 export async function POST(request: NextRequest) {
   try {
@@ -65,17 +65,24 @@ export async function POST(request: NextRequest) {
         )
       ) {
         insideAreas.push(area.study_area_id)
-
-        // Update live_locations to mark which study area they're in
-        await prisma.live_locations.update({
-          where: { user_id: userId },
-          data: { study_area_id: area.study_area_id },
-        })
       }
     }
 
-    // Recalculate occupancy for affected study areas
-    for (const areaId of studyAreas.map((a) => a.study_area_id)) {
+    // Assign user to one matched area, or clear when outside all areas
+    const assignedStudyAreaId = insideAreas.length > 0 ? insideAreas[0] : null
+    const previousStudyAreaId = liveLocation.study_area_id || null
+
+    await prisma.live_locations.update({
+      where: { user_id: userId },
+      data: { study_area_id: assignedStudyAreaId },
+    })
+
+    // Recalculate occupancy only for areas affected by this user's movement
+    const affectedAreaIds = new Set<string>()
+    if (previousStudyAreaId) affectedAreaIds.add(previousStudyAreaId)
+    if (assignedStudyAreaId) affectedAreaIds.add(assignedStudyAreaId)
+
+    for (const areaId of affectedAreaIds) {
       const activeCount = await prisma.live_locations.count({
         where: {
           study_area_id: areaId,
@@ -87,8 +94,6 @@ export async function POST(request: NextRequest) {
 
       const area = studyAreas.find((a) => a.study_area_id === areaId)
       if (!area || !area.capacity) continue
-
-      const occupancyInfo = calculateOccupancy(activeCount, area.capacity)
 
       // Update occupancy record
       await prisma.area_occupancy.upsert({
@@ -109,6 +114,7 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Location updated',
       insideAreas,
+      assignedStudyAreaId,
     })
   } catch (error) {
     console.error('Error updating location:', error)
