@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, X, Check } from 'lucide-react'
 import NotificationDropdownList from './NotificationDropdownList'
+import { useOptionalNotifications } from '@/contexts/NotificationContext'
 
 interface HallRequestNotification {
   notification_id: number
@@ -32,29 +33,10 @@ export default function NotificationBell({
   onDeleteNotification,
 }: NotificationBellProps) {
   const [open, setOpen] = useState(false)
-  const [complaintNotifications, setComplaintNotifications] = useState<any[]>([])
-  const [complaintUnreadCount, setComplaintUnreadCount] = useState(0)
   const panelRef = useRef<HTMLDivElement | null>(null)
-
-  // Try to get complaint notifications from context
-  useEffect(() => {
-    try {
-      // Dynamically import and use the context
-      const tryGetContext = async () => {
-        try {
-          const { useNotifications } = await import('@/contexts/NotificationContext')
-          const { notifications: compNotif, unreadCount: compUnread } = useNotifications()
-          setComplaintNotifications(compNotif)
-          setComplaintUnreadCount(compUnread)
-        } catch (err) {
-          // Context not available, that's ok
-        }
-      }
-      tryGetContext()
-    } catch (error) {
-      // Silently fail if NotificationContext is not available
-    }
-  }, [])
+  const optionalNotifications = useOptionalNotifications()
+  const complaintNotifications = optionalNotifications?.notifications || []
+  const complaintUnreadCount = optionalNotifications?.unreadCount || 0
 
   // Combine both notification types
   const totalUnreadCount = unreadCount + complaintUnreadCount

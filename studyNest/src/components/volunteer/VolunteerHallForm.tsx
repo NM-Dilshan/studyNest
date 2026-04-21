@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react'
 import { AlertCircle, CheckCircle2, Loader2, X, Info } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
 import {
   isValidHallCode,
   isValidPartialHallCode,
   validateHallCode,
   getFormatHelpText,
   shouldTriggerSearch,
-  isCompleteHallCode,
   type ValidationResult,
 } from '@/lib/validations/hallCodeValidation'
+import VolunteerStatusSelector from './VolunteerStatusSelector'
+import VolunteerPanelSection from './VolunteerPanelSection'
+import AppButton from '@/components/ui/AppButton'
 
 interface LectureHall {
   hall_id: string
@@ -33,8 +36,8 @@ export default function VolunteerHallForm({
   editingSubmission,
   onEditCancel,
 }: VolunteerHallFormProps) {
+  const shouldReduceMotion = useReducedMotion()
   const [filteredHalls, setFilteredHalls] = useState<LectureHall[]>([])
-  const [loading, setLoading] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
   const [message, setMessage] = useState<{
@@ -444,48 +447,52 @@ export default function VolunteerHallForm({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            {editingSubmission ? 'Edit Submission' : 'Submit Hall Update'}
-          </h2>
-          <p className="text-sm text-gray-500 mt-1">
-            {editingSubmission
-              ? 'Update hall availability information'
-              : 'Help keep hall information up-to-date'}
-          </p>
-        </div>
-        {editingSubmission && onEditCancel && (
+    <VolunteerPanelSection
+      title={editingSubmission ? 'Edit Submission' : 'Submit Hall Update'}
+      subtitle={
+        editingSubmission
+          ? 'Update hall availability information'
+          : 'Help keep hall information up-to-date'
+      }
+      rightSlot={
+        editingSubmission && onEditCancel ? (
           <button
             onClick={onEditCancel}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-slate-300 transition-colors hover:text-white"
+            aria-label="Cancel editing hall update"
           >
             <X className="h-5 w-5" />
           </button>
-        )}
-      </div>
-
+        ) : null
+      }
+    >
+      <motion.div
+        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
+      >
+      {/* Header */}
       {/* Messages */}
       {message && (
         <div
-          className={`rounded-lg p-4 mb-6 flex items-start gap-3 ${
+          role={message.type === 'error' ? 'alert' : 'status'}
+          aria-live={message.type === 'error' ? 'assertive' : 'polite'}
+          className={`mb-6 flex items-start gap-3 rounded-lg p-4 ${
             message.type === 'success'
-              ? 'bg-green-50 border border-green-200'
-              : 'bg-red-50 border border-red-200'
+              ? 'border border-emerald-300/35 bg-emerald-400/15'
+              : 'border border-rose-300/40 bg-rose-400/15'
           }`}
         >
           {message.type === 'success' ? (
-            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-300" />
           ) : (
-            <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-300" />
           )}
           <p
             className={`text-sm ${
               message.type === 'success'
-                ? 'text-green-700'
-                : 'text-red-700'
+                ? 'text-emerald-100'
+                : 'text-rose-100'
             }`}
           >
             {message.text}
@@ -497,12 +504,12 @@ export default function VolunteerHallForm({
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Lecture Hall - Search Input */}
         <div className="relative">
-          <label htmlFor="hallSearch" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Lecture Hall <span className="text-red-500">*</span>
+          <label htmlFor="hallSearch" className="mb-1.5 block text-sm font-medium text-slate-200">
+            Lecture Hall <span className="text-rose-300">*</span>
           </label>
-          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+          <div className="mb-2 flex items-center gap-1 text-xs text-slate-400">
             <Info className="h-3.5 w-3.5" />
-            <span>{getFormatHelpText()}</span>
+            <span id="hallSearchFormatHelp">{getFormatHelpText()}</span>
           </div>
           <div className="relative">
             <input
@@ -515,49 +522,55 @@ export default function VolunteerHallForm({
               onKeyDown={handleKeyDown}
               onFocus={() => searchQuery && isValidPartialHallCode(searchQuery) && setShowDropdown(true)}
               maxLength={20}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-text pr-10 uppercase ${
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={showDropdown && filteredHalls.length > 0}
+              aria-controls="volunteer-hall-results"
+              aria-invalid={Boolean(errors.hallId)}
+              aria-describedby="hallSearchFormatHelp"
+              className={`w-full cursor-text rounded-lg border bg-slate-900/70 px-3 py-2 pr-10 text-sm uppercase text-white transition focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
                 errors.hallId
-                  ? 'border-red-500 bg-red-50'
+                  ? 'border-rose-300/60 bg-rose-400/10'
                   : searchQuery && !hallCodeValidation.isValid && hallCodeValidation.error !== 'Lecture hall code is required'
-                  ? 'border-orange-300 bg-orange-50'
+                  ? 'border-amber-300/60 bg-amber-300/10'
                   : searchQuery && hallCodeValidation.isValid && resolvedHall
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-gray-300'
+                  ? 'border-emerald-300/60 bg-emerald-300/10'
+                  : 'border-white/20'
               }`}
             />
             
             {/* Loading indicator while searching or resolving */}
             {(searchLoading || resolving) && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin text-cyan-300" />
               </div>
             )}
 
             {/* Valid indicator - only show when code is resolved */}
             {searchQuery && hallCodeValidation.isValid && resolvedHall && !searchLoading && !resolving && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
               </div>
             )}
 
             {/* Warning indicator for invalid/incomplete input */}
             {searchQuery && !hallCodeValidation.isValid && !searchLoading && !resolving && (
               <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                <AlertCircle className="h-4 w-4 text-orange-500" />
+                <AlertCircle className="h-4 w-4 text-amber-300" />
               </div>
             )}
           </div>
           
           {/* Live validation error message */}
           {searchQuery && hallCodeValidation.error && (
-            <p className={`text-xs mt-2 ${hallCodeValidation.isValid ? 'text-green-600' : 'text-orange-600'}`}>
+            <p className={`mt-2 text-xs ${hallCodeValidation.isValid ? 'text-emerald-300' : 'text-amber-300'}`}>
               {hallCodeValidation.error}
             </p>
           )}
 
           {/* Resolved hall confirmation */}
           {resolvedHall && hallCodeValidation.isValid && (
-            <p className="text-xs mt-2 text-green-600 flex items-center gap-1">
+            <p className="mt-2 flex items-center gap-1 text-xs text-emerald-300">
               <CheckCircle2 className="h-3 w-3" />
               <span>
                 Found: {resolvedHall.hall_name}
@@ -570,11 +583,11 @@ export default function VolunteerHallForm({
           
           {/* Dropdown Results */}
           {showDropdown && searchQuery && isValidPartialHallCode(searchQuery) && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <div id="volunteer-hall-results" role="listbox" className="absolute z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-white/20 bg-slate-950 shadow-lg">
               {searchLoading ? (
                 <div className="p-4 text-center">
-                  <Loader2 className="h-4 w-4 text-blue-500 animate-spin inline-block" />
-                  <span className="ml-2 text-sm text-gray-600">Searching...</span>
+                  <Loader2 className="inline-block h-4 w-4 animate-spin text-cyan-300" />
+                  <span className="ml-2 text-sm text-slate-200">Searching...</span>
                 </div>
               ) : filteredHalls.length > 0 ? (
                 filteredHalls.map((hall, index) => (
@@ -583,18 +596,20 @@ export default function VolunteerHallForm({
                     type="button"
                     onClick={(e) => handleSelectButtonClick(e, hall)}
                     onMouseEnter={() => setHighlightedIndex(index)}
-                    className={`w-full text-left px-3 py-2 border-b border-gray-100 last:border-b-0 transition flex justify-between items-center ${
+                    role="option"
+                    aria-selected={formData.hallId === hall.hall_id}
+                    className={`flex w-full items-center justify-between border-b border-white/10 px-3 py-2 text-left transition last:border-b-0 ${
                       highlightedIndex === index
-                        ? 'bg-blue-200'
+                        ? 'bg-cyan-400/25'
                         : formData.hallId === hall.hall_id
-                          ? 'bg-blue-100'
-                          : 'hover:bg-blue-50'
+                          ? 'bg-cyan-400/15'
+                          : 'hover:bg-white/5'
                     }`}
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{hall.hall_name}</p>
+                      <p className="font-medium text-white">{hall.hall_name}</p>
                       {hall.building && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-slate-300">
                           {hall.building}
                           {hall.floor && ` • Floor ${hall.floor}`}
                           {hall.capacity && ` • Capacity: ${hall.capacity}`}
@@ -602,14 +617,14 @@ export default function VolunteerHallForm({
                       )}
                     </div>
                     {formData.hallId === hall.hall_id && (
-                      <span className="text-green-600 font-semibold text-lg">✓</span>
+                      <span className="text-lg font-semibold text-emerald-300">✓</span>
                     )}
                   </button>
                 ))
               ) : (
-                <div className="p-4 text-center text-gray-500 text-sm">
+                <div className="p-4 text-center text-sm text-slate-300">
                   <p>No lecture halls match "{searchQuery}"</p>
-                  <p className="text-xs text-gray-400 mt-1">Check the hall code format: {getFormatHelpText()}</p>
+                  <p className="mt-1 text-xs text-slate-400">Check the hall code format: {getFormatHelpText()}</p>
                 </div>
               )}
             </div>
@@ -617,8 +632,8 @@ export default function VolunteerHallForm({
 
           {/* Selected Hall Display */}
           {formData.hallId && isValidHallCode(formData.hallName) && (
-            <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-700 text-sm">
+            <div className="mt-2 rounded-lg border border-emerald-300/35 bg-emerald-300/10 p-3">
+              <p className="text-sm text-emerald-100">
                 <span className="inline-block mr-2">✓</span>
                 <span>Selected: <span className="font-semibold">{formData.hallName}</span></span>
               </p>
@@ -626,66 +641,60 @@ export default function VolunteerHallForm({
           )}
 
           {errors.hallId && (
-            <p className="text-red-500 text-xs mt-1">{errors.hallId}</p>
+            <p className="mt-1 text-xs text-rose-300">{errors.hallId}</p>
           )}
         </div>
 
-        {/* Availability Status */}
-        <div>
-          <label htmlFor="availabilityStatus" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Availability Status <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="availabilityStatus"
-            name="availabilityStatus"
-            value={formData.availabilityStatus}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.availabilityStatus
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
-            }`}
-          >
-            <option value="Free">Free</option>
-            <option value="Partially Busy">Partially Busy</option>
-            <option value="Busy">Busy</option>
-          </select>
-          {errors.availabilityStatus && (
-            <p className="text-red-600 text-sm mt-1">{errors.availabilityStatus}</p>
-          )}
-        </div>
+        <VolunteerStatusSelector
+          label="Availability Status"
+          required
+          value={formData.availabilityStatus}
+          error={errors.availabilityStatus}
+          onChange={(value) => {
+            setFormData((prev) => ({ ...prev, availabilityStatus: value }))
+            if (errors.availabilityStatus) {
+              setErrors((prev) => {
+                const newErrors = { ...prev }
+                delete newErrors.availabilityStatus
+                return newErrors
+              })
+            }
+          }}
+          options={[
+            { label: 'Free', value: 'Free', colorClass: 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100' },
+            { label: 'Partially Busy', value: 'Partially Busy', colorClass: 'border-amber-300/40 bg-amber-400/20 text-amber-100' },
+            { label: 'Busy', value: 'Busy', colorClass: 'border-rose-300/40 bg-rose-400/20 text-rose-100' },
+          ]}
+        />
 
-        {/* Occupancy Level */}
-        <div>
-          <label htmlFor="occupancyLevel" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Occupancy Level <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="occupancyLevel"
-            name="occupancyLevel"
-            value={formData.occupancyLevel}
-            onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              errors.occupancyLevel
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
-            }`}
-          >
-            <option value="Empty">Empty</option>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-            <option value="Full">Full</option>
-          </select>
-          {errors.occupancyLevel && (
-            <p className="text-red-600 text-sm mt-1">{errors.occupancyLevel}</p>
-          )}
-        </div>
+        <VolunteerStatusSelector
+          label="Occupancy Level"
+          required
+          value={formData.occupancyLevel}
+          error={errors.occupancyLevel}
+          onChange={(value) => {
+            setFormData((prev) => ({ ...prev, occupancyLevel: value }))
+            if (errors.occupancyLevel) {
+              setErrors((prev) => {
+                const newErrors = { ...prev }
+                delete newErrors.occupancyLevel
+                return newErrors
+              })
+            }
+          }}
+          options={[
+            { label: 'Empty', value: 'Empty', colorClass: 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100' },
+            { label: 'Low', value: 'Low', colorClass: 'border-sky-300/40 bg-sky-400/20 text-sky-100' },
+            { label: 'Medium', value: 'Medium', colorClass: 'border-amber-300/40 bg-amber-400/20 text-amber-100' },
+            { label: 'High', value: 'High', colorClass: 'border-orange-300/40 bg-orange-400/20 text-orange-100' },
+            { label: 'Full', value: 'Full', colorClass: 'border-rose-300/40 bg-rose-400/20 text-rose-100' },
+          ]}
+        />
 
         {/* Available Seats */}
         <div>
-          <label htmlFor="availableSeats" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Available Seats <span className="text-gray-400">(optional)</span>
+          <label htmlFor="availableSeats" className="mb-1.5 block text-sm font-medium text-slate-200">
+            Available Seats <span className="text-slate-400">(optional)</span>
           </label>
           <input
             type="number"
@@ -695,21 +704,21 @@ export default function VolunteerHallForm({
             onChange={handleInputChange}
             min="0"
             placeholder="0"
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full rounded-lg border bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
               errors.availableSeats
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
+                ? 'border-rose-300/60 bg-rose-300/10'
+                : 'border-white/20'
             }`}
           />
           {errors.availableSeats && (
-            <p className="text-red-600 text-sm mt-1">{errors.availableSeats}</p>
+            <p className="mt-1 text-sm text-rose-300">{errors.availableSeats}</p>
           )}
         </div>
 
         {/* Note */}
         <div>
-          <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Note <span className="text-gray-400">(optional)</span>
+          <label htmlFor="note" className="mb-1.5 block text-sm font-medium text-slate-200">
+            Note <span className="text-slate-400">(optional)</span>
           </label>
           <textarea
             id="note"
@@ -718,24 +727,24 @@ export default function VolunteerHallForm({
             onChange={handleInputChange}
             placeholder="Add any additional information about the hall condition..."
             rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full resize-none rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
           />
         </div>
 
         {/* Expiry Duration */}
         <div>
-          <label htmlFor="expiryDuration" className="block text-sm font-medium text-gray-700 mb-1.5">
-            Valid For <span className="text-red-500">*</span>
+          <label htmlFor="expiryDuration" className="mb-1.5 block text-sm font-medium text-slate-200">
+            Valid For <span className="text-rose-300">*</span>
           </label>
           <select
             id="expiryDuration"
             name="expiryDuration"
             value={formData.expiryDuration}
             onChange={handleInputChange}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            className={`w-full rounded-lg border bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
               errors.expiryDuration
-                ? 'border-red-500 bg-red-50'
-                : 'border-gray-300'
+                ? 'border-rose-300/60 bg-rose-300/10'
+                : 'border-white/20'
             }`}
           >
             <option value="30m">30 Minutes</option>
@@ -744,15 +753,15 @@ export default function VolunteerHallForm({
             <option value="custom">Custom Time</option>
           </select>
           {errors.expiryDuration && (
-            <p className="text-red-600 text-sm mt-1">{errors.expiryDuration}</p>
+            <p className="mt-1 text-sm text-rose-300">{errors.expiryDuration}</p>
           )}
         </div>
 
         {/* Custom Expiry Time */}
         {formData.expiryDuration === 'custom' && (
           <div>
-            <label htmlFor="expiryTime" className="block text-sm font-medium text-gray-700 mb-1.5">
-              Expiry Date & Time <span className="text-red-500">*</span>
+            <label htmlFor="expiryTime" className="mb-1.5 block text-sm font-medium text-slate-200">
+              Expiry Date & Time <span className="text-rose-300">*</span>
             </label>
             <input
               type="datetime-local"
@@ -760,23 +769,24 @@ export default function VolunteerHallForm({
               name="expiryTime"
               value={formData.expiryTime}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full rounded-lg border bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
                 errors.expiryTime
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300'
+                  ? 'border-rose-300/60 bg-rose-300/10'
+                  : 'border-white/20'
               }`}
             />
             {errors.expiryTime && (
-              <p className="text-red-600 text-sm mt-1">{errors.expiryTime}</p>
+              <p className="mt-1 text-sm text-rose-300">{errors.expiryTime}</p>
             )}
           </div>
         )}
 
         {/* Submit Button */}
-        <button
+        <AppButton
           type="submit"
           disabled={submitting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+          fullWidth
+          variant="primary"
         >
           {submitting ? (
             <>
@@ -786,8 +796,9 @@ export default function VolunteerHallForm({
           ) : (
             editingSubmission ? 'Update Submission' : 'Submit Update'
           )}
-        </button>
+        </AppButton>
       </form>
-    </div>
+      </motion.div>
+    </VolunteerPanelSection>
   )
 }

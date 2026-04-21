@@ -1,41 +1,29 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, ShieldCheck } from 'lucide-react'
 import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import RequestForm from '@/components/hall-requests/RequestForm'
 import MyRequestsList from '@/components/hall-requests/MyRequestsList'
-
-interface User {
-  user_id: string
-  student_id: string
-  name: string
-  email: string
-  role: 'student' | 'volunteer' | 'admin'
-  is_active: boolean
-  created_at: string
-}
+import AnimatedSection from '@/components/ui/AnimatedSection'
+import PageHeader from '@/components/ui/PageHeader'
+import GlassCard from '@/components/ui/GlassCard'
+import { clearStoredSession, readStoredUser, type ClientUser } from '@/lib/auth/clientUser'
 
 export default function RequestsPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<ClientUser | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
-    let parsedUser: User | null = null
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        parsedUser = JSON.parse(userData)
-      } catch {
-        localStorage.removeItem('user')
-      }
-    }
+    const parsedUser = readStoredUser()
 
     if (!parsedUser) {
+      clearStoredSession()
       router.push('/login/signIN')
       return
     }
@@ -47,10 +35,10 @@ export default function RequestsPage() {
   if (!isHydrated) {
     return (
       <AppBackground>
-        <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite" aria-busy="true">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6F95] mx-auto mb-4" />
-            <p className="text-gray-600">Loading...</p>
+            <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-300" />
+            <p className="text-slate-300">Loading...</p>
           </div>
         </div>
       </AppBackground>
@@ -69,66 +57,73 @@ export default function RequestsPage() {
   return (
     <AppBackground>
       <MainHeader />
-      <main className="min-h-screen">
-        <div className="max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Hall Information Requests</h1>
-          <p className="text-lg text-gray-600">
-            Request real-time information about lecture halls from our volunteer network
-          </p>
-        </div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e293b_0%,#0f172a_50%,#020617_100%)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <AnimatedSection>
+          <PageHeader
+            eyebrow="Hall Intelligence"
+            title="Hall Information Requests"
+            subtitle="Create request tickets and track volunteer responses with clear status updates and confidence indicators."
+          />
+        </AnimatedSection>
 
-        {/* Student-Only Notice */}
+        <AnimatedSection className="mt-6" delay={0.04}>
         {user.role === 'student' ? (
-          <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-semibold text-blue-900">
+          <GlassCard className="border-cyan-300/25 bg-cyan-400/10 p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-cyan-200" />
+              <div>
+                <p className="text-sm font-semibold text-cyan-100">
                 Welcome, {user.name}!
-              </p>
-              <p className="text-sm text-blue-800 mt-1">
+                </p>
+                <p className="mt-1 text-sm text-cyan-100/85">
                 Use the form below to request real-time information about any lecture hall. Volunteers will respond with
                 current status, occupancy, and availability.
-              </p>
+                </p>
+              </div>
             </div>
-          </div>
+          </GlassCard>
         ) : (
-          <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-900">
+          <GlassCard className="border-amber-300/30 bg-amber-400/10 p-4">
+            <p className="text-sm text-amber-100">
               As a {user.role}, you can create requests and also earn reputation by responding to requests from others.
               Visit{' '}
-              <a href="/volunteer/requests" className="font-bold underline hover:no-underline">
+              <Link href="/volunteer/requests" className="font-bold underline underline-offset-2 transition hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
                 the volunteer dashboard
-              </a>{' '}
+              </Link>{' '}
               to respond to incoming requests.
             </p>
-          </div>
+          </GlassCard>
         )}
+        </AnimatedSection>
 
-        {/* Layout: Form + List */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Request Form */}
+        <AnimatedSection className="mt-8" delay={0.08}>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
           <div className="lg:col-span-1">
             <RequestForm
               userId={user.user_id}
               userRole={user.role as 'student' | 'volunteer'}
               userIdNumber={user.student_id || user.user_id.slice(0, 8)}
-              userName={user.name}
+              userName={user.name || 'User'}
               onRequestCreated={handleRequestCreated}
             />
           </div>
 
-          {/* Right Column - Requests List */}
           <div className="lg:col-span-2">
-            <div className="mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Requests</h2>
-              <p className="text-gray-600">View your requests and responses from volunteers</p>
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="mb-1 text-2xl font-bold text-white">Your Requests</h2>
+                <p className="text-sm text-slate-300">Track responses and submit feedback when volunteers answer your request.</p>
+              </div>
+              <span className="inline-flex min-h-11 items-center gap-1 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Live Sync
+              </span>
             </div>
             <MyRequestsList userId={user.user_id} refreshTrigger={refreshTrigger} />
           </div>
         </div>
+        </AnimatedSection>
       </div>
       </main>
     </AppBackground>

@@ -51,6 +51,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const dismissedIdsRef = useRef<Set<number>>(new Set())
   const readStateRef = useRef<Map<number, string>>(new Map())
   const persistedStateLoadedRef = useRef(false)
+  const pollingInFlightRef = useRef(false)
+  const pollingAbortRef = useRef<AbortController | null>(null)
 
   const DISMISSED_STORAGE_KEY = 'studynest:dismissed-complaint-notifications'
   const READ_STATE_STORAGE_KEY = 'studynest:read-complaint-notifications'
@@ -188,10 +190,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const fetchAndSyncNotifications = async () => {
+      if (pollingInFlightRef.current) return
+      if (typeof document !== 'undefined' && document.hidden) return
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return
+
+      pollingInFlightRef.current = true
+      const controller = new AbortController()
+      pollingAbortRef.current = controller
+
       try {
         ensurePersistedStateLoaded()
 
-        const response = await fetch('/api/admin/complaints', { cache: 'no-store' })
+        const response = await fetch('/api/admin/complaints', {
+          cache: 'no-store',
+          signal: controller.signal,
+        })
         if (!response.ok) return
 
         const result = await response.json()
@@ -267,14 +280,37 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             }
           })
         })
-      } catch {
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return
+        }
         // Silent fail: notification polling should not break the UI.
+      } finally {
+        pollingInFlightRef.current = false
       }
+    }
+
+    const onVisible = () => {
+      if (!document.hidden) {
+        fetchAndSyncNotifications()
+      }
+    }
+
+    const onOnline = () => {
+      fetchAndSyncNotifications()
     }
 
     fetchAndSyncNotifications()
     const interval = window.setInterval(fetchAndSyncNotifications, 10000)
-    return () => window.clearInterval(interval)
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+      pollingAbortRef.current?.abort()
+    }
   }, [ensurePersistedStateLoaded])
 
   useEffect(() => {
@@ -334,4 +370,8 @@ export function useNotifications() {
     throw new Error('useNotifications must be used within NotificationProvider')
   }
   return ctx
+}
+
+export function useOptionalNotifications() {
+  return useContext(NotificationContext)
 }

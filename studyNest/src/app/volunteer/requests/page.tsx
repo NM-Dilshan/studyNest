@@ -2,42 +2,32 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, Bell, Tabs } from 'lucide-react'
+import { AlertCircle, Bell, ShieldCheck, Sparkles } from 'lucide-react'
+import { motion, useReducedMotion } from 'framer-motion'
 import MainHeader from '@/components/MainHeader'
 import VolunteerIncomingRequestList from '@/components/hall-requests/VolunteerIncomingRequestList'
 import VolunteerHallForm from '@/components/volunteer/VolunteerHallForm'
 import VolunteerSubmissionList from '@/components/volunteer/VolunteerSubmissionList'
-
-interface User {
-  user_id: string
-  student_id?: string
-  volunteer_id?: string
-  name: string
-  email: string
-  role: 'student' | 'volunteer' | 'admin'
-  is_active: boolean
-  created_at: string
-}
+import PageHeader from '@/components/ui/PageHeader'
+import GlassCard from '@/components/ui/GlassCard'
+import AnimatedSection from '@/components/ui/AnimatedSection'
+import StatCard from '@/components/ui/StatCard'
+import AppButton from '@/components/ui/AppButton'
+import { clearStoredSession, readStoredUser, type ClientUser } from '@/lib/auth/clientUser'
 
 export default function VolunteerRequestsPage() {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<ClientUser | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [activeTab, setActiveTab] = useState<'requests' | 'submit'>('requests')
+  const shouldReduceMotion = useReducedMotion()
 
   useEffect(() => {
-    let parsedUser: User | null = null
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        parsedUser = JSON.parse(userData)
-      } catch {
-        localStorage.removeItem('user')
-      }
-    }
+    const parsedUser = readStoredUser()
 
     if (!parsedUser) {
+      clearStoredSession()
       router.push('/login/signIN')
       return
     }
@@ -55,10 +45,10 @@ export default function VolunteerRequestsPage() {
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-slate-950" role="status" aria-live="polite" aria-busy="true">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2E6F95] mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-300" />
+          <p className="text-slate-300">Loading...</p>
         </div>
       </div>
     )
@@ -68,143 +58,123 @@ export default function VolunteerRequestsPage() {
     return null
   }
 
-  const volunteerId = user.volunteer_id || user.user_id.slice(0, 8)
-
   return (
     <>
       <MainHeader />
-      <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-        <div className="max-w-6xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Bell className="h-8 w-8 text-[#2E6F95]" />
-            <h1 className="text-4xl font-bold text-gray-900">Volunteer Dashboard</h1>
-          </div>
-          <p className="text-lg text-gray-600">
-            Respond to real-time hall information requests and build your reputation
-          </p>
-        </div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#0f172a,_#020617_55%)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <PageHeader
+            title="Volunteer Command Center"
+            subtitle="Respond quickly to incoming requests and publish trustworthy hall updates."
+            icon={<Bell className="h-7 w-7 text-cyan-200" />}
+          />
 
-        {/* Volunteer Info Card */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-[#2E6F95] to-[#1e4f6f] text-white rounded-lg shadow-md">
-          <h2 className="text-lg font-bold mb-2">Welcome, {user.name}!</h2>
-          <p className="text-sm opacity-90">
-            You're helping the community find study spaces. Respond to requests to earn reputation and improve your volunteer score.
-          </p>
-        </div>
+          <AnimatedSection delay={0.05} className="mb-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <StatCard title="Volunteer" value={user.name} icon={<ShieldCheck className="h-5 w-5 text-cyan-300" />} />
+              <StatCard title="Role" value={user.role} icon={<Sparkles className="h-5 w-5 text-cyan-300" />} />
+              <StatCard title="Session" value="Live" icon={<Bell className="h-5 w-5 text-cyan-300" />} />
+            </div>
+          </AnimatedSection>
 
-        {/* Tab Navigation */}
-        <div className="mb-8 border-b border-gray-200">
-          <div className="flex space-x-8">
-            <button
+          <GlassCard className="mb-6 border-cyan-300/25 bg-cyan-400/10 p-5">
+            <h2 className="mb-1 text-lg font-semibold text-white">Welcome, {user.name}</h2>
+            <p className="text-sm text-cyan-100/90">
+              Your updates help students find seating fast. Switch between request responses and direct hall updates below.
+            </p>
+          </GlassCard>
+
+          <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3" role="tablist" aria-label="Volunteer dashboard views">
+            <AppButton
+              id="volunteer-tab-requests"
               onClick={() => setActiveTab('requests')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'requests'
-                  ? 'border-[#2E6F95] text-[#2E6F95]'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
+              variant={activeTab === 'requests' ? 'primary' : 'secondary'}
+              className="w-full rounded-full"
+              role="tab"
+              aria-selected={activeTab === 'requests'}
+              aria-controls="volunteer-panel-requests"
             >
-              <Bell className="inline-block w-5 h-5 mr-2" />
               Incoming Requests
-            </button>
-            <button
+            </AppButton>
+            <AppButton
+              id="volunteer-tab-submit"
               onClick={() => setActiveTab('submit')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'submit'
-                  ? 'border-[#2E6F95] text-[#2E6F95]'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300'
-              }`}
+              variant={activeTab === 'submit' ? 'primary' : 'secondary'}
+              className="w-full rounded-full"
+              role="tab"
+              aria-selected={activeTab === 'submit'}
+              aria-controls="volunteer-panel-submit"
             >
-              ✏️ Submit Hall Update
-            </button>
+              Submit Hall Update
+            </AppButton>
           </div>
-        </div>
 
-        {/* Tab Content */}
-        {activeTab === 'requests' ? (
-          // Incoming Requests Tab
-          <>
-            {/* Refresh Note */}
-            <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-amber-800">
-                This dashboard automatically updates every 5 seconds. New requests will appear at the top.
-              </p>
-            </div>
+          {activeTab === 'requests' ? (
+            <motion.section
+              key="requests"
+              id="volunteer-panel-requests"
+              role="tabpanel"
+              aria-labelledby="volunteer-tab-requests"
+              initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+              className="space-y-4"
+            >
+              <div className="flex items-start gap-3 rounded-xl border border-amber-300/40 bg-amber-400/15 p-4">
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-200" />
+                <p className="text-sm text-amber-50">
+                  This dashboard refreshes every 5 seconds so newly created requests appear quickly.
+                </p>
+              </div>
 
-            {/* Requests List */}
-            <VolunteerIncomingRequestList
-              volunteerId={user.user_id}
-              refreshTrigger={refreshTrigger}
-            />
-          </>
-        ) : (
-          // Submit Hall Update Tab
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Form */}
-            <div className="lg:col-span-2">
-              <VolunteerHallForm
+              <VolunteerIncomingRequestList
                 volunteerId={user.user_id}
-                onSubmitSuccess={() => setRefreshTrigger(prev => prev + 1)}
+                refreshTrigger={refreshTrigger}
               />
+            </motion.section>
+          ) : (
+            <motion.section
+              key="submit"
+              id="volunteer-panel-submit"
+              role="tabpanel"
+              aria-labelledby="volunteer-tab-submit"
+              initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.22, ease: 'easeOut' }}
+              className="grid grid-cols-1 gap-6 lg:grid-cols-3"
+            >
+              <div className="space-y-6 lg:col-span-2">
+                <VolunteerHallForm
+                  volunteerId={user.user_id}
+                  onSubmitSuccess={() => setRefreshTrigger((prev) => prev + 1)}
+                />
 
-              {/* Tips Card */}
-              <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Tips for Accurate Updates</h3>
-                <ul className="space-y-3 text-sm text-gray-600">
-                  <li className="flex gap-2">
-                    <span className="text-blue-600 font-bold">•</span>
-                    <span>Submit updates only when you're in or have just left the hall</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-blue-600 font-bold">•</span>
-                    <span>Be honest about occupancy levels for accurate information</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-blue-600 font-bold">•</span>
-                    <span>Set appropriate expiry times (30 min to 2 hours)</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-blue-600 font-bold">•</span>
-                    <span>Add notes for special situations (maintenance, events, etc.)</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Right Column - Status Guide */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-20">
-                <h3 className="font-semibold text-gray-900 mb-4">Status Guide</h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold mr-2">Free</span>
-                    <span className="text-gray-600">Hall is completely empty or has plenty of seats</span>
-                  </div>
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold mr-2">Moderate</span>
-                    <span className="text-gray-600">Hall is moderately filled, some seats available</span>
-                  </div>
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-semibold mr-2">Busy</span>
-                    <span className="text-gray-600">Hall is quite crowded, few seats left</span>
-                  </div>
-                  <div>
-                    <span className="inline-block px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold mr-2">Full</span>
-                    <span className="text-gray-600">Hall is completely full, no seats available</span>
-                  </div>
-                </div>
+                <GlassCard className="border-white/15 bg-slate-950/55 p-5">
+                  <h3 className="mb-3 text-base font-semibold text-white">Tips for Accurate Updates</h3>
+                  <ul className="space-y-2 text-sm text-slate-300">
+                    <li>Submit updates only when you have current hall visibility.</li>
+                    <li>Match occupancy and seat counts consistently for higher trust.</li>
+                    <li>Use shorter validity windows when the hall changes quickly.</li>
+                    <li>Add notes for events, maintenance, or special constraints.</li>
+                  </ul>
+                </GlassCard>
               </div>
 
-              {/* My Submissions */}
-              <div className="mt-6 bg-white rounded-lg shadow-sm p-6">
-                <h3 className="font-semibold text-gray-900 mb-4">Recent Submissions</h3>
+              <div className="space-y-6">
+                <GlassCard className="border-white/15 bg-slate-950/55 p-5 lg:sticky lg:top-20">
+                  <h3 className="mb-3 text-base font-semibold text-white">Status Guide</h3>
+                  <div className="space-y-2 text-sm text-slate-300">
+                    <p><span className="font-semibold text-emerald-200">Free:</span> plenty of seats.</p>
+                    <p><span className="font-semibold text-amber-200">Partially Busy:</span> some seats available.</p>
+                    <p><span className="font-semibold text-rose-200">Busy:</span> few seats left.</p>
+                    <p><span className="font-semibold text-red-200">Full:</span> no seats available.</p>
+                  </div>
+                </GlassCard>
+
                 <VolunteerSubmissionList volunteerId={user.user_id} refreshTrigger={refreshTrigger} />
               </div>
-            </div>
-          </div>
-        )}
+            </motion.section>
+          )}
       </div>
     </main>
     </>

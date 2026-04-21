@@ -11,29 +11,39 @@
 
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import { useLocationTracking } from '@/hooks/useLocationTracking'
-import { StudyAreaCard } from '@/components/study-areas/StudyAreaCard'
 import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary'
 import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap'
 import { determineCrowdStatus, CrowdStatus } from '@/lib/geofence'
-import { Loader, AlertCircle } from 'lucide-react'
+import { AlertCircle, MapPin, RefreshCcw } from 'lucide-react'
+import { motion } from 'framer-motion'
+import AnimatedSection from '@/components/ui/AnimatedSection'
+import PageHeader from '@/components/ui/PageHeader'
+import GlassCard from '@/components/ui/GlassCard'
+import EmptyState from '@/components/ui/EmptyState'
+import AppButton from '@/components/ui/AppButton'
+import AppLinkButton from '@/components/ui/AppLinkButton'
+import StudyAreaFilters, { CrowdFilter, FeatureFilter } from '@/components/study-areas/StudyAreaFilters'
+import StudyAreaGrid, { StudyAreaGridItem } from '@/components/study-areas/StudyAreaGrid'
 
 interface StudyAreaData {
   study_area_id: string;
   area_name: string;
   building: string | null;
   capacity: number;
-  lat: number;
-  lng: number;
+  latitude?: number | null;
+  longitude?: number | null;
+  lat?: number | null;
+  lng?: number | null;
   radius_meters: number;
   wifi: boolean;
   charging_ports: boolean;
   silent_zone: boolean;
   ac: boolean;
-  cafe: boolean;
+  cafe?: boolean;
 }
 
 interface OccupancyData {
@@ -63,6 +73,11 @@ export default function StudyAreaFinderPage() {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<StudyAreaStats | null>(null);
   const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [crowdFilter, setCrowdFilter] = useState<CrowdFilter>('all');
+  const [buildingFilter, setBuildingFilter] = useState('all');
+  const [featureFilter, setFeatureFilter] = useState<FeatureFilter>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Location tracking
   const location = useLocationTracking(userId, true);
@@ -88,6 +103,7 @@ export default function StudyAreaFinderPage() {
   // Fetch study areas and occupancy data
   const fetchData = useCallback(async () => {
     try {
+      setIsRefreshing(true);
       const response = await fetch('/api/study-areas');
       if (!response.ok) throw new Error('Failed to fetch');
       
@@ -141,6 +157,7 @@ export default function StudyAreaFinderPage() {
       setError('Failed to load study areas');
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, []);
 
@@ -169,133 +186,225 @@ export default function StudyAreaFinderPage() {
     }
   }, [location.permissionStatus, location.isTracking, location]);
 
+  const availableBuildings = useMemo(() => {
+    const unique = new Set<string>();
+    studyAreas.forEach((area) => {
+      if (area.building && area.building.trim()) {
+        unique.add(area.building.trim());
+      }
+    });
+    return Array.from(unique).sort((a, b) => a.localeCompare(b));
+  }, [studyAreas]);
+
+  const filteredAreas = useMemo(() => {
+    return studyAreas.filter((area) => {
+      const occupancy = occupancyData.get(area.study_area_id);
+      const crowdStatus = (occupancy?.crowd_status || 'Low Crowd').toLowerCase();
+      const areaName = area.area_name.toLowerCase();
+      const building = (area.building || '').toLowerCase();
+
+      const matchesSearch =
+        searchTerm.trim().length === 0 ||
+        areaName.includes(searchTerm.toLowerCase()) ||
+        building.includes(searchTerm.toLowerCase());
+
+      const matchesCrowd =
+        crowdFilter === 'all' ||
+        (crowdFilter === 'low' && crowdStatus.includes('low')) ||
+        (crowdFilter === 'medium' && crowdStatus.includes('medium')) ||
+        (crowdFilter === 'high' && crowdStatus.includes('high'));
+
+      const matchesBuilding =
+        buildingFilter === 'all' ||
+        (area.building || '').toLowerCase() === buildingFilter.toLowerCase();
+
+      const matchesFeature =
+        featureFilter === 'all' ||
+        (featureFilter === 'wifi' && area.wifi) ||
+        (featureFilter === 'quiet' && area.silent_zone) ||
+        (featureFilter === 'charging' && area.charging_ports) ||
+        (featureFilter === 'ac' && area.ac);
+
+      return matchesSearch && matchesCrowd && matchesBuilding && matchesFeature;
+    });
+  }, [studyAreas, occupancyData, searchTerm, crowdFilter, buildingFilter, featureFilter]);
+
+  const gridItems = useMemo<StudyAreaGridItem[]>(() => {
+    return filteredAreas.map((area) => {
+      const occupancy = occupancyData.get(area.study_area_id);
+
+      return {
+        id: area.study_area_id,
+        name: area.area_name,
+        building: area.building,
+        currentCount: occupancy?.current_count || 0,
+        availableSeats: occupancy?.available_seats || area.capacity,
+        occupancyPercentage: occupancy?.occupancy_percentage || 0,
+        crowdStatus: occupancy?.crowd_status || 'Low Crowd',
+        capacity: area.capacity,
+        updatedAt: occupancy?.updated_at,
+        features: {
+          wifi: area.wifi,
+          quietZone: area.silent_zone,
+          cafe: area.cafe,
+          chargingPorts: area.charging_ports,
+          ac: area.ac,
+        },
+      };
+    });
+  }, [filteredAreas, occupancyData]);
+
+  const mapAreas = useMemo(() => {
+    return studyAreas
+      .filter((area) => {
+        const latitude = area.lat ?? area.latitude;
+        const longitude = area.lng ?? area.longitude;
+        return typeof latitude === 'number' && typeof longitude === 'number';
+      })
+      .map((area) => {
+        const occupancy = occupancyData.get(area.study_area_id);
+        const latitude = (area.lat ?? area.latitude) as number;
+        const longitude = (area.lng ?? area.longitude) as number;
+
+        return {
+          id: area.study_area_id,
+          name: area.area_name,
+          latitude,
+          longitude,
+          radiusMeters: area.radius_meters,
+          crowdStatus: occupancy?.crowd_status || 'Low Crowd',
+          currentCount: occupancy?.current_count || 0,
+          capacity: area.capacity,
+        };
+      });
+  }, [studyAreas, occupancyData]);
+
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setCrowdFilter('all');
+    setBuildingFilter('all');
+    setFeatureFilter('all');
+  };
+
   if (!userId) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
-            <AlertCircle className="mx-auto text-amber-600 mb-4" size={48} />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Please Log In</h1>
-            <p className="text-gray-600 mb-6">
-              You need to log in to the StudyNest app to use the Study Area Finder.
-            </p>
-            <a
-              href="/login/signIN"
-              className="inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700"
-            >
-              Go to Login
-            </a>
+      <AppBackground>
+        <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,#1e293b_0%,#0f172a_45%,#020617_100%)] p-4 md:p-8">
+          <div className="mx-auto max-w-6xl">
+            <EmptyState
+              title="Please log in"
+              description="You need an active StudyNest session to access live study area occupancy."
+              icon={<AlertCircle className="h-10 w-10" />}
+              action={
+                <AppLinkButton
+                  href="/login/signIN"
+                  variant="primary"
+                  className="text-slate-950"
+                >
+                  Go to Login
+                </AppLinkButton>
+              }
+            />
           </div>
         </div>
-      </div>
+      </AppBackground>
     );
   }
 
   return (
     <AppBackground>
-      {/* Header Component */}
       <MainHeader />
 
-      {/* Study Area Header Section */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Study Area Finder</h1>
-          <p className="text-gray-600">
-            Check real-time crowd levels and find your perfect study space
-          </p>
-        </div>
-      </div>
+      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e293b_0%,#0f172a_50%,#020617_100%)]">
+        <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:py-10">
+          <AnimatedSection>
+            <PageHeader
+              eyebrow="Live Occupancy"
+              title="Study Area Finder"
+              subtitle="Discover the best study zones with real-time crowd signals, seat availability, and feature-based filtering."
+              actions={
+                <AppButton
+                  onClick={fetchData}
+                  variant="primary"
+                  className="bg-cyan-400/10 text-cyan-100"
+                  aria-label="Refresh study area data"
+                >
+                  <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh
+                </AppButton>
+              }
+            />
+          </AnimatedSection>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 md:px-8 py-8">
-        {/* Error message */}
-        {error && (
-          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={20} />
-            <div>
-              <h3 className="font-semibold text-red-900 mb-1">Error Loading Data</h3>
-              <p className="text-red-700 text-sm">{error}</p>
-            </div>
-          </div>
-        )}
+          <AnimatedSection className="mt-6" delay={0.04}>
+            <StudyAreaSummary stats={stats} isLoading={isLoading} />
+          </AnimatedSection>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <Loader className="text-blue-600 animate-spin mr-3" size={24} />
-            <span className="text-gray-600 font-medium">Loading study areas...</span>
-          </div>
-        )}
+          <AnimatedSection className="mt-6" delay={0.06}>
+            <StudyAreaFilters
+              searchTerm={searchTerm}
+              crowdFilter={crowdFilter}
+              buildingFilter={buildingFilter}
+              featureFilter={featureFilter}
+              availableBuildings={availableBuildings}
+              visibleCount={filteredAreas.length}
+              totalCount={studyAreas.length}
+              onSearchChange={setSearchTerm}
+              onCrowdChange={setCrowdFilter}
+              onBuildingChange={setBuildingFilter}
+              onFeatureChange={setFeatureFilter}
+              onReset={handleResetFilters}
+              onRefresh={fetchData}
+              isRefreshing={isRefreshing}
+            />
+          </AnimatedSection>
 
-        {/* Study areas grid */}
-        {!isLoading && (
-          <>
-            <h2 className="text-xl font-bold text-gray-900 mb-6">All Study Areas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {studyAreas.map((area, index) => {
-                const occupancy = occupancyData.get(area.study_area_id);
-                const crowdStatus: CrowdStatus = occupancy?.crowd_status || 'Low Crowd';
+          <AnimatedSection className="mt-6" delay={0.08}>
+            <GlassCard className="border-white/15 bg-slate-950/55 p-5">
+              <h2 className="mb-4 text-xl font-semibold text-white">All Study Areas</h2>
+              <StudyAreaGrid
+                isLoading={isLoading}
+                items={gridItems}
+                onAreaHover={setHoveredAreaId}
+              />
+            </GlassCard>
+          </AnimatedSection>
 
-                return (
-                  <div
-                    key={area.study_area_id || `area-${index}`}
-                    onMouseEnter={() => setHoveredAreaId(area.study_area_id)}
-                    onMouseLeave={() => setHoveredAreaId(null)}
-                  >
-                    <StudyAreaCard
-                      id={area.study_area_id}
-                      name={area.area_name}
-                      currentCount={occupancy?.current_count || 0}
-                      availableSeats={occupancy?.available_seats || area.capacity}
-                      occupancyPercentage={occupancy?.occupancy_percentage || 0}
-                      crowdStatus={crowdStatus}
-                      capacity={area.capacity}
-                      features={{
-                        wifi: area.wifi,
-                        quietZone: area.silent_zone,
-                        café: area.cafe,
-                        chargingPorts: area.charging_ports,
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* Map section */}
-        {!isLoading && (
-          <div className="mb-8">
+          <AnimatedSection className="mt-6" delay={0.1}>
             <StudyAreaMap
-              areas={studyAreas.map((area) => {
-                const occupancy = occupancyData.get(area.study_area_id);
-                return {
-                  id: area.study_area_id,
-                  name: area.area_name,
-                  latitude: area.lat,
-                  longitude: area.lng,
-                  radiusMeters: area.radius_meters,
-                  crowdStatus: occupancy?.crowd_status || 'Low Crowd',
-                  currentCount: occupancy?.current_count || 0,
-                  capacity: area.capacity,
-                };
-              })}
+              areas={mapAreas}
               hoveredAreaId={hoveredAreaId}
             />
-          </div>
+          </AnimatedSection>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            role="alert"
+            aria-live="assertive"
+            className="mt-6 flex items-start gap-3 rounded-xl border border-rose-300/30 bg-rose-400/10 p-4"
+          >
+            <AlertCircle className="mt-0.5 flex-shrink-0 text-rose-200" size={20} />
+            <div>
+              <h3 className="mb-1 font-semibold text-rose-100">Error Loading Data</h3>
+              <p className="text-sm text-rose-100/85">{error}</p>
+            </div>
+          </motion.div>
         )}
 
-        {/* Privacy statement */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-          <p className="text-sm text-blue-900 mb-2">
-            <strong>🔒 Your Privacy is Protected</strong>
-          </p>
-          <p className="text-sm text-blue-700">
+          <AnimatedSection className="mt-6" delay={0.12}>
+            <GlassCard className="border-cyan-300/25 bg-cyan-400/10 p-6 text-center">
+              <p className="mb-2 text-sm text-cyan-100">
+                <strong>🔒 Your Privacy is Protected</strong>
+              </p>
+              <p className="text-sm text-cyan-100/85">
             StudyNest only tracks aggregated occupancy counts. Your exact location is never stored
             permanently, displayed to other users, or shared. Location data automatically expires every 5
             minutes. You can revoke location access at any time.
           </p>
+            </GlassCard>
+          </AnimatedSection>
         </div>
       </main>
     </AppBackground>

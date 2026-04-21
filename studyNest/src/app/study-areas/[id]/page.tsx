@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -46,17 +46,28 @@ export default function StudyAreaDetailPage() {
   const [area, setArea] = useState<StudyAreaDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const inFlightRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  useEffect(() => {
-    const fetchAreaDetail = async () => {
+  const fetchAreaDetail = useCallback(async () => {
       if (!areaId) {
         setError('Invalid study area ID')
         setLoading(false)
         return
       }
 
+      if (inFlightRef.current) return
+      if (typeof document !== 'undefined' && document.hidden) return
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return
+
+      inFlightRef.current = true
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
       try {
-        const response = await fetch(`/api/study-areas/${areaId}`)
+        const response = await fetch(`/api/study-areas/${areaId}`, {
+          signal: controller.signal,
+        })
         
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
@@ -76,20 +87,43 @@ export default function StudyAreaDetailPage() {
         })
         setError(null)
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return
+        }
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
         console.error('Error fetching area details:', errorMessage)
         setError(`Failed to load study area details: ${errorMessage}`)
       } finally {
+        inFlightRef.current = false
         setLoading(false)
       }
+    }, [areaId])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) {
+        fetchAreaDetail()
+      }
+    }
+
+    const onOnline = () => {
+      fetchAreaDetail()
     }
 
     fetchAreaDetail()
 
     // Poll for updates every 5 seconds
     const interval = setInterval(fetchAreaDetail, 5000)
-    return () => clearInterval(interval)
-  }, [areaId])
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+      abortControllerRef.current?.abort()
+    }
+  }, [fetchAreaDetail])
 
   if (loading) {
     return (

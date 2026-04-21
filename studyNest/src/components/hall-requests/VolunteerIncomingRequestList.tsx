@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AlertCircle, Loader2, Clock, ChevronDown, ChevronUp } from 'lucide-react'
+import { motion } from 'framer-motion'
 import VolunteerRequestResponseForm from './VolunteerRequestResponseForm'
+import VolunteerEmptyState from '@/components/volunteer/VolunteerEmptyState'
+import VolunteerPanelSection from '@/components/volunteer/VolunteerPanelSection'
+import StatusBadge from '@/components/ui/StatusBadge'
+import AppButton from '@/components/ui/AppButton'
 
 interface HallUpdate {
   update_id: string
@@ -46,6 +51,9 @@ interface VolunteerIncomingRequestListProps {
   refreshTrigger?: number
 }
 
+const requestCardClassName = 'overflow-hidden rounded-xl border border-white/15 bg-slate-950/55'
+const idPillClassName = 'inline-block rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-100'
+
 export default function VolunteerIncomingRequestList({
   volunteerId,
   refreshTrigger,
@@ -55,12 +63,24 @@ export default function VolunteerIncomingRequestList({
   const [error, setError] = useState('')
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null)
   const [respondingToId, setRespondingToId] = useState<string | null>(null)
+  const inFlightRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  const fetchRequests = async () => {
+  const fetchRequests = useCallback(async () => {
+    if (inFlightRef.current) return
+    if (typeof document !== 'undefined' && document.hidden) return
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return
+
+    inFlightRef.current = true
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     try {
       setLoading(true)
       setError('')
-      const response = await fetch('/api/hall-requests?status=Pending&skip=0&take=20')
+      const response = await fetch('/api/hall-requests?status=Pending&skip=0&take=20', {
+        signal: controller.signal,
+      })
       const result = await response.json()
 
       if (!response.ok) {
@@ -70,18 +90,40 @@ export default function VolunteerIncomingRequestList({
 
       setRequests(result.data || [])
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        return
+      }
       console.error('Error fetching requests:', err)
       setError('An error occurred while loading requests')
     } finally {
+      inFlightRef.current = false
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) {
+        fetchRequests()
+      }
+    }
+
+    const onOnline = () => {
+      fetchRequests()
+    }
+
     const interval = setInterval(fetchRequests, 5000) // Refresh every 5 seconds
     fetchRequests()
-    return () => clearInterval(interval)
-  }, [refreshTrigger])
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('online', onOnline)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('online', onOnline)
+      abortControllerRef.current?.abort()
+    }
+  }, [refreshTrigger, fetchRequests])
 
   const formatDate = (date: string) => {
     const now = new Date()
@@ -104,24 +146,31 @@ export default function VolunteerIncomingRequestList({
 
   if (loading && requests.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md border border-slate-200 p-8 flex justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-[#2E6F95]" />
-      </div>
+      <VolunteerPanelSection
+        title="Incoming Requests"
+        subtitle="Live queue from students and volunteers"
+      >
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-cyan-300" />
+        </div>
+      </VolunteerPanelSection>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-        <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl border border-rose-300/40 bg-rose-400/15 p-4">
+        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-300" />
         <div>
-          <p className="text-sm font-semibold text-red-700">{error}</p>
-          <button
+          <p className="text-sm font-semibold text-rose-100">{error}</p>
+          <AppButton
             onClick={fetchRequests}
-            className="text-xs text-red-600 hover:text-red-800 mt-2 underline font-semibold"
+            size="sm"
+            variant="danger"
+            className="mt-2"
           >
             Try again
-          </button>
+          </AppButton>
         </div>
       </div>
     )
@@ -129,29 +178,36 @@ export default function VolunteerIncomingRequestList({
 
   if (requests.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg border border-slate-200 p-12 text-center">
-        <p className="text-gray-600 font-semibold">No pending requests</p>
-        <p className="text-sm text-gray-500 mt-1">
-          Check back soon for new hall information requests!
-        </p>
-      </div>
+      <VolunteerPanelSection
+        title="Incoming Requests"
+        subtitle="Live queue from students and volunteers"
+      >
+        <VolunteerEmptyState
+          title="No pending requests"
+          description="Check back soon for new hall information requests."
+          icon={<Clock className="h-5 w-5 text-slate-400" />}
+        />
+      </VolunteerPanelSection>
     )
   }
 
   return (
     <div className="space-y-3">
       {/* Header with count */}
-      <div className="px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
-        <p className="text-sm font-semibold text-blue-900">
+      <div className="rounded-xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2">
+        <p className="text-sm font-semibold text-cyan-100">
           {requests.length} Pending Request{requests.length !== 1 ? 's' : ''}
         </p>
       </div>
 
       {/* Request List */}
       {requests.map((request) => (
-        <div
+        <motion.div
           key={request.request_id}
-          className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+          className={requestCardClassName}
         >
           {/* Request Header (Click to expand) */}
           <button
@@ -160,20 +216,20 @@ export default function VolunteerIncomingRequestList({
                 expandedRequestId === request.request_id ? null : request.request_id
               )
             }
-            className="w-full text-left p-4 hover:bg-slate-50 transition flex items-start justify-between gap-4"
+            className="flex w-full items-start justify-between gap-4 p-4 text-left transition hover:bg-white/5"
           >
             {/* Left Side - Request Info */}
             <div className="flex-1">
               <div className="flex items-start gap-3">
                 <div className="flex-1">
-                  <h3 className="text-base font-bold text-gray-900">
+                  <h3 className="text-base font-bold text-white">
                     {request.lecture_halls.hall_name}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-0.5">
-                    Requested by <span className="font-semibold">{request.requester.name}</span>
+                  <p className="mt-0.5 text-sm text-slate-300">
+                    Requested by <span className="font-semibold text-white">{request.requester.name}</span>
                   </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="inline-block px-2 py-0.5 bg-gray-100 rounded text-xs font-semibold text-gray-700">
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className={idPillClassName}>
                       {request.requester_role === 'student' ? 'Student' : 'Volunteer'} ID:{' '}
                       {request.requester_id_number}
                     </span>
@@ -182,7 +238,7 @@ export default function VolunteerIncomingRequestList({
               </div>
 
               {/* Hall Details */}
-              <div className="flex items-center gap-2 mt-2 text-xs text-gray-600">
+              <div className="mt-2 flex items-center gap-2 text-xs text-slate-300">
                 <span className="inline-block">
                   {request.lecture_halls.building}
                   {request.lecture_halls.floor && ` • Floor ${request.lecture_halls.floor}`}
@@ -195,7 +251,7 @@ export default function VolunteerIncomingRequestList({
               </div>
 
               {/* Time */}
-              <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+              <div className="mt-2 flex items-center gap-1 text-xs text-slate-400">
                 <Clock className="h-3 w-3" />
                 <span>{formatDate(request.created_at)}</span>
               </div>
@@ -204,11 +260,9 @@ export default function VolunteerIncomingRequestList({
             {/* Right Side - Expand Button & Responded Indicator */}
             <div className="flex flex-col items-end gap-2">
               {request.hall_request_updates.length > 0 && (
-                <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">
-                  Already Responded
-                </span>
+                <StatusBadge status="Responded" />
               )}
-              <div className="text-gray-400">
+              <div className="text-slate-400">
                 {expandedRequestId === request.request_id ? (
                   <ChevronUp className="h-5 w-5" />
                 ) : (
@@ -220,29 +274,29 @@ export default function VolunteerIncomingRequestList({
 
           {/* Expanded Content */}
           {expandedRequestId === request.request_id && (
-            <div className="border-t border-slate-200 p-4 bg-slate-50 space-y-4">
+            <div className="space-y-4 border-t border-white/10 bg-slate-900/45 p-4">
               {/* Request Note */}
               {request.request_note && (
-                <div className="bg-white rounded-lg p-3 border border-slate-200">
-                  <p className="text-xs text-gray-600 font-semibold mb-1">Request Message:</p>
-                  <p className="text-sm text-gray-800">{request.request_note}</p>
+                <div className="rounded-lg border border-white/10 bg-black/30 p-3">
+                  <p className="mb-1 text-xs font-semibold text-slate-300">Request Message:</p>
+                  <p className="text-sm text-slate-100">{request.request_note}</p>
                 </div>
               )}
 
               {/* Previous Responses (if any) */}
               {request.hall_request_updates.length > 0 && (
-                <div className="bg-white rounded-lg p-3 border border-green-200">
-                  <p className="text-xs text-green-700 font-semibold mb-2">
+                <div className="rounded-lg border border-emerald-300/30 bg-emerald-400/10 p-3">
+                  <p className="mb-2 text-xs font-semibold text-emerald-100">
                     Previous Response:
                   </p>
                   {request.hall_request_updates.map((update) => (
                     <div key={update.update_id} className="text-xs">
-                      <p className="text-gray-700">
+                      <p className="text-slate-200">
                         <span className="font-semibold">{update.availability_status}</span> •{' '}
                         {update.occupancy_level}
                       </p>
                       {update.available_seats !== null && (
-                        <p className="text-gray-600 mt-1">
+                        <p className="mt-1 text-slate-300">
                           Available Seats: <span className="font-semibold">{update.available_seats}</span>
                         </p>
                       )}
@@ -261,16 +315,17 @@ export default function VolunteerIncomingRequestList({
                   onSuccess={handleResponseSubmitted}
                 />
               ) : (
-                <button
+                <AppButton
                   onClick={() => setRespondingToId(request.request_id)}
-                  className="w-full px-4 py-2 bg-[#2E6F95] text-white font-semibold rounded-lg hover:bg-[#255B79] transition"
+                  fullWidth
+                  variant="primary"
                 >
                   Respond with Hall Information
-                </button>
+                </AppButton>
               )}
             </div>
           )}
-        </div>
+        </motion.div>
       ))}
     </div>
   )

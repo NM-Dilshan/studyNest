@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface Notification {
   notification_id: number
@@ -14,6 +14,8 @@ export function useHallRequestNotifications(userId: string | null, userRole: str
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(false)
+  const inFlightRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const fetchNotifications = useCallback(async () => {
     if (!userId || userRole !== 'volunteer') {
@@ -22,29 +24,65 @@ export function useHallRequestNotifications(userId: string | null, userRole: str
       return
     }
 
+    if (inFlightRef.current) return
+    if (typeof document !== 'undefined' && document.hidden) return
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return
+
+    inFlightRef.current = true
+    const controller = new AbortController()
+    abortControllerRef.current = controller
+
     try {
       setLoading(true)
-      const response = await fetch(`/api/notifications?userId=${userId}&limit=20`)
+      const response = await fetch(`/api/notifications?userId=${userId}&limit=20`, {
+        signal: controller.signal,
+      })
       if (response.ok) {
         const data = await response.json()
         setNotifications(data.notifications || [])
         setUnreadCount(data.unreadCount || 0)
       }
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
       console.error('Failed to fetch notifications:', error)
     } finally {
+      inFlightRef.current = false
       setLoading(false)
     }
   }, [userId, userRole])
 
   // Fetch notifications on mount and set up polling
   useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) {
+        fetchNotifications()
+      }
+    }
+
+    const onOnline = () => {
+      fetchNotifications()
+    }
+
     fetchNotifications()
 
     // Poll for new notifications every 10 seconds for volunteers
     if (userRole === 'volunteer') {
       const interval = setInterval(fetchNotifications, 10000)
-      return () => clearInterval(interval)
+      document.addEventListener('visibilitychange', onVisible)
+      window.addEventListener('online', onOnline)
+
+      return () => {
+        clearInterval(interval)
+        document.removeEventListener('visibilitychange', onVisible)
+        window.removeEventListener('online', onOnline)
+        abortControllerRef.current?.abort()
+      }
+    }
+
+    return () => {
+      abortControllerRef.current?.abort()
     }
   }, [userId, userRole, fetchNotifications])
 

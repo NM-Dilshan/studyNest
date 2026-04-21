@@ -1,8 +1,10 @@
 'use client'
 
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Clock3 } from 'lucide-react'
 import { useState } from 'react'
 import { ResponseFeedbackForm } from '@/components/feedback/ResponseFeedbackForm'
+import StatusBadge from '@/components/ui/StatusBadge'
+import AppButton from '@/components/ui/AppButton'
 
 interface HallUpdate {
   update_id: string
@@ -47,83 +49,46 @@ export default function RequestResponseCard({
   const isExpired =
     response.expires_at && new Date(response.expires_at) < new Date()
 
-  const getAvailabilityColor = (status: string) => {
-    switch (status) {
-      case 'Free':
-        return 'bg-green-100 text-green-800'
-      case 'Partially Busy':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Busy':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
-  const getOccupancyColor = (level: string) => {
-    switch (level) {
-      case 'Empty':
-        return 'bg-blue-100 text-blue-800'
-      case 'Low':
-        return 'bg-green-100 text-green-800'
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'High':
-        return 'bg-orange-100 text-orange-800'
-      case 'Full':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
-
   const getConfidenceColor = (level?: string) => {
     switch (level) {
       case 'Low':
-        return 'text-orange-600'
+        return 'text-amber-200'
       case 'Medium':
-        return 'text-yellow-600'
+        return 'text-yellow-200'
       case 'High':
-        return 'text-green-600'
+        return 'text-emerald-200'
       default:
-        return 'text-gray-600'
+        return 'text-slate-300'
     }
   }
 
   return (
-    <div className={`rounded-lg border p-4 ${isExpired ? 'border-gray-200 bg-gray-50' : 'border-slate-200 bg-slate-50'}`}>
-      {/* Expired Badge */}
+    <div className={`rounded-xl border p-4 ${isExpired ? 'border-slate-300/25 bg-slate-800/35' : 'border-white/15 bg-white/5'}`}>
       {isExpired && (
-        <div className="flex items-center gap-2 mb-3 p-2 bg-gray-100 rounded">
-          <AlertCircle className="h-4 w-4 text-gray-600" />
-          <p className="text-xs text-gray-600 font-semibold">This response has expired</p>
+        <div className="mb-3 flex items-center gap-2 rounded border border-slate-300/25 bg-slate-700/35 p-2">
+          <AlertCircle className="h-4 w-4 text-slate-200" />
+          <p className="text-xs font-semibold text-slate-200">This response has expired</p>
         </div>
       )}
 
-      {/* Primary Status */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1"></div>
         <div className="flex gap-2 flex-wrap justify-end">
-          <span className={`px-2 py-1 rounded text-xs font-semibold ${getAvailabilityColor(response.availability_status)}`}>
-            {response.availability_status}
-          </span>
-          <span className={`px-2 py-1 rounded text-xs font-semibold ${getOccupancyColor(response.occupancy_level)}`}>
-            {response.occupancy_level}
-          </span>
+          <StatusBadge status={response.availability_status} className="normal-case tracking-normal" />
+          <StatusBadge status={response.occupancy_level} className="normal-case tracking-normal" />
         </div>
       </div>
 
-      {/* Hall Details */}
       <div className="grid grid-cols-2 gap-3 mb-3">
         {response.available_seats !== null && response.available_seats !== undefined && (
-          <div className="bg-white rounded p-2">
-            <p className="text-xs text-gray-600">Available Seats</p>
-            <p className="text-sm font-bold text-gray-900">{response.available_seats}</p>
+          <div className="rounded border border-white/10 bg-slate-900/60 p-2">
+            <p className="text-xs text-slate-400">Available Seats</p>
+            <p className="text-sm font-bold text-white">{response.available_seats}</p>
           </div>
         )}
         {response.confidence_level && (
-          <div className="bg-white rounded p-2">
-            <p className="text-xs text-gray-600">Confidence</p>
+          <div className="rounded border border-white/10 bg-slate-900/60 p-2">
+            <p className="text-xs text-slate-400">Confidence</p>
             <p className={`text-sm font-bold ${getConfidenceColor(response.confidence_level)}`}>
               {response.confidence_level}
             </p>
@@ -131,32 +96,34 @@ export default function RequestResponseCard({
         )}
       </div>
 
-      {/* Volunteer Note */}
       {response.volunteer_note && (
-        <div className="mb-3 p-2 bg-white rounded border border-slate-200">
-          <p className="text-xs text-gray-600 font-semibold mb-1">Volunteer's Note:</p>
-          <p className="text-sm text-gray-800">{response.volunteer_note}</p>
+        <div className="mb-3 rounded border border-white/10 bg-slate-900/60 p-2">
+          <p className="mb-1 text-xs font-semibold text-slate-300">Volunteer Note:</p>
+          <p className="text-sm text-slate-100">{response.volunteer_note}</p>
         </div>
       )}
 
-      {/* Timestamp and Expiry */}
-      <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-slate-200">
+      <div className="flex items-center justify-between border-t border-white/10 pt-2 text-xs text-slate-400">
         <span>Responded: {formatDate(response.created_at)}</span>
         {response.expires_at && !isExpired && (
-          <span>Valid until: {formatDate(response.expires_at)}</span>
+          <span className="inline-flex items-center gap-1">
+            <Clock3 className="h-3.5 w-3.5" />
+            Valid until: {formatDate(response.expires_at)}
+          </span>
         )}
       </div>
 
-      {/* Feedback Form */}
       {currentUserId && requestId && (
-        <div className="mt-4 pt-4 border-t border-slate-200">
+        <div className="mt-4 border-t border-white/10 pt-4">
           {!showFeedbackForm ? (
-            <button
+            <AppButton
               onClick={() => setShowFeedbackForm(true)}
-              className="w-full py-2 px-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-sm font-semibold rounded transition-all duration-200 hover:shadow-md"
+              fullWidth
+              variant="primary"
+              className="text-slate-950"
             >
               ⭐ Rate This Response
-            </button>
+            </AppButton>
           ) : (
             <ResponseFeedbackForm
               responseId={response.update_id}

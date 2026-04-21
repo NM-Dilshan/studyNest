@@ -40,7 +40,34 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans);
+}
+
+.premium-grid-overlay {
+  position: relative;
+}
+
+.premium-grid-overlay::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: radial-gradient(circle at center, black 32%, transparent 85%);
+  z-index: 0;
+}
+
+.soft-glow-ring {
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.22), 0 0 45px -22px rgba(56, 189, 248, 0.8);
+}
+
+.text-gradient-cyber {
+  background: linear-gradient(100deg, #67e8f9 0%, #38bdf8 45%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 /* Shared form helpers for consistent, high-contrast inputs/buttons */

@@ -6,8 +6,12 @@
 
 'use client';
 
-import { CrowdStatus, getCrowdEmoji } from '@/lib/geofence';
-import { Users, Wifi, Volume2, Coffee, Zap } from 'lucide-react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { Clock3, Users, Wifi, Volume2, Coffee, Zap, Snowflake, Building2 } from 'lucide-react';
+import { CrowdStatus } from '@/lib/geofence';
+import GlassCard from '@/components/ui/GlassCard';
+import OccupancyIndicator from '@/components/ui/OccupancyIndicator';
+import StatusBadge from '@/components/ui/StatusBadge';
 
 interface Feature {
   icon: React.ReactNode;
@@ -17,106 +21,101 @@ interface Feature {
 interface StudyAreaCardProps {
   id: string;
   name: string;
+  building?: string | null;
   currentCount: number;
   availableSeats: number;
   occupancyPercentage: number;
   crowdStatus: CrowdStatus;
   capacity: number;
+  updatedAt?: string;
   features?: {
     wifi?: boolean;
     quietZone?: boolean;
     café?: boolean;
     chargingPorts?: boolean;
+    ac?: boolean;
   };
 }
 
 export function StudyAreaCard({
   id,
   name,
+  building,
   currentCount,
   availableSeats,
   occupancyPercentage,
   crowdStatus,
   capacity,
+  updatedAt,
   features,
 }: StudyAreaCardProps) {
-  const crowdIndicator = getCrowdEmoji(crowdStatus);
-
+  const shouldReduceMotion = useReducedMotion();
   const featuresToShow: Feature[] = [];
   if (features?.wifi) featuresToShow.push({ icon: <Wifi size={16} />, label: 'WiFi' });
   if (features?.quietZone) featuresToShow.push({ icon: <Volume2 size={16} />, label: 'Quiet' });
   if (features?.café) featuresToShow.push({ icon: <Coffee size={16} />, label: 'Café' });
   if (features?.chargingPorts) featuresToShow.push({ icon: <Zap size={16} />, label: 'Charging' });
+  if (features?.ac) featuresToShow.push({ icon: <Snowflake size={16} />, label: 'AC' });
+
+  const lastUpdatedText = updatedAt
+    ? `${Math.max(0, Math.round((Date.now() - new Date(updatedAt).getTime()) / 60000))} min ago`
+    : 'Live';
+
+  const safeAvailableSeats = Math.max(0, availableSeats);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow p-6">
-      {/* Header with title and crowd status */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">{name}</h3>
-        </div>
-        <div className={`px-3 py-1 rounded-full text-sm font-medium ${crowdIndicator.bgColor} ${crowdIndicator.color}`}>
-          {crowdStatus}
-        </div>
-      </div>
-
-      {/* Occupancy visualization */}
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <Users size={18} className="text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">
-              {currentCount} / {capacity}
-            </span>
+    <motion.div whileHover={shouldReduceMotion ? undefined : { y: -4 }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.24, ease: 'easeOut' }}>
+      <GlassCard className="border-white/20 bg-slate-950/60 p-5">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-white">{name}</h3>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-300">
+              <Building2 className="h-4 w-4 text-cyan-200" />
+              {building || 'Building not specified'}
+            </p>
           </div>
-          <span className="text-sm text-gray-600">{occupancyPercentage.toFixed(1)}%</span>
+          <StatusBadge status={crowdStatus} />
         </div>
 
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-          <div
-            className={`h-full transition-all ${
-              occupancyPercentage <= 30
-                ? 'bg-green-500'
-                : occupancyPercentage <= 70
-                  ? 'bg-yellow-500'
-                  : 'bg-red-500'
-            }`}
-            style={{ width: `${Math.min(occupancyPercentage, 100)}%` }}
-          />
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-slate-400">Current Count</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-xl font-semibold text-white">
+              <Users className="h-4 w-4 text-cyan-200" />
+              {currentCount}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">Capacity {capacity}</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+            <p className="text-xs text-slate-400">Available Seats</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-300">{safeAvailableSeats}</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
+              <Clock3 className="h-3.5 w-3.5" />
+              Updated {lastUpdatedText}
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Available seats */}
-      <div className="mb-4 pb-4 border-b border-gray-200">
-        <div className="bg-green-50 rounded-lg p-3">
-          <p className="text-xs text-gray-600 mb-1">Available Seats</p>
-          <p className="text-xl font-bold text-green-600">{availableSeats}</p>
+        <OccupancyIndicator percentage={occupancyPercentage} />
+
+        {featuresToShow.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {featuresToShow.map((feature, idx) => (
+              <span
+                key={idx}
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100"
+              >
+                {feature.icon}
+                {feature.label}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-2.5 text-xs text-cyan-100/90">
+          Privacy-safe occupancy: individual user locations are never shown.
         </div>
-      </div>
-
-      {/* Features */}
-      {featuresToShow.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {featuresToShow.map((feature, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs"
-            >
-              {feature.icon}
-              {feature.label}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Privacy notice */}
-      <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-        <p className="text-xs text-blue-700">
-          🔒 <strong>Privacy Protected:</strong> Only aggregated occupancy is shown. 
-          Individual locations are not tracked or displayed.
-        </p>
-      </div>
-    </div>
+      </GlassCard>
+    </motion.div>
   );
 }

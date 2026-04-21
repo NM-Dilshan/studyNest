@@ -7,7 +7,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import AdminHeader from '@/components/AdminHeader';
 import { SearchProvider } from '@/contexts/SearchContext';
-import { NotificationProvider } from '@/contexts/NotificationContext';
 
 function TypingText() {
   const [displayedText, setDisplayedText] = useState('');
@@ -80,9 +79,8 @@ export default function AdminLoginPage(): React.ReactElement {
   };
 
   return (
-    <NotificationProvider>
-      <SearchProvider>
-        <div className="min-h-screen bg-[#FBFDFD] antialiased">
+    <SearchProvider>
+      <div className="min-h-screen bg-[#FBFDFD] antialiased">
           <AdminHeader />
           <div className="flex items-center justify-center px-4 py-6 md:py-8">
             <div className="flex w-full max-w-[1400px] min-h-[90vh] bg-white rounded-[40px] shadow-2xl shadow-slate-200/70 overflow-hidden border border-slate-100 relative">
@@ -186,8 +184,8 @@ export default function AdminLoginPage(): React.ReactElement {
             </div>
             </div>
           </div>
-        </div>
-        <style jsx global>{`
+      </div>
+      <style jsx global>{`
           @keyframes blob {
             0%, 100% { transform: translate(0, 0) scale(1); }
             50% { transform: translate(20px, -30px) scale(1.1); }
@@ -200,7 +198,6 @@ export default function AdminLoginPage(): React.ReactElement {
           .animate-blob { animation: blob 10s infinite ease-in-out; }
           .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
         `}</style>
-      </SearchProvider>
-    </NotificationProvider>
+    </SearchProvider>
   );
 }
