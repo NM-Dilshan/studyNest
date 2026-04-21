@@ -364,6 +364,21 @@ body {
   color: transparent;
 }
 
+@keyframes admin-broadcast-swap {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.admin-broadcast-swap {
+  animation: admin-broadcast-swap 320ms ease-out;
+}
+
 /* Shared form helpers for consistent, high-contrast inputs/buttons */
 .form-card {
   @apply bg-white shadow-lg border border-gray-200 rounded-2xl p-6 md:p-8;

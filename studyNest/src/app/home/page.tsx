@@ -225,97 +225,100 @@ export default function HomePage() {
         <ParticleHero />
 
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-          <AnimatedSection className="themed-hero-surface relative overflow-hidden rounded-[2rem] px-6 py-8 md:px-8 md:py-10">
-            <PageHeader
-              eyebrow="StudyNest Smart Campus"
-              title={`Welcome back, ${firstName}`}
-              subtitle="Real-time occupancy, volunteer-powered hall intelligence, and data-driven campus operations in one premium workspace."
-              actions={
-                <div className="flex flex-wrap gap-2">
-                  <AppLinkButton href="/study-areas" variant="primary">
-                    Explore Study Areas
-                  </AppLinkButton>
-                  <AppLinkButton href="/requests" variant="secondary">
-                    Open Hall Requests
-                  </AppLinkButton>
+          <AnimatedSection className="themed-hero-surface relative overflow-hidden rounded-[2rem] px-6 py-7 md:px-8 md:py-8">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+              <div>
+                <PageHeader
+                  eyebrow="StudyNest Smart Campus"
+                  title={`Welcome back, ${firstName}`}
+                  subtitle="Real-time occupancy, volunteer-powered hall intelligence, and data-driven campus operations in one premium workspace."
+                  actions={
+                    <div className="flex flex-wrap gap-2">
+                      <AppLinkButton href="/study-areas" variant="primary">
+                        Explore Study Areas
+                      </AppLinkButton>
+                      <AppLinkButton href="/requests" variant="secondary">
+                        Open Hall Requests
+                      </AppLinkButton>
+                    </div>
+                  }
+                />
+              </div>
+
+              <div
+                className="flex h-full flex-col rounded-2xl border p-4 md:p-5 lg:max-h-[290px]"
+                style={{
+                  borderColor: "var(--panel-info-border)",
+                  background:
+                    "linear-gradient(140deg, var(--panel-info-bg) 0%, color-mix(in srgb, var(--surface-card) 82%, var(--panel-info-bg) 18%) 100%)",
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <BellRing className="h-5 w-5 text-[var(--accent-text)]" />
+                  <h2 className="text-lg font-semibold text-[var(--text-main)]">Broadcasts Massage</h2>
                 </div>
-              }
-            />
+                <p className="mt-1 text-sm text-[var(--text-soft)]">Important announcements published from Massage.</p>
+
+                {loadingAdminMessages ? (
+                  <p className="mt-4 text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+                ) : adminMessages.length > 0 ? (
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col justify-between gap-3">
+                    <div
+                      key={adminMessages[activeAdminMessageIndex]?.message_id ?? activeAdminMessageIndex}
+                      className="admin-broadcast-swap rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--panel-info-border)",
+                        background:
+                          "linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 78%, transparent) 0%, var(--surface-inset-strong) 100%)",
+                        boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 70%, transparent)",
+                      }}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-base font-semibold text-[var(--text-main)]">
+                          {adminMessages[activeAdminMessageIndex]?.title}
+                        </h3>
+                        <span className="text-xs text-[var(--text-soft)]">
+                          {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="mt-2 line-clamp-3 text-sm text-[var(--text-soft)]">
+                        {adminMessages[activeAdminMessageIndex]?.message}
+                      </p>
+                      {adminMessages[activeAdminMessageIndex]?.created_by && (
+                        <p className="mt-2 text-xs text-[var(--text-soft)]">
+                          Published by {adminMessages[activeAdminMessageIndex]?.created_by}
+                        </p>
+                      )}
+                    </div>
+
+                    {adminMessages.length > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        {adminMessages.map((message, index) => (
+                          <button
+                            key={message.message_id}
+                            type="button"
+                            onClick={() => setActiveAdminMessageIndex(index)}
+                            aria-label={`Show announcement ${index + 1}`}
+                            className={`h-2.5 w-2.5 rounded-full transition-all ${
+                              index === activeAdminMessageIndex
+                                ? "bg-[var(--accent-text)]"
+                                : "bg-[var(--surface-border)] hover:bg-[var(--text-soft)]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                )}
+              </div>
+            </div>
           </AnimatedSection>
 
           <AnimatedSection className="mt-7">
             <GlassCard className="p-4">
               <SearchBar />
-            </GlassCard>
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-7" delay={0.03}>
-            <GlassCard
-              className="p-5 md:p-6"
-              style={{
-                borderColor: "var(--panel-info-border)",
-                background:
-                  "linear-gradient(140deg, var(--panel-info-bg) 0%, color-mix(in srgb, var(--surface-card) 82%, var(--panel-info-bg) 18%) 100%)",
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <BellRing className="h-5 w-5 text-[var(--accent-text)]" />
-                <h2 className="text-lg font-semibold text-[var(--text-main)]">Admin Broadcasts</h2>
-              </div>
-              <p className="mt-1 text-sm text-[var(--text-soft)]">Important announcements published from admin dashboard.</p>
-
-              {loadingAdminMessages ? (
-                <p className="mt-4 text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
-              ) : adminMessages.length > 0 ? (
-                <div className="mt-4 space-y-3">
-                  <div
-                    className="rounded-2xl border p-4"
-                    style={{
-                      borderColor: "var(--panel-info-border)",
-                      background:
-                        "linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 78%, transparent) 0%, var(--surface-inset-strong) 100%)",
-                      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 70%, transparent)",
-                    }}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-base font-semibold text-[var(--text-main)]">
-                        {adminMessages[activeAdminMessageIndex]?.title}
-                      </h3>
-                      <span className="text-xs text-[var(--text-soft)]">
-                        {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-[var(--text-soft)]">
-                      {adminMessages[activeAdminMessageIndex]?.message}
-                    </p>
-                    {adminMessages[activeAdminMessageIndex]?.created_by && (
-                      <p className="mt-2 text-xs text-[var(--text-soft)]">
-                        Published by {adminMessages[activeAdminMessageIndex]?.created_by}
-                      </p>
-                    )}
-                  </div>
-
-                  {adminMessages.length > 1 && (
-                    <div className="flex items-center justify-center gap-2">
-                      {adminMessages.map((message, index) => (
-                        <button
-                          key={message.message_id}
-                          type="button"
-                          onClick={() => setActiveAdminMessageIndex(index)}
-                          aria-label={`Show announcement ${index + 1}`}
-                          className={`h-2.5 w-2.5 rounded-full transition-all ${
-                            index === activeAdminMessageIndex
-                              ? "bg-[var(--accent-text)]"
-                              : "bg-[var(--surface-border)] hover:bg-[var(--text-soft)]"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
-              )}
             </GlassCard>
           </AnimatedSection>
 
