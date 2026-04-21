@@ -294,6 +294,83 @@ export default function HomePage() {
                     )}
                   </div>
 
+                    {adminMessages.length > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        {adminMessages.map((message, index) => (
+                          <button
+                            key={message.message_id}
+                            type="button"
+                            onClick={() => setActiveAdminMessageIndex(index)}
+                            aria-label={`Show announcement ${index + 1}`}
+                            className={`h-2.5 w-2.5 rounded-full transition-all ${
+                              index === activeAdminMessageIndex
+                                ? "bg-[var(--accent-text)]"
+                                : "bg-[var(--surface-border)] hover:bg-[var(--text-soft)]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                )}
+              </div>
+            </div>
+          </AnimatedSection>
+
+<<<<<<<<< Temporary merge branch 1
+          <AnimatedSection className="mt-7" delay={0.03}>
+            <GlassCard className="overflow-hidden p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="themed-panel-info inline-flex rounded-xl p-2.5">
+                      <BellRing className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--text-main)]">Admin Broadcasts</h2>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        Important announcements published from the admin dashboard.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="themed-badge-info rounded-full px-3 py-1 text-xs font-semibold">
+                  Live notices
+                </div>
+              </div>
+
+              {loadingAdminMessages ? (
+                <div className="themed-inset mt-4 rounded-2xl p-4">
+                  <p className="text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+                </div>
+              ) : adminMessages.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  <div className="themed-inset-strong rounded-2xl p-4 md:p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          Current announcement
+                        </p>
+                        <h3 className="mt-2 text-base font-semibold text-[var(--text-main)] md:text-lg">
+                        {adminMessages[activeAdminMessageIndex]?.title}
+                        </h3>
+                      </div>
+                      <div className="themed-surface-muted rounded-xl px-3 py-2 text-right text-xs font-medium text-[var(--text-soft)]">
+                        {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">
+                      {adminMessages[activeAdminMessageIndex]?.message}
+                    </p>
+                    {adminMessages[activeAdminMessageIndex]?.created_by && (
+                      <p className="mt-4 text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                        Published by {adminMessages[activeAdminMessageIndex]?.created_by}
+                      </p>
+                    )}
+                  </div>
+
                   {adminMessages.length > 1 && (
                     <div className="flex items-center justify-center gap-2">
                       {adminMessages.map((message, index) => (
@@ -313,8 +390,15 @@ export default function HomePage() {
                   )}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                <div className="themed-inset mt-4 rounded-2xl p-4">
+                  <p className="text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                </div>
               )}
+=========
+          <AnimatedSection className="mt-7">
+            <GlassCard className="p-4">
+              <SearchBar />
+>>>>>>>>> Temporary merge branch 2
             </GlassCard>
           </AnimatedSection>
 
