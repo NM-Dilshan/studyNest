@@ -5,8 +5,7 @@ import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
 import { useLocationTracking } from '@/hooks/useLocationTracking'
 import { StudyAreaSummary } from '@/components/study-areas/StudyAreaSummary'
-import { StudyAreaMap } from '@/components/study-areas/StudyAreaMap'
-import { CrowdStatus } from '@/lib/geofence'
+import { CrowdStatus, haversineDistance } from '@/lib/geofence'
 import { AlertCircle, RefreshCcw } from 'lucide-react'
 import { motion } from 'framer-motion'
 import AnimatedSection from '@/components/ui/AnimatedSection'
@@ -66,6 +65,39 @@ interface StudyAreaStats {
   totalCapacity: number
 }
 
+interface InsideUser {
+  id: string
+  label: string
+  joinedAt: number
+}
+
+const calculateOccupancy = (count: number, capacity: number) => {
+  const safeCount = Math.max(0, count)
+  const safeCapacity = Math.max(0, capacity)
+  const availableSeats = Math.max(0, safeCapacity - safeCount)
+  const occupancyPercentage = safeCapacity > 0 ? (safeCount / safeCapacity) * 100 : 0
+
+  return {
+    currentCount: safeCount,
+    availableSeats,
+    occupancyPercentage,
+  }
+}
+
+const anonymizeUserLabel = (userId: string) => {
+  const seed = userId
+    .split('')
+    .reduce((sum, char) => sum + char.charCodeAt(0), 0)
+
+  return `User ${((seed % 999) + 1).toString()}`
+}
+
+const getCrowdStatusFromPercentage = (occupancyPercentage: number): CrowdStatus => {
+  if (occupancyPercentage <= 30) return 'Low Crowd'
+  if (occupancyPercentage <= 70) return 'Medium Crowd'
+  return 'High Crowd'
+}
+
 export default function StudyAreaFinderPage() {
   const [userId, setUserId] = useState<string | null>(null)
   const [studyAreas, setStudyAreas] = useState<StudyAreaData[]>([])
@@ -73,12 +105,12 @@ export default function StudyAreaFinderPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [stats, setStats] = useState<StudyAreaStats | null>(null)
-  const [hoveredAreaId, setHoveredAreaId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [crowdFilter, setCrowdFilter] = useState<CrowdFilter>('all')
   const [buildingFilter, setBuildingFilter] = useState('all')
   const [featureFilter, setFeatureFilter] = useState<FeatureFilter>('all')
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [insideUsersByLocation, setInsideUsersByLocation] = useState<Record<string, InsideUser[]>>({})
 
   const location = useLocationTracking(userId, true)
 
@@ -114,13 +146,14 @@ export default function StudyAreaFinderPage() {
 
       areas.forEach((area) => {
         if (area.area_occupancy) {
+          const normalizedCrowdStatus = getCrowdStatusFromPercentage(area.area_occupancy.occupancy_percentage)
           const occupancy: OccupancyData = {
             occupancy_id: area.area_occupancy.occupancy_id,
             study_area_id: area.area_occupancy.study_area_id,
             current_count: area.area_occupancy.current_count,
             available_seats: area.area_occupancy.available_seats,
             occupancy_percentage: area.area_occupancy.occupancy_percentage,
-            crowd_status: area.area_occupancy.crowd_status as CrowdStatus,
+            crowd_status: normalizedCrowdStatus,
             updated_at: area.area_occupancy.updated_at,
           }
           occupancyMap.set(occupancy.study_area_id, occupancy)
@@ -178,6 +211,106 @@ export default function StudyAreaFinderPage() {
     }
   }, [location.permissionStatus, location.isTracking, location])
 
+  useEffect(() => {
+    if (!userId || !location.currentLocation) return
+    fetchData()
+  }, [userId, location.currentLocation, fetchData])
+
+  const handleEnableLocation = async () => {
+    await location.requestPermission()
+  }
+
+  const currentUserLocation = useMemo(() => {
+    if (!location.currentLocation) return null
+    return {
+      latitude: location.currentLocation.latitude,
+      longitude: location.currentLocation.longitude,
+    }
+  }, [location.currentLocation])
+
+  const handleUserEnter = useCallback((locationId: string, user: InsideUser) => {
+    setInsideUsersByLocation((previous) => {
+      const locationUsers = previous[locationId] || []
+      const alreadyInside = locationUsers.some((existingUser) => existingUser.id === user.id)
+
+      if (alreadyInside) {
+        return previous
+      }
+
+      return {
+        ...previous,
+        [locationId]: [...locationUsers, user],
+      }
+    })
+  }, [])
+
+  const handleUserLeave = useCallback((locationId: string, userIdToRemove: string) => {
+    setInsideUsersByLocation((previous) => {
+      const locationUsers = previous[locationId] || []
+      const updatedUsers = locationUsers.filter((existingUser) => existingUser.id !== userIdToRemove)
+
+      if (updatedUsers.length === locationUsers.length) {
+        return previous
+      }
+
+      if (updatedUsers.length === 0) {
+        const { [locationId]: _removed, ...rest } = previous
+        return rest
+      }
+
+      return {
+        ...previous,
+        [locationId]: updatedUsers,
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!userId || !currentUserLocation) return
+
+    const liveUser: InsideUser = {
+      id: userId,
+      label: anonymizeUserLabel(userId),
+      joinedAt: Date.now(),
+    }
+
+    studyAreas.forEach((area) => {
+      const latitude = area.lat ?? area.latitude
+      const longitude = area.lng ?? area.longitude
+
+      if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+        return
+      }
+
+      const distance = haversineDistance(
+        { latitude, longitude },
+        {
+          latitude: currentUserLocation.latitude,
+          longitude: currentUserLocation.longitude,
+        }
+      )
+
+      const isInside = distance <= (area.radius_meters || 20)
+      const areaUsers = insideUsersByLocation[area.study_area_id] || []
+      const alreadyInside = areaUsers.some((existingUser) => existingUser.id === userId)
+
+      if (isInside && !alreadyInside) {
+        handleUserEnter(area.study_area_id, liveUser)
+      }
+
+      if (!isInside && alreadyInside) {
+        handleUserLeave(area.study_area_id, userId)
+      }
+    })
+  }, [
+    currentUserLocation,
+    handleUserEnter,
+    handleUserLeave,
+    insideUsersByLocation,
+    studyAreas,
+    userId,
+  ])
+
   const availableBuildings = useMemo(() => {
     const unique = new Set<string>()
     studyAreas.forEach((area) => {
@@ -224,17 +357,27 @@ export default function StudyAreaFinderPage() {
   const gridItems = useMemo<StudyAreaGridItem[]>(() => {
     return filteredAreas.map((area) => {
       const occupancy = occupancyData.get(area.study_area_id)
+      const latitude = area.lat ?? area.latitude
+      const longitude = area.lng ?? area.longitude
+      const baseCurrentCount = occupancy?.current_count || 0
+      const insideUsers = insideUsersByLocation[area.study_area_id] || []
+      const occupancySummary = calculateOccupancy(baseCurrentCount + insideUsers.length, area.capacity)
+      const crowdStatus = getCrowdStatusFromPercentage(occupancySummary.occupancyPercentage)
 
       return {
         id: area.study_area_id,
         name: area.area_name,
         building: area.building,
-        currentCount: occupancy?.current_count || 0,
-        availableSeats: occupancy?.available_seats || area.capacity,
-        occupancyPercentage: occupancy?.occupancy_percentage || 0,
-        crowdStatus: occupancy?.crowd_status || 'Low Crowd',
+        latitude,
+        longitude,
+        radiusMeters: area.radius_meters,
+        currentCount: occupancySummary.currentCount,
+        availableSeats: occupancySummary.availableSeats,
+        occupancyPercentage: occupancySummary.occupancyPercentage,
+        crowdStatus,
         capacity: area.capacity,
         updatedAt: occupancy?.updated_at,
+        insideUsers,
         features: {
           wifi: area.wifi,
           quietZone: area.silent_zone,
@@ -244,32 +387,7 @@ export default function StudyAreaFinderPage() {
         },
       }
     })
-  }, [filteredAreas, occupancyData])
-
-  const mapAreas = useMemo(() => {
-    return studyAreas
-      .filter((area) => {
-        const latitude = area.lat ?? area.latitude
-        const longitude = area.lng ?? area.longitude
-        return typeof latitude === 'number' && typeof longitude === 'number'
-      })
-      .map((area) => {
-        const occupancy = occupancyData.get(area.study_area_id)
-        const latitude = (area.lat ?? area.latitude) as number
-        const longitude = (area.lng ?? area.longitude) as number
-
-        return {
-          id: area.study_area_id,
-          name: area.area_name,
-          latitude,
-          longitude,
-          radiusMeters: area.radius_meters,
-          crowdStatus: occupancy?.crowd_status || 'Low Crowd',
-          currentCount: occupancy?.current_count || 0,
-          capacity: area.capacity,
-        }
-      })
-  }, [studyAreas, occupancyData])
+  }, [filteredAreas, insideUsersByLocation, occupancyData])
 
   const handleResetFilters = () => {
     setSearchTerm('')
@@ -311,10 +429,21 @@ export default function StudyAreaFinderPage() {
               title="Study Area Finder"
               subtitle="Discover the best study zones with real-time crowd signals, seat availability, and feature-based filtering."
               actions={
-                <AppButton onClick={fetchData} variant="primary" aria-label="Refresh study area data">
-                  <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </AppButton>
+                <div className="flex flex-wrap gap-2">
+                  <AppButton onClick={fetchData} variant="primary" aria-label="Refresh study area data">
+                    <RefreshCcw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </AppButton>
+                  {location.permissionStatus !== 'granted' ? (
+                    <AppButton onClick={handleEnableLocation} variant="secondary" aria-label="Enable live location">
+                      Enable Location
+                    </AppButton>
+                  ) : (
+                    <span className="inline-flex items-center rounded-full border border-green-300 bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">
+                      Location On
+                    </span>
+                  )}
+                </div>
               }
             />
           </AnimatedSection>
@@ -348,13 +477,9 @@ export default function StudyAreaFinderPage() {
               <StudyAreaGrid
                 isLoading={isLoading}
                 items={gridItems}
-                onAreaHover={setHoveredAreaId}
+                userLocation={currentUserLocation}
               />
             </GlassCard>
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-6" delay={0.1}>
-            <StudyAreaMap areas={mapAreas} hoveredAreaId={hoveredAreaId} />
           </AnimatedSection>
 
           {error && (
