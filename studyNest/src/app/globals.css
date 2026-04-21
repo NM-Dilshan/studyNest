@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --bg-main: #FBFDFD;
+  --bg-main: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-soft: #F4F9F8;
+  --bg-soft: #FFFFFF;
   --bg-glass: rgba(255, 255, 255, 0.7);
   --background: var(--bg-main);
   --foreground: #0f172a;

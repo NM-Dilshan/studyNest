@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Home, Building, MapPin, AlertCircle, Calendar, AlertTriangle } from 'lucide-react'
+import { Home, Building, MapPin, AlertCircle, Calendar, AlertTriangle, Megaphone } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export function Sidebar() {
@@ -55,6 +55,11 @@ export function Sidebar() {
       href: '/admin/timetable',
     },
     {
+      label: 'Student Messages',
+      icon: Megaphone,
+      href: '/Naveen/Admin/messages',
+    },
+    {
       label: 'Conflict Overrides',
       icon: AlertTriangle,
       href: '/admin/conflicts',
@@ -64,6 +69,9 @@ export function Sidebar() {
   const isActive = (href: string): boolean => {
     if (href === '/Naveen/Admin/dashboard') {
       return pathname === '/Naveen/Admin/dashboard'
+    }
+    if (href === '/Naveen/Admin/messages') {
+      return pathname === '/Naveen/Admin/messages'
     }
     return pathname.startsWith(href)
   }

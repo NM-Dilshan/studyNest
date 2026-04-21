@@ -20,5 +20,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </main>
       </div>
     </SearchProvider>
+    <NotificationProvider>
+      <SearchProvider>
+        <div className="flex h-screen bg-white">
+          <Sidebar />
+          <main className="flex-1 overflow-auto flex flex-col">
+            <AdminHeader />
+            <div className="flex-1 overflow-auto">{children}</div>
+          </main>
+        </div>
+      </SearchProvider>
+    </NotificationProvider>
   );
 }

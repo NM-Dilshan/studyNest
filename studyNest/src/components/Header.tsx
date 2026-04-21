@@ -55,7 +55,7 @@ export default function Header({ currentPage = 'home' }: HeaderProps) {
   ]
 
   return (
-    <header className="bg-white shadow-sm sticky top-0 z-50">
+    <header className="bg-gradient-to-r from-sky-50 to-blue-50 border-b border-sky-100 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex justify-between items-center">
           {/* Logo & Branding */}
