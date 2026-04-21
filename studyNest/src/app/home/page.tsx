@@ -5,7 +5,6 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, BarChart3, BellRing, Clock3, MapPin, Radar, Send } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
-import SearchBar from "@/components/SearchBar";
 import AppBackground from "@/components/AppBackground";
 import AnimatedSection from "@/components/ui/AnimatedSection";
 import PageHeader from "@/components/ui/PageHeader";
@@ -241,12 +240,6 @@ export default function HomePage() {
                 </div>
               }
             />
-          </AnimatedSection>
-
-          <AnimatedSection className="mt-7">
-            <GlassCard className="p-4">
-              <SearchBar />
-            </GlassCard>
           </AnimatedSection>
 
           <AnimatedSection className="mt-7" delay={0.03}>
