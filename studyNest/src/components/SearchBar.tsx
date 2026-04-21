@@ -137,7 +137,7 @@ export default function SearchBar() {
       {/* Search Input */}
       <div className="relative">
         <svg
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+          className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -157,11 +157,11 @@ export default function SearchBar() {
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={() => query.trim() && isOpen && setIsOpen(true)}
-          className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#2E6F95] text-gray-900 placeholder-gray-500 transition"
+          className="themed-input w-full rounded-lg px-4 py-3 pl-12 pr-4 transition focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
         />
         {isLoading && (
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-            <div className="animate-spin h-4 w-4 border-2 border-[#2E6F95] border-t-transparent rounded-full"></div>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 transform">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--brand-primary)] border-t-transparent"></div>
           </div>
         )}
       </div>
@@ -170,14 +170,14 @@ export default function SearchBar() {
       {isOpen && results.length > 0 && (
         <div
           ref={dropdownRef}
-          className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+          className="themed-surface absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-lg"
         >
           {results.map((result, index) => (
             <div
               key={`${result.type}-${result.id}`}
               id={`result-${index}`}
               className={`px-4 py-3 cursor-pointer transition ${
-                selectedIndex === index ? 'bg-[#eaf4fa]' : 'hover:bg-gray-50'
+                selectedIndex === index ? 'bg-[var(--accent-bg)]' : 'hover:bg-[var(--surface-card-muted)]'
               }`}
               onClick={() => handleSelectResult(result)}
               onMouseEnter={() => setSelectedIndex(index)}
@@ -188,13 +188,13 @@ export default function SearchBar() {
                   <div
                     className={`h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                       result.type === 'lecture_hall'
-                        ? 'bg-[#eaf4fa]'
-                        : 'bg-green-100'
+                        ? 'bg-[var(--accent-bg)]'
+                        : 'bg-emerald-500/12'
                     }`}
                   >
                     {result.type === 'lecture_hall' ? (
                       <svg
-                        className="h-4 w-4 text-[#2E6F95]"
+                        className="h-4 w-4 text-[var(--accent-text)]"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -208,7 +208,7 @@ export default function SearchBar() {
                       </svg>
                     ) : (
                       <svg
-                        className="h-4 w-4 text-green-600"
+                        className="h-4 w-4 text-emerald-500"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -225,11 +225,11 @@ export default function SearchBar() {
 
                   {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
+                    <p className="truncate font-medium text-[var(--text-main)]">
                       {result.name}
                     </p>
                     {result.building && (
-                      <p className="text-xs text-gray-500 truncate">
+                      <p className="truncate text-xs text-[var(--text-muted)]">
                         {result.building}
                       </p>
                     )}
@@ -240,8 +240,8 @@ export default function SearchBar() {
                 <span
                   className={`ml-2 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0 ${
                     result.type === 'lecture_hall'
-                      ? 'bg-[#eaf4fa] text-[#2E6F95]'
-                      : 'bg-green-100 text-green-700'
+                      ? 'bg-[var(--accent-bg)] text-[var(--accent-text)]'
+                      : 'bg-emerald-500/12 text-emerald-600'
                   }`}
                 >
                   {result.type === 'lecture_hall' ? 'Lecture Hall' : 'Study Area'}
@@ -254,9 +254,9 @@ export default function SearchBar() {
 
       {/* No results message */}
       {isOpen && query.trim() && results.length === 0 && !isLoading && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 px-4 py-8 text-center">
+        <div className="themed-surface absolute left-0 right-0 top-full z-50 mt-2 rounded-lg px-4 py-8 text-center">
           <svg
-            className="mx-auto h-8 w-8 text-gray-400 mb-2"
+            className="mx-auto mb-2 h-8 w-8 text-[var(--text-muted)]"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -268,7 +268,7 @@ export default function SearchBar() {
               d="M20 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
             />
           </svg>
-          <p className="text-gray-600 font-medium">
+          <p className="font-medium text-[var(--text-soft)]">
             No matching lecture halls or study areas found
           </p>
         </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, ShieldCheck } from 'lucide-react'
@@ -16,7 +16,11 @@ import { clearStoredSession, readStoredUser, type ClientUser } from '@/lib/auth/
 export default function RequestsPage() {
   const router = useRouter()
   const [user, setUser] = useState<ClientUser | null>(null)
-  const [isHydrated, setIsHydrated] = useState(false)
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  )
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   useEffect(() => {
@@ -28,8 +32,7 @@ export default function RequestsPage() {
       return
     }
 
-    setUser(parsedUser)
-    setIsHydrated(true)
+    setTimeout(() => setUser(parsedUser), 0)
   }, [router])
 
   if (!isHydrated) {
@@ -38,7 +41,7 @@ export default function RequestsPage() {
         <div className="min-h-screen flex items-center justify-center" role="status" aria-live="polite" aria-busy="true">
           <div className="text-center">
             <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-300" />
-            <p className="text-slate-300">Loading...</p>
+            <p className="text-[var(--text-soft)]">Loading...</p>
           </div>
         </div>
       </AppBackground>
@@ -57,7 +60,7 @@ export default function RequestsPage() {
   return (
     <AppBackground>
       <MainHeader />
-      <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#1e293b_0%,#0f172a_50%,#020617_100%)]">
+      <main className="themed-page-main min-h-screen">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <AnimatedSection>
           <PageHeader
@@ -69,14 +72,14 @@ export default function RequestsPage() {
 
         <AnimatedSection className="mt-6" delay={0.04}>
         {user.role === 'student' ? (
-          <GlassCard className="border-cyan-300/25 bg-cyan-400/10 p-4">
+          <GlassCard className="themed-panel-info p-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-cyan-200" />
+              <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[var(--panel-info-text)]" />
               <div>
-                <p className="text-sm font-semibold text-cyan-100">
+                <p className="themed-panel-title text-sm font-semibold">
                 Welcome, {user.name}!
                 </p>
-                <p className="mt-1 text-sm text-cyan-100/85">
+                <p className="themed-panel-copy mt-1 text-sm">
                 Use the form below to request real-time information about any lecture hall. Volunteers will respond with
                 current status, occupancy, and availability.
                 </p>
@@ -84,11 +87,11 @@ export default function RequestsPage() {
             </div>
           </GlassCard>
         ) : (
-          <GlassCard className="border-amber-300/30 bg-amber-400/10 p-4">
-            <p className="text-sm text-amber-100">
+          <GlassCard className="themed-panel-warning p-4">
+            <p className="text-sm">
               As a {user.role}, you can create requests and also earn reputation by responding to requests from others.
               Visit{' '}
-              <Link href="/volunteer/requests" className="font-bold underline underline-offset-2 transition hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900">
+              <Link href="/volunteer/requests" className="font-bold underline underline-offset-2 transition hover:no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]">
                 the volunteer dashboard
               </Link>{' '}
               to respond to incoming requests.
@@ -112,10 +115,10 @@ export default function RequestsPage() {
           <div className="lg:col-span-2">
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="mb-1 text-2xl font-bold text-white">Your Requests</h2>
-                <p className="text-sm text-slate-300">Track responses and submit feedback when volunteers answer your request.</p>
+                <h2 className="mb-1 text-2xl font-bold text-[var(--text-main)]">Your Requests</h2>
+                <p className="text-sm text-[var(--text-soft)]">Track responses and submit feedback when volunteers answer your request.</p>
               </div>
-              <span className="inline-flex min-h-11 items-center gap-1 rounded-full border border-emerald-300/40 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+              <span className="themed-panel-success inline-flex min-h-11 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Live Sync
               </span>

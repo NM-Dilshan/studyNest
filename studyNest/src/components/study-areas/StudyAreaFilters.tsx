@@ -41,37 +41,37 @@ export default function StudyAreaFilters({
   isRefreshing = false,
 }: StudyAreaFiltersProps) {
   return (
-    <GlassCard className="border-white/15 bg-slate-950/55 p-4 md:p-5">
+    <GlassCard className="p-4 md:p-5">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
-          <SlidersHorizontal className="h-4 w-4 text-cyan-200" />
+        <div className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-main)]">
+          <SlidersHorizontal className="h-4 w-4 text-[var(--accent-text)]" />
           Filters & Search
         </div>
-        <p className="text-xs text-slate-300">
-          Showing <span className="font-semibold text-white">{visibleCount}</span> of {" "}
-          <span className="font-semibold text-white">{totalCount}</span>
+        <p className="text-xs text-[var(--text-soft)]">
+          Showing <span className="font-semibold text-[var(--text-main)]">{visibleCount}</span> of {" "}
+          <span className="font-semibold text-[var(--text-main)]">{totalCount}</span>
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="group relative block">
-          <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400 group-focus-within:text-cyan-200" />
+          <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-[var(--text-muted)] group-focus-within:text-[var(--accent-text)]" />
           <input
             type="text"
             value={searchTerm}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder="Search area or building..."
-            className="h-11 w-full rounded-lg border border-white/15 bg-slate-900/75 pl-9 pr-3 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/20"
+            className="themed-input h-11 w-full rounded-lg pl-9 pr-3 text-sm outline-none transition focus:border-[var(--surface-border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]"
             aria-label="Search study areas"
           />
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Crowd Level</span>
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Crowd Level</span>
           <select
             value={crowdFilter}
             onChange={(event) => onCrowdChange(event.target.value as CrowdFilter)}
-            className="h-11 w-full rounded-lg border border-white/15 bg-slate-900/75 px-3 text-sm text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/20"
+            className="themed-input h-11 w-full rounded-lg px-3 text-sm outline-none transition focus:border-[var(--surface-border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]"
             aria-label="Filter by crowd level"
           >
             <option value="all">All Levels</option>
@@ -82,11 +82,11 @@ export default function StudyAreaFilters({
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Building</span>
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Building</span>
           <select
             value={buildingFilter}
             onChange={(event) => onBuildingChange(event.target.value)}
-            className="h-11 w-full rounded-lg border border-white/15 bg-slate-900/75 px-3 text-sm text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/20"
+            className="themed-input h-11 w-full rounded-lg px-3 text-sm outline-none transition focus:border-[var(--surface-border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]"
             aria-label="Filter by building"
           >
             <option value="all">All Buildings</option>
@@ -99,11 +99,11 @@ export default function StudyAreaFilters({
         </label>
 
         <label className="block">
-          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-slate-400">Feature</span>
+          <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]">Feature</span>
           <select
             value={featureFilter}
             onChange={(event) => onFeatureChange(event.target.value as FeatureFilter)}
-            className="h-11 w-full rounded-lg border border-white/15 bg-slate-900/75 px-3 text-sm text-white outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-400/20"
+            className="themed-input h-11 w-full rounded-lg px-3 text-sm outline-none transition focus:border-[var(--surface-border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]"
             aria-label="Filter by feature"
           >
             <option value="all">Any Feature</option>
@@ -120,7 +120,7 @@ export default function StudyAreaFilters({
           onClick={onRefresh}
           size="sm"
           variant="primary"
-          className="w-full bg-cyan-400/10 sm:w-auto"
+          className="w-full sm:w-auto"
         >
           <RefreshCcw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           Refresh Data
@@ -129,7 +129,7 @@ export default function StudyAreaFilters({
           onClick={onReset}
           size="sm"
           variant="secondary"
-          className="w-full text-slate-200 sm:w-auto"
+          className="w-full sm:w-auto"
         >
           <RotateCcw className="h-3.5 w-3.5" />
           Reset Filters

@@ -31,7 +31,7 @@ export function StudyAreaSummary({ stats, isLoading = false }: StudyAreaSummaryP
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {Array.from({ length: 5 }).map((_, i) => (
-          <LoadingSkeleton key={i} className="h-28 rounded-2xl bg-slate-700/50" />
+          <LoadingSkeleton key={i} className="h-28 rounded-2xl" />
         ))}
       </div>
     );
@@ -74,23 +74,23 @@ export function StudyAreaSummary({ stats, isLoading = false }: StudyAreaSummaryP
         />
       </div>
 
-      <GlassCard className="border-white/15 bg-slate-950/55 p-5">
-        <h2 className="text-lg font-semibold text-white">Campus Occupancy Overview</h2>
+      <GlassCard className="p-5">
+        <h2 className="text-lg font-semibold text-[var(--text-main)]">Campus Occupancy Overview</h2>
         <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-3">
           <div>
-            <p className="text-sm text-slate-300">Students Currently Inside</p>
-            <p className="mt-2 text-3xl font-bold text-white">{stats.totalStudentsInside}</p>
-            <p className="mt-1 text-xs text-slate-400">across all active study areas</p>
+            <p className="text-sm text-[var(--text-soft)]">Students Currently Inside</p>
+            <p className="mt-2 text-3xl font-bold text-[var(--text-main)]">{stats.totalStudentsInside}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">across all active study areas</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Available Seats</p>
-            <p className="mt-2 text-3xl font-bold text-emerald-300">{stats.totalAvailableSeats}</p>
-            <p className="mt-1 text-xs text-slate-400">remaining seat inventory</p>
+            <p className="text-sm text-[var(--text-soft)]">Available Seats</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-600">{stats.totalAvailableSeats}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">remaining seat inventory</p>
           </div>
           <div>
-            <p className="text-sm text-slate-300">Overall Capacity</p>
-            <p className="mt-2 text-3xl font-bold text-cyan-200">{stats.totalCapacity}</p>
-            <p className="mt-1 text-xs text-slate-400">all areas combined</p>
+            <p className="text-sm text-[var(--text-soft)]">Overall Capacity</p>
+            <p className="mt-2 text-3xl font-bold text-[var(--accent-text)]">{stats.totalCapacity}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">all areas combined</p>
           </div>
         </div>
         <div className="mt-5">
@@ -98,9 +98,9 @@ export function StudyAreaSummary({ stats, isLoading = false }: StudyAreaSummaryP
         </div>
       </GlassCard>
 
-      <GlassCard className="border-cyan-300/20 bg-cyan-400/10 p-4 text-sm text-cyan-100">
-        <p className="font-semibold text-cyan-100">Smart usage tips</p>
-        <p className="mt-1 text-cyan-100/90">
+      <GlassCard className="themed-panel-info p-4 text-sm">
+        <p className="themed-panel-title font-semibold">Smart usage tips</p>
+        <p className="themed-panel-copy mt-1">
           Low occupancy spaces are ideal for focused work, while medium occupancy areas are better for group collaboration.
           Occupancy data auto-refreshes every 30 seconds.
         </p>

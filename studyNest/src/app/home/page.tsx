@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, BarChart3, Clock3, MapPin, Radar, Send } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
@@ -21,15 +21,19 @@ import { readStoredUser, type ClientUser } from "@/lib/auth/clientUser";
 const ParticleHero = dynamic(() => import("@/components/effects/ParticleHero"), { ssr: false });
 const FloatingCampusNodes = dynamic(() => import("@/components/3d/FloatingCampusNodes"), {
   ssr: false,
-  loading: () => <div className="h-[320px] animate-pulse rounded-2xl bg-slate-800/50" />,
+  loading: () => <div className="themed-inset h-[320px] animate-pulse rounded-2xl" />,
 });
 
 export default function HomePage() {
   const router = useRouter();
-  const [isHydrated, setIsHydrated] = useState(false);
   const [showGPSDialog, setShowGPSDialog] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<"idle" | "requesting" | "enabled" | "denied">("idle");
   const [user] = useState<ClientUser | null>(() => readStoredUser());
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const [recentUpdates] = useState<HomeRecentUpdate[]>(() => {
     const now = new Date();
@@ -66,8 +70,6 @@ export default function HomePage() {
   });
 
   useEffect(() => {
-    setIsHydrated(true);
-
     if (!user) {
       router.push("/login/signIN");
       return;
@@ -139,7 +141,7 @@ export default function HomePage() {
     return (
       <AppBackground>
         <div className="flex min-h-screen items-center justify-center">
-          <div className="text-slate-300">Preparing your smart campus workspace...</div>
+          <div className="text-[var(--text-soft)]">Preparing your smart campus workspace...</div>
         </div>
       </AppBackground>
     );
@@ -157,29 +159,21 @@ export default function HomePage() {
 
       <GPSPermissionModal show={showGPSDialog} status={gpsStatus} onEnable={requestGPSPermission} onSkip={handleSkipGPS} />
 
-      <main className="relative overflow-hidden bg-[radial-gradient(circle_at_top_left,#1e293b_0%,#0f172a_45%,#020617_100%)]">
+      <main className="themed-page-main relative overflow-hidden">
         <ParticleHero />
 
         <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
-          <AnimatedSection>
+          <AnimatedSection className="themed-hero-surface relative overflow-hidden rounded-[2rem] px-6 py-8 md:px-8 md:py-10">
             <PageHeader
               eyebrow="StudyNest Smart Campus"
               title={`Welcome back, ${firstName}`}
               subtitle="Real-time occupancy, volunteer-powered hall intelligence, and data-driven campus operations in one premium workspace."
               actions={
                 <div className="flex flex-wrap gap-2">
-                  <AppLinkButton
-                    href="/study-areas"
-                    variant="primary"
-                    className="bg-cyan-500 text-slate-950 hover:bg-cyan-400"
-                  >
+                  <AppLinkButton href="/study-areas" variant="primary">
                     Explore Study Areas
                   </AppLinkButton>
-                  <AppLinkButton
-                    href="/requests"
-                    variant="secondary"
-                    className="border-cyan-300/45 bg-cyan-300/10 text-cyan-100 hover:bg-cyan-300/20"
-                  >
+                  <AppLinkButton href="/requests" variant="secondary">
                     Open Hall Requests
                   </AppLinkButton>
                 </div>
@@ -188,7 +182,7 @@ export default function HomePage() {
           </AnimatedSection>
 
           <AnimatedSection className="mt-7">
-            <GlassCard className="border-cyan-300/20 bg-slate-900/55 p-4">
+            <GlassCard className="p-4">
               <SearchBar />
             </GlassCard>
           </AnimatedSection>
@@ -201,9 +195,9 @@ export default function HomePage() {
           </AnimatedSection>
 
           <AnimatedSection className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]" delay={0.08}>
-            <GlassCard className="border-white/15 bg-slate-900/55 p-5 md:p-6">
-              <h2 className="text-xl font-semibold text-white">Core Modules</h2>
-              <p className="mt-1 text-sm text-slate-300">Navigate quickly to the most-used student, volunteer, and admin workflows.</p>
+            <GlassCard className="p-5 md:p-6">
+              <h2 className="text-xl font-semibold text-[var(--text-main)]">Core Modules</h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">Navigate quickly to the most-used student, volunteer, and admin workflows.</p>
               <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FeatureSpotlightCard
                   href="/study-areas"
@@ -236,8 +230,8 @@ export default function HomePage() {
               </div>
             </GlassCard>
 
-            <GlassCard className="border-indigo-300/20 bg-slate-900/55 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-indigo-200">Campus signal graph</p>
+            <GlassCard className="p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--accent-text)]">Campus signal graph</p>
               <FloatingCampusNodes />
             </GlassCard>
           </AnimatedSection>
@@ -245,8 +239,8 @@ export default function HomePage() {
           <AnimatedSection className="mt-10" delay={0.12}>
             <div className="mb-4 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-semibold text-white">Recent Activity Feed</h2>
-                <p className="mt-1 text-sm text-slate-300">Latest crowd and hall updates reported by your campus network.</p>
+                <h2 className="text-2xl font-semibold text-[var(--text-main)]">Recent Activity Feed</h2>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">Latest crowd and hall updates reported by your campus network.</p>
               </div>
             </div>
             {recentUpdates.length > 0 ? (
@@ -257,12 +251,7 @@ export default function HomePage() {
                 description="When volunteers and students report space updates, they will appear here with occupancy signals."
                 icon={<Activity className="h-6 w-6" />}
                 action={
-                  <AppLinkButton
-                    href="/requests"
-                    variant="secondary"
-                    size="sm"
-                    className="border-cyan-300/40 text-cyan-100 hover:bg-cyan-300/10"
-                  >
+                  <AppLinkButton href="/requests" variant="secondary" size="sm">
                     Create First Request
                   </AppLinkButton>
                 }

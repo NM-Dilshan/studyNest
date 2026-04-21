@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Clock, AlertCircle, Loader2 } from 'lucide-react'
 import { getTimeRemaining } from '@/lib/validations/volunteerHallUpdate'
 import VolunteerPanelSection from './VolunteerPanelSection'
@@ -46,7 +46,7 @@ export default function VolunteerSubmissionList({
   const [timeRemaining, setTimeRemaining] = useState<Record<number, string>>({})
 
   // Fetch submissions
-  const fetchSubmissions = async (signal?: AbortSignal) => {
+  const fetchSubmissions = useCallback(async (signal?: AbortSignal) => {
     try {
       setLoading(true)
       setError(null)
@@ -71,7 +71,7 @@ export default function VolunteerSubmissionList({
     } finally {
       setLoading(false)
     }
-  }
+  }, [volunteerId])
 
   // Fetch submissions on mount and when refreshTrigger changes
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function VolunteerSubmissionList({
     return () => {
       controller.abort()
     }
-  }, [volunteerId, refreshTrigger])
+  }, [refreshTrigger, fetchSubmissions])
 
   // Update countdown timers
   useEffect(() => {
@@ -159,8 +159,8 @@ export default function VolunteerSubmissionList({
     return (
       <VolunteerPanelSection title="My Submissions" subtitle="View and manage your hall updates">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-cyan-300" />
-          <span className="ml-2 text-slate-300">Loading submissions...</span>
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--button-primary-bg)]" />
+          <span className="ml-2 text-[var(--text-soft)]">Loading submissions...</span>
         </div>
       </VolunteerPanelSection>
     )
@@ -171,9 +171,9 @@ export default function VolunteerSubmissionList({
 
       {/* Error Message */}
       {error && (
-        <div className="mb-6 flex items-start gap-3 rounded-lg border border-rose-300/40 bg-rose-400/15 p-4">
-          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-300" />
-          <p className="text-sm text-rose-100">{error}</p>
+        <div className="themed-panel-danger mb-6 flex items-start gap-3 rounded-lg p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+          <p className="text-sm">{error}</p>
         </div>
       )}
 
@@ -182,7 +182,7 @@ export default function VolunteerSubmissionList({
         <VolunteerEmptyState
           title="No submissions yet"
           description="Submit your first hall update using the form in this tab."
-          icon={<Clock className="h-5 w-5 text-slate-400" />}
+          icon={<Clock className="h-5 w-5 text-[var(--text-muted)]" />}
         />
       ) : (
         <div className="space-y-4">

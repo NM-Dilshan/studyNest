@@ -58,6 +58,29 @@
   --badge-danger-text: #9f1239;
   --badge-neutral-bg: rgba(148, 163, 184, 0.2);
   --badge-neutral-text: #334155;
+  --badge-info-bg: rgba(14, 116, 144, 0.14);
+  --badge-info-text: #155e75;
+  --button-primary-bg: #2e6f95;
+  --button-primary-border: #255b79;
+  --button-primary-text: #f8fafc;
+  --button-primary-hover: #255b79;
+  --panel-info-bg: rgba(46, 111, 149, 0.1);
+  --panel-info-border: rgba(46, 111, 149, 0.22);
+  --panel-info-text: #134466;
+  --panel-info-text-soft: #255b79;
+  --panel-success-bg: rgba(22, 163, 74, 0.1);
+  --panel-success-border: rgba(22, 163, 74, 0.2);
+  --panel-success-text: #166534;
+  --panel-warning-bg: rgba(245, 158, 11, 0.12);
+  --panel-warning-border: rgba(217, 119, 6, 0.24);
+  --panel-warning-text: #92400e;
+  --panel-danger-bg: rgba(225, 29, 72, 0.1);
+  --panel-danger-border: rgba(225, 29, 72, 0.2);
+  --panel-danger-text: #9f1239;
+  --surface-inset: rgba(255, 255, 255, 0.62);
+  --surface-inset-strong: rgba(255, 255, 255, 0.78);
+  --progress-track: rgba(148, 163, 184, 0.28);
+  --hero-surface: linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(234, 244, 250, 0.92) 52%, rgba(226, 238, 248, 0.84));
   --font-geist-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-geist-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", Courier, monospace;
 }
@@ -104,6 +127,29 @@ html.theme-dark {
   --badge-danger-text: #fda4af;
   --badge-neutral-bg: rgba(100, 116, 139, 0.26);
   --badge-neutral-text: #cbd5e1;
+  --badge-info-bg: rgba(14, 165, 233, 0.18);
+  --badge-info-text: #bae6fd;
+  --button-primary-bg: #22d3ee;
+  --button-primary-border: #67e8f9;
+  --button-primary-text: #082f49;
+  --button-primary-hover: #67e8f9;
+  --panel-info-bg: rgba(56, 189, 248, 0.16);
+  --panel-info-border: rgba(56, 189, 248, 0.32);
+  --panel-info-text: #e0f2fe;
+  --panel-info-text-soft: #bae6fd;
+  --panel-success-bg: rgba(22, 163, 74, 0.18);
+  --panel-success-border: rgba(34, 197, 94, 0.3);
+  --panel-success-text: #bbf7d0;
+  --panel-warning-bg: rgba(245, 158, 11, 0.22);
+  --panel-warning-border: rgba(245, 158, 11, 0.34);
+  --panel-warning-text: #fde68a;
+  --panel-danger-bg: rgba(225, 29, 72, 0.2);
+  --panel-danger-border: rgba(244, 63, 94, 0.34);
+  --panel-danger-text: #fecdd3;
+  --surface-inset: rgba(15, 23, 42, 0.56);
+  --surface-inset-strong: rgba(15, 23, 42, 0.74);
+  --progress-track: rgba(51, 65, 85, 0.9);
+  --hero-surface: linear-gradient(145deg, rgba(15, 23, 42, 0.82), rgba(2, 6, 23, 0.88) 54%, rgba(15, 23, 42, 0.72));
 }
 
 html.theme-light {
@@ -140,6 +186,12 @@ body {
   background: var(--page-shell-bg);
 }
 
+.themed-page-main {
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent-bg) 88%, transparent) 0%, transparent 36%),
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-main) 24%, transparent) 0%, transparent 28%, color-mix(in srgb, var(--bg-main) 12%, transparent) 100%);
+}
+
 .themed-surface {
   border: 1px solid var(--surface-border);
   background: var(--surface-card);
@@ -152,6 +204,23 @@ body {
   background: var(--surface-card-muted);
   box-shadow: var(--surface-shadow);
   backdrop-filter: blur(12px);
+}
+
+.themed-hero-surface {
+  border: 1px solid var(--surface-border);
+  background: var(--hero-surface);
+  box-shadow: var(--surface-shadow-strong);
+  backdrop-filter: blur(18px);
+}
+
+.themed-inset {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-inset);
+}
+
+.themed-inset-strong {
+  border: 1px solid var(--surface-border);
+  background: var(--surface-inset-strong);
 }
 
 .themed-surface:hover {
@@ -205,6 +274,48 @@ body {
 .themed-badge-neutral {
   background: var(--badge-neutral-bg);
   color: var(--badge-neutral-text);
+}
+
+.themed-badge-info {
+  background: var(--badge-info-bg);
+  color: var(--badge-info-text);
+}
+
+.themed-panel-info {
+  border: 1px solid var(--panel-info-border);
+  background: var(--panel-info-bg);
+  color: var(--panel-info-text);
+}
+
+.themed-panel-info .themed-panel-title,
+.themed-panel-info strong {
+  color: var(--panel-info-text);
+}
+
+.themed-panel-info .themed-panel-copy {
+  color: var(--panel-info-text-soft);
+}
+
+.themed-panel-success {
+  border: 1px solid var(--panel-success-border);
+  background: var(--panel-success-bg);
+  color: var(--panel-success-text);
+}
+
+.themed-panel-warning {
+  border: 1px solid var(--panel-warning-border);
+  background: var(--panel-warning-bg);
+  color: var(--panel-warning-text);
+}
+
+.themed-panel-danger {
+  border: 1px solid var(--panel-danger-border);
+  background: var(--panel-danger-bg);
+  color: var(--panel-danger-text);
+}
+
+.themed-progress-track {
+  background: var(--progress-track);
 }
 
 .premium-grid-overlay {

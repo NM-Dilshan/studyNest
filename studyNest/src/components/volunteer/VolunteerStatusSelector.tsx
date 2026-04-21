@@ -25,7 +25,7 @@ export default function VolunteerStatusSelector({
 
   return (
     <div role="radiogroup" aria-label={groupLabel}>
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-300">
+      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
         {label} {required ? <span className="text-rose-300">*</span> : null}
       </label>
       <div className="flex flex-wrap gap-2">
@@ -39,8 +39,8 @@ export default function VolunteerStatusSelector({
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
                 active
                   ? option.colorClass
-                  : 'border-white/20 bg-white/5 text-slate-200 hover:bg-white/10'
-              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/80 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900`}
+                  : 'border-[var(--surface-border)] bg-[var(--surface-inset)] text-[var(--text-soft)] hover:bg-[var(--surface-card-muted)]'
+              } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]`}
               role="radio"
               aria-checked={active}
             >

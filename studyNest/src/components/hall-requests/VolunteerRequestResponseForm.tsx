@@ -37,7 +37,6 @@ export default function VolunteerRequestResponseForm({
     setError('')
     setSuccess(false)
 
-    // Validation
     if (!availabilityStatus) {
       setError('Please select availability status')
       return
@@ -64,22 +63,19 @@ export default function VolunteerRequestResponseForm({
     setLoading(true)
 
     try {
-      const response = await fetch(
-        `/api/hall-requests/${requestId}/respond`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            responderId: volunteerId,
-            availabilityStatus,
-            occupancyLevel,
-            availableSeats: seats,
-            volunteerNote: note || null,
-            confidenceLevel,
-            expiryMinutes: parseInt(expiryMinutes),
-          }),
-        }
-      )
+      const response = await fetch(`/api/hall-requests/${requestId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          responderId: volunteerId,
+          availabilityStatus,
+          occupancyLevel,
+          availableSeats: seats,
+          volunteerNote: note || null,
+          confidenceLevel,
+          expiryMinutes: parseInt(expiryMinutes),
+        }),
+      })
 
       const result = await response.json()
 
@@ -92,8 +88,8 @@ export default function VolunteerRequestResponseForm({
       setTimeout(() => {
         onSuccess()
       }, 1500)
-    } catch (err) {
-      console.error('Error submitting response:', err)
+    } catch (submitError) {
+      console.error('Error submitting response:', submitError)
       setError('An error occurred while submitting your response')
     } finally {
       setLoading(false)
@@ -102,11 +98,11 @@ export default function VolunteerRequestResponseForm({
 
   if (success) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-emerald-300/40 bg-emerald-400/15 p-4" role="status" aria-live="polite">
-        <Check className="h-5 w-5 text-green-600" />
+      <div className="themed-panel-success flex items-center gap-3 rounded-xl p-4" role="status" aria-live="polite">
+        <Check className="h-5 w-5" />
         <div>
-          <p className="text-sm font-semibold text-emerald-100">Response submitted!</p>
-          <p className="mt-1 text-xs text-emerald-200">The requester will see your update shortly.</p>
+          <p className="text-sm font-semibold">Response submitted!</p>
+          <p className="mt-1 text-xs">The requester will see your update shortly.</p>
         </div>
       </div>
     )
@@ -118,92 +114,86 @@ export default function VolunteerRequestResponseForm({
       animate={{ opacity: 1, y: 0 }}
       transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-white/15 bg-slate-950/55 p-4"
+      className="themed-surface space-y-4 rounded-xl p-4"
     >
-      <h4 className="text-sm font-bold uppercase tracking-wide text-white">Submit Hall Information</h4>
+      <h4 className="text-sm font-bold uppercase tracking-wide text-[var(--text-main)]">Submit Hall Information</h4>
 
-      {/* Error Alert */}
       {error && (
-        <div className="flex items-start gap-3 rounded-lg border border-rose-300/40 bg-rose-400/15 p-3" role="alert" aria-live="assertive">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-rose-300" />
-          <p className="text-xs text-rose-100">{error}</p>
+        <div className="themed-panel-danger flex items-start gap-3 rounded-lg p-3" role="alert" aria-live="assertive">
+          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p className="text-xs">{error}</p>
         </div>
       )}
 
-      {/* Availability Status */}
       <VolunteerStatusSelector
         label="Availability Status"
         required
         value={availabilityStatus}
         onChange={setAvailabilityStatus}
         options={[
-          { label: 'Free', value: 'Free', colorClass: 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100' },
-          { label: 'Partially Busy', value: 'Partially Busy', colorClass: 'border-amber-300/40 bg-amber-400/20 text-amber-100' },
-          { label: 'Busy', value: 'Busy', colorClass: 'border-rose-300/40 bg-rose-400/20 text-rose-100' },
+          { label: 'Free', value: 'Free', colorClass: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600' },
+          { label: 'Partially Busy', value: 'Partially Busy', colorClass: 'border-amber-500/25 bg-amber-500/10 text-amber-600' },
+          { label: 'Busy', value: 'Busy', colorClass: 'border-rose-500/25 bg-rose-500/10 text-rose-600' },
         ]}
       />
 
-      {/* Occupancy Level */}
       <VolunteerStatusSelector
         label="Occupancy Level"
         required
         value={occupancyLevel}
         onChange={setOccupancyLevel}
         options={[
-          { label: 'Empty', value: 'Empty', colorClass: 'border-emerald-300/40 bg-emerald-400/20 text-emerald-100' },
-          { label: 'Low', value: 'Low', colorClass: 'border-sky-300/40 bg-sky-400/20 text-sky-100' },
-          { label: 'Medium', value: 'Medium', colorClass: 'border-amber-300/40 bg-amber-400/20 text-amber-100' },
-          { label: 'High', value: 'High', colorClass: 'border-orange-300/40 bg-orange-400/20 text-orange-100' },
-          { label: 'Full', value: 'Full', colorClass: 'border-rose-300/40 bg-rose-400/20 text-rose-100' },
+          { label: 'Empty', value: 'Empty', colorClass: 'border-emerald-500/25 bg-emerald-500/10 text-emerald-600' },
+          { label: 'Low', value: 'Low', colorClass: 'border-sky-500/25 bg-sky-500/10 text-sky-600' },
+          { label: 'Medium', value: 'Medium', colorClass: 'border-amber-500/25 bg-amber-500/10 text-amber-600' },
+          { label: 'High', value: 'High', colorClass: 'border-orange-500/25 bg-orange-500/10 text-orange-600' },
+          { label: 'Full', value: 'Full', colorClass: 'border-rose-500/25 bg-rose-500/10 text-rose-600' },
         ]}
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {/* Available Seats */}
-      <div>
-        <label htmlFor="volunteerAvailableSeats" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-300">
-          Available Seats {hallCapacity && `(Max: ${hallCapacity})`}
-        </label>
-        <input
-          id="volunteerAvailableSeats"
-          type="number"
-          value={availableSeats}
-          onChange={(e) => setAvailableSeats(e.target.value)}
-          placeholder="e.g., 42"
-          min="0"
-          className="w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
-        />
+        <div>
+          <label htmlFor="volunteerAvailableSeats" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Available Seats {hallCapacity && `(Max: ${hallCapacity})`}
+          </label>
+          <input
+            id="volunteerAvailableSeats"
+            type="number"
+            value={availableSeats}
+            onChange={(e) => setAvailableSeats(e.target.value)}
+            placeholder="e.g., 42"
+            min="0"
+            className="themed-input w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="volunteerConfidenceLevel" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+            Confidence Level
+          </label>
+          <select
+            id="volunteerConfidenceLevel"
+            value={confidenceLevel}
+            onChange={(e) => setConfidenceLevel(e.target.value)}
+            className="themed-input w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
+          >
+            <option value="Low">Low</option>
+            <option value="Medium">Medium</option>
+            <option value="High">High</option>
+          </select>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">How confident are you about this information?</p>
+        </div>
       </div>
 
-      {/* Confidence Level */}
       <div>
-        <label htmlFor="volunteerConfidenceLevel" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-300">
-          Confidence Level
-        </label>
-        <select
-          id="volunteerConfidenceLevel"
-          value={confidenceLevel}
-          onChange={(e) => setConfidenceLevel(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
-        >
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-        </select>
-        <p className="mt-1 text-xs text-slate-400">How confident are you about this information?</p>
-      </div>
-      </div>
-
-      {/* Valid For */}
-      <div>
-        <label htmlFor="volunteerExpiryMinutes" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-300">
+        <label htmlFor="volunteerExpiryMinutes" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Valid For (minutes)
         </label>
         <select
           id="volunteerExpiryMinutes"
           value={expiryMinutes}
           onChange={(e) => setExpiryMinutes(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          className="themed-input w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
         >
           <option value="30">30 minutes</option>
           <option value="60">1 hour</option>
@@ -212,9 +202,8 @@ export default function VolunteerRequestResponseForm({
         </select>
       </div>
 
-      {/* Volunteer Note */}
       <div>
-        <label htmlFor="volunteerAdditionalNote" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-300">
+        <label htmlFor="volunteerAdditionalNote" className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
           Additional Note (Optional)
         </label>
         <textarea
@@ -222,31 +211,19 @@ export default function VolunteerRequestResponseForm({
           value={note}
           onChange={(e) => setNote(e.target.value.slice(0, 300))}
           placeholder="E.g., Class ending soon, will free up..."
-          className="w-full resize-none rounded-lg border border-white/20 bg-slate-900/70 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-cyan-300"
+          className="themed-input w-full resize-none rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--focus-ring)]"
           rows={2}
           maxLength={300}
         />
-        <p className="mt-0.5 text-xs text-slate-400">{note.length}/300 characters</p>
+        <p className="mt-0.5 text-xs text-[var(--text-muted)]">{note.length}/300 characters</p>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex gap-2 pt-2">
-        <AppButton
-          type="submit"
-          disabled={loading}
-          className="flex-1"
-          variant="primary"
-        >
+        <AppButton type="submit" disabled={loading} className="flex-1" variant="primary">
           {loading && <Loader2 className="h-4 w-4 animate-spin" />}
           {loading ? 'Submitting...' : 'Submit Response'}
         </AppButton>
-        <AppButton
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="flex-1"
-          variant="secondary"
-        >
+        <AppButton type="button" onClick={onCancel} disabled={loading} className="flex-1" variant="secondary">
           Cancel
         </AppButton>
       </div>

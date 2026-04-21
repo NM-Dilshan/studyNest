@@ -39,7 +39,7 @@ export default function StudyAreaGrid({ isLoading, items, onAreaHover }: StudyAr
     return (
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="space-y-3 rounded-2xl border border-white/10 bg-slate-900/45 p-4">
+          <div key={index} className="themed-surface space-y-3 rounded-2xl p-4">
             <LoadingSkeleton className="h-6 w-2/3" />
             <LoadingSkeleton className="h-4 w-1/2" />
             <LoadingSkeleton className="h-20 w-full" />

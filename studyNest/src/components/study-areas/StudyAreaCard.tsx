@@ -1,9 +1,3 @@
-/**
- * StudyAreaCard Component
- * Displays occupancy information for a single study area
- * Privacy-safe: shows only aggregated occupancy, never individual locations
- */
-
 'use client';
 
 import { motion, useReducedMotion } from 'framer-motion';
@@ -31,14 +25,13 @@ interface StudyAreaCardProps {
   features?: {
     wifi?: boolean;
     quietZone?: boolean;
-    café?: boolean;
+    cafe?: boolean;
     chargingPorts?: boolean;
     ac?: boolean;
   };
 }
 
 export function StudyAreaCard({
-  id,
   name,
   building,
   currentCount,
@@ -51,26 +44,27 @@ export function StudyAreaCard({
 }: StudyAreaCardProps) {
   const shouldReduceMotion = useReducedMotion();
   const featuresToShow: Feature[] = [];
+
   if (features?.wifi) featuresToShow.push({ icon: <Wifi size={16} />, label: 'WiFi' });
   if (features?.quietZone) featuresToShow.push({ icon: <Volume2 size={16} />, label: 'Quiet' });
-  if (features?.café) featuresToShow.push({ icon: <Coffee size={16} />, label: 'Café' });
+  if (features?.cafe) featuresToShow.push({ icon: <Coffee size={16} />, label: 'Cafe' });
   if (features?.chargingPorts) featuresToShow.push({ icon: <Zap size={16} />, label: 'Charging' });
   if (features?.ac) featuresToShow.push({ icon: <Snowflake size={16} />, label: 'AC' });
 
   const lastUpdatedText = updatedAt
-    ? `${Math.max(0, Math.round((Date.now() - new Date(updatedAt).getTime()) / 60000))} min ago`
+    ? new Date(updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : 'Live';
 
   const safeAvailableSeats = Math.max(0, availableSeats);
 
   return (
     <motion.div whileHover={shouldReduceMotion ? undefined : { y: -4 }} transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.24, ease: 'easeOut' }}>
-      <GlassCard className="border-white/20 bg-slate-950/60 p-5">
+      <GlassCard className="p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-semibold text-white">{name}</h3>
-            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-slate-300">
-              <Building2 className="h-4 w-4 text-cyan-200" />
+            <h3 className="text-lg font-semibold text-[var(--text-main)]">{name}</h3>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-[var(--text-soft)]">
+              <Building2 className="h-4 w-4 text-[var(--accent-text)]" />
               {building || 'Building not specified'}
             </p>
           </div>
@@ -78,18 +72,18 @@ export function StudyAreaCard({
         </div>
 
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs text-slate-400">Current Count</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-xl font-semibold text-white">
-              <Users className="h-4 w-4 text-cyan-200" />
+          <div className="themed-inset rounded-xl p-3">
+            <p className="text-xs text-[var(--text-muted)]">Current Count</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-xl font-semibold text-[var(--text-main)]">
+              <Users className="h-4 w-4 text-[var(--accent-text)]" />
               {currentCount}
             </p>
-            <p className="mt-1 text-xs text-slate-400">Capacity {capacity}</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Capacity {capacity}</p>
           </div>
-          <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-            <p className="text-xs text-slate-400">Available Seats</p>
-            <p className="mt-1 text-xl font-semibold text-emerald-300">{safeAvailableSeats}</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">
+          <div className="themed-inset rounded-xl p-3">
+            <p className="text-xs text-[var(--text-muted)]">Available Seats</p>
+            <p className="mt-1 text-xl font-semibold text-emerald-600">{safeAvailableSeats}</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
               <Clock3 className="h-3.5 w-3.5" />
               Updated {lastUpdatedText}
             </p>
@@ -103,7 +97,7 @@ export function StudyAreaCard({
             {featuresToShow.map((feature, idx) => (
               <span
                 key={idx}
-                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/25 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100"
+                className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-border)] bg-[var(--accent-bg)] px-2.5 py-1 text-xs font-medium text-[var(--accent-text)]"
               >
                 {feature.icon}
                 {feature.label}
@@ -112,7 +106,7 @@ export function StudyAreaCard({
           </div>
         ) : null}
 
-        <div className="mt-4 rounded-lg border border-cyan-300/20 bg-cyan-400/10 p-2.5 text-xs text-cyan-100/90">
+        <div className="themed-panel-info mt-4 rounded-lg p-2.5 text-xs">
           Privacy-safe occupancy: individual user locations are never shown.
         </div>
       </GlassCard>

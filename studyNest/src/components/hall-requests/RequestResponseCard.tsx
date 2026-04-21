@@ -30,13 +30,14 @@ interface RequestResponseCardProps {
   onFeedbackSubmitted?: () => void
 }
 
-export default function RequestResponseCard({ 
-  response, 
-  requestId, 
+export default function RequestResponseCard({
+  response,
+  requestId,
   currentUserId,
-  onFeedbackSubmitted 
+  onFeedbackSubmitted,
 }: RequestResponseCardProps) {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
+
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
@@ -52,43 +53,43 @@ export default function RequestResponseCard({
   const getConfidenceColor = (level?: string) => {
     switch (level) {
       case 'Low':
-        return 'text-amber-200'
+        return 'text-amber-600'
       case 'Medium':
-        return 'text-yellow-200'
+        return 'text-amber-500'
       case 'High':
-        return 'text-emerald-200'
+        return 'text-emerald-600'
       default:
-        return 'text-slate-300'
+        return 'text-[var(--text-soft)]'
     }
   }
 
   return (
-    <div className={`rounded-xl border p-4 ${isExpired ? 'border-slate-300/25 bg-slate-800/35' : 'border-white/15 bg-white/5'}`}>
+    <div className={`rounded-xl border p-4 ${isExpired ? 'themed-inset' : 'themed-inset-strong'}`}>
       {isExpired && (
-        <div className="mb-3 flex items-center gap-2 rounded border border-slate-300/25 bg-slate-700/35 p-2">
-          <AlertCircle className="h-4 w-4 text-slate-200" />
-          <p className="text-xs font-semibold text-slate-200">This response has expired</p>
+        <div className="mb-3 flex items-center gap-2 rounded border border-[var(--surface-border)] bg-[var(--surface-card-muted)] p-2">
+          <AlertCircle className="h-4 w-4 text-[var(--text-soft)]" />
+          <p className="text-xs font-semibold text-[var(--text-soft)]">This response has expired</p>
         </div>
       )}
 
-      <div className="flex items-start justify-between mb-3">
+      <div className="mb-3 flex items-start justify-between">
         <div className="flex-1"></div>
-        <div className="flex gap-2 flex-wrap justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
           <StatusBadge status={response.availability_status} className="normal-case tracking-normal" />
           <StatusBadge status={response.occupancy_level} className="normal-case tracking-normal" />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="mb-3 grid grid-cols-2 gap-3">
         {response.available_seats !== null && response.available_seats !== undefined && (
-          <div className="rounded border border-white/10 bg-slate-900/60 p-2">
-            <p className="text-xs text-slate-400">Available Seats</p>
-            <p className="text-sm font-bold text-white">{response.available_seats}</p>
+          <div className="themed-inset rounded p-2">
+            <p className="text-xs text-[var(--text-muted)]">Available Seats</p>
+            <p className="text-sm font-bold text-[var(--text-main)]">{response.available_seats}</p>
           </div>
         )}
         {response.confidence_level && (
-          <div className="rounded border border-white/10 bg-slate-900/60 p-2">
-            <p className="text-xs text-slate-400">Confidence</p>
+          <div className="themed-inset rounded p-2">
+            <p className="text-xs text-[var(--text-muted)]">Confidence</p>
             <p className={`text-sm font-bold ${getConfidenceColor(response.confidence_level)}`}>
               {response.confidence_level}
             </p>
@@ -97,13 +98,13 @@ export default function RequestResponseCard({
       </div>
 
       {response.volunteer_note && (
-        <div className="mb-3 rounded border border-white/10 bg-slate-900/60 p-2">
-          <p className="mb-1 text-xs font-semibold text-slate-300">Volunteer Note:</p>
-          <p className="text-sm text-slate-100">{response.volunteer_note}</p>
+        <div className="themed-inset mb-3 rounded p-2">
+          <p className="mb-1 text-xs font-semibold text-[var(--text-soft)]">Volunteer Note:</p>
+          <p className="text-sm text-[var(--text-main)]">{response.volunteer_note}</p>
         </div>
       )}
 
-      <div className="flex items-center justify-between border-t border-white/10 pt-2 text-xs text-slate-400">
+      <div className="flex items-center justify-between border-t border-[var(--surface-border)] pt-2 text-xs text-[var(--text-muted)]">
         <span>Responded: {formatDate(response.created_at)}</span>
         {response.expires_at && !isExpired && (
           <span className="inline-flex items-center gap-1">
@@ -114,15 +115,14 @@ export default function RequestResponseCard({
       </div>
 
       {currentUserId && requestId && (
-        <div className="mt-4 border-t border-white/10 pt-4">
+        <div className="mt-4 border-t border-[var(--surface-border)] pt-4">
           {!showFeedbackForm ? (
             <AppButton
               onClick={() => setShowFeedbackForm(true)}
               fullWidth
               variant="primary"
-              className="text-slate-950"
             >
-              ⭐ Rate This Response
+              Rate This Response
             </AppButton>
           ) : (
             <ResponseFeedbackForm

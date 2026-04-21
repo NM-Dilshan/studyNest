@@ -38,12 +38,12 @@ export default function RecentUpdatesPanel({ updates }: RecentUpdatesPanelProps)
   return (
     <div className="space-y-4">
       {updates.map((update, index) => (
-        <GlassCard key={`${update.name}-${index}`} className="border-white/15 bg-slate-950/55 p-4">
+        <GlassCard key={`${update.name}-${index}`} className="p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-cyan-200/80">{update.type}</p>
-              <h3 className="mt-1 text-base font-semibold text-white">{update.name || "Unknown Space"}</h3>
-              <p className="mt-1 text-sm text-slate-300">{update.building || "Unknown Building"}</p>
+              <p className="text-xs uppercase tracking-[0.14em] text-[var(--accent-text)]">{update.type}</p>
+              <h3 className="mt-1 text-base font-semibold text-[var(--text-main)]">{update.name || "Unknown Space"}</h3>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">{update.building || "Unknown Building"}</p>
             </div>
             <div className="min-w-[180px] flex-1">
               <OccupancyIndicator
@@ -52,7 +52,7 @@ export default function RecentUpdatesPanel({ updates }: RecentUpdatesPanelProps)
               />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
+          <div className="mt-3 flex items-center gap-4 text-xs text-[var(--text-muted)]">
             <span className="inline-flex items-center gap-1">
               <User className="h-3.5 w-3.5" />
               {update.reporter || "Anonymous"}

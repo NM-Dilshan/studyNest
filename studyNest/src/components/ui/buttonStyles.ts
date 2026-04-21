@@ -3,11 +3,11 @@ export type AppButtonSize = "sm" | "md";
 
 const variantClasses: Record<AppButtonVariant, string> = {
   primary:
-    "border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] text-[var(--header-accent-text)] hover:brightness-110",
+    "border-[var(--button-primary-border)] bg-[var(--button-primary-bg)] text-[var(--button-primary-text)] hover:bg-[var(--button-primary-hover)]",
   secondary:
     "border-[var(--header-border)] bg-[var(--header-button-bg)] text-[var(--header-text)] hover:bg-[var(--header-button-hover)]",
   danger:
-    "border-rose-400/35 bg-rose-500/12 text-rose-300 hover:bg-rose-500/20",
+    "border-[var(--panel-danger-border)] bg-[var(--panel-danger-bg)] text-[var(--panel-danger-text)] hover:brightness-95",
 };
 
 const sizeClasses: Record<AppButtonSize, string> = {

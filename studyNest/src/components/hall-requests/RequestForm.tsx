@@ -51,7 +51,6 @@ export default function RequestForm({
   })
   const [hallName, setHallName] = useState('')
 
-  // Search lecture halls using the search API
   useEffect(() => {
     if (!searchQuery.trim() || !shouldTriggerSearch(searchQuery)) {
       setFilteredHalls([])
@@ -59,14 +58,13 @@ export default function RequestForm({
       return
     }
 
-    // Debounce search requests
     const timer = setTimeout(async () => {
       setSearchLoading(true)
       try {
         const response = await fetch(
           `/api/lecture-halls/search?q=${encodeURIComponent(searchQuery)}&limit=15`
         )
-        
+
         if (response.ok) {
           const data = await response.json()
           setFilteredHalls(data)
@@ -75,25 +73,23 @@ export default function RequestForm({
           console.error('Failed to search halls:', response.status)
           setFilteredHalls([])
         }
-      } catch (error) {
-        console.error('Error searching halls:', error)
+      } catch (searchError) {
+        console.error('Error searching halls:', searchError)
         setFilteredHalls([])
       } finally {
         setSearchLoading(false)
       }
-    }, 300) // 300ms debounce
+    }, 300)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
 
-  // Show dropdown when search results arrive
   useEffect(() => {
     if (filteredHalls.length > 0 && searchQuery) {
       setShowDropdown(true)
     }
   }, [filteredHalls, searchQuery])
 
-  // Close dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const searchContainer = document.getElementById('hallSearch')?.parentElement?.parentElement
@@ -111,17 +107,14 @@ export default function RequestForm({
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase()
     setSearchQuery(value)
-    
-    // Validate hall code format
+
     const validation = validateHallCode(value)
     setHallCodeValidation(validation)
-    
-    // Reset selection if user modifies input
+
     if (value !== hallName) {
       setSelectedHallId('')
     }
-    
-    // Clear error when user is typing
+
     if (error && error.includes('Please select')) {
       setError('')
     }
@@ -184,8 +177,8 @@ export default function RequestForm({
       }, 3000)
 
       onRequestCreated?.()
-    } catch (err) {
-      console.error('Error submitting request:', err)
+    } catch (submitError) {
+      console.error('Error submitting request:', submitError)
       setError('An error occurred while submitting your request')
     } finally {
       setSubmitting(false)
@@ -193,38 +186,34 @@ export default function RequestForm({
   }
 
   return (
-    <GlassCard className="border-white/15 bg-slate-950/55 p-6">
-      <h2 className="mb-4 text-xl font-bold text-white">Create Request</h2>
+    <GlassCard className="p-6">
+      <h2 className="mb-4 text-xl font-bold text-[var(--text-main)]">Create Request</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="flex items-start gap-3 rounded-lg border border-rose-300/35 bg-rose-400/10 p-3" role="alert" aria-live="assertive">
-            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-200" />
-            <p className="text-sm text-rose-100">{error}</p>
+          <div className="themed-panel-danger flex items-start gap-3 rounded-lg p-3" role="alert" aria-live="assertive">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <p className="text-sm">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="flex items-start gap-3 rounded-lg border border-emerald-300/35 bg-emerald-400/10 p-3" role="status" aria-live="polite">
-            <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-200" />
-            <p className="text-sm text-emerald-100">Request submitted successfully!</p>
+          <div className="themed-panel-success flex items-start gap-3 rounded-lg p-3" role="status" aria-live="polite">
+            <Check className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <p className="text-sm">Request submitted successfully!</p>
           </div>
         )}
 
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label htmlFor="hallSearch" className="block text-sm font-semibold text-slate-100">
+          <div className="mb-2 flex items-center justify-between">
+            <label htmlFor="hallSearch" className="block text-sm font-semibold text-[var(--text-main)]">
               Lecture Hall <span className="text-red-500">*</span>
             </label>
             {searchQuery && (
               <div className="flex items-center gap-2">
-                {searchLoading && <Loader2 className="h-4 w-4 animate-spin text-cyan-200" />}
-                {selectedHallId && !searchLoading && (
-                  <Check className="h-4 w-4 text-emerald-300" />
-                )}
-                {!selectedHallId && searchQuery && !searchLoading && (
-                  <X className="h-4 w-4 text-amber-200" />
-                )}
+                {searchLoading && <Loader2 className="h-4 w-4 animate-spin text-[var(--accent-text)]" />}
+                {selectedHallId && !searchLoading && <Check className="h-4 w-4 text-emerald-500" />}
+                {!selectedHallId && searchQuery && !searchLoading && <X className="h-4 w-4 text-amber-500" />}
               </div>
             )}
           </div>
@@ -243,24 +232,24 @@ export default function RequestForm({
               aria-controls="hallSearch-results"
               aria-invalid={Boolean(searchQuery && hallCodeValidation.error && !selectedHallId)}
               aria-describedby="hallSearch-help"
-              className={`w-full rounded-lg border px-4 py-2 text-sm text-white placeholder:text-slate-400 outline-none transition focus:ring-2 ${
+              className={`w-full rounded-lg border px-4 py-2 text-sm outline-none transition focus:ring-2 ${
                 selectedHallId
-                  ? 'border-emerald-300/50 bg-emerald-500/10 focus:ring-emerald-300/30'
+                  ? 'border-emerald-500/25 bg-emerald-500/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:ring-emerald-500/20'
                   : searchQuery && hallCodeValidation.error
-                    ? 'border-amber-300/50 bg-amber-500/10 focus:ring-amber-300/30'
-                    : 'border-white/20 bg-slate-900/80 focus:border-cyan-300/70 focus:ring-cyan-300/25'
+                    ? 'border-amber-500/25 bg-amber-500/10 text-[var(--text-main)] placeholder:text-[var(--text-muted)] focus:ring-amber-500/20'
+                    : 'themed-input focus:border-[var(--surface-border-strong)] focus:ring-[var(--focus-ring)]'
               }`}
             />
 
             {searchQuery && hallCodeValidation.error && (
-              <div className="flex items-center gap-1 mt-1">
-                <Info className="h-3.5 w-3.5 text-amber-200" />
-                <p className="text-xs text-amber-100">{hallCodeValidation.error}</p>
+              <div className="mt-1 flex items-center gap-1">
+                <Info className="h-3.5 w-3.5 text-amber-500" />
+                <p className="text-xs text-amber-600">{hallCodeValidation.error}</p>
               </div>
             )}
 
             {showDropdown && filteredHalls.length > 0 && (
-              <div id="hallSearch-results" role="listbox" className="absolute left-0 right-0 top-12 z-50 max-h-64 overflow-y-auto rounded-lg border border-white/20 bg-slate-900/95 shadow-xl">
+              <div id="hallSearch-results" role="listbox" className="themed-surface absolute left-0 right-0 top-12 z-50 max-h-64 overflow-y-auto rounded-lg shadow-xl">
                 {filteredHalls.map((hall, index) => (
                   <button
                     key={hall.hall_id}
@@ -270,12 +259,12 @@ export default function RequestForm({
                     aria-selected={selectedHallId === hall.hall_id}
                     className={`w-full px-4 py-2.5 text-left transition ${
                       index === highlightedIndex
-                        ? 'border-l-4 border-cyan-300 bg-cyan-400/15'
-                        : 'hover:bg-white/10'
+                        ? 'border-l-4 border-[var(--button-primary-bg)] bg-[var(--accent-bg)]'
+                        : 'hover:bg-[var(--surface-card-muted)]'
                     }`}
                   >
-                    <div className="font-medium text-white">{hall.hall_name}</div>
-                    <div className="text-xs text-slate-300">
+                    <div className="font-medium text-[var(--text-main)]">{hall.hall_name}</div>
+                    <div className="text-xs text-[var(--text-soft)]">
                       {hall.building && `${hall.building}`}
                       {hall.floor && ` • Floor ${hall.floor}`}
                       {hall.capacity && ` • Capacity: ${hall.capacity}`}
@@ -286,15 +275,13 @@ export default function RequestForm({
             )}
           </div>
 
-          <p id="hallSearch-help" className="mt-1 text-xs text-slate-300">
-            {selectedHallId
-              ? '✓ Hall selected'
-              : 'Type to search for a lecture hall'}
+          <p id="hallSearch-help" className="mt-1 text-xs text-[var(--text-muted)]">
+            {selectedHallId ? 'Hall selected' : 'Type to search for a lecture hall'}
           </p>
         </div>
 
         <div>
-          <label htmlFor="requestNote" className="mb-2 block text-sm font-semibold text-slate-100">
+          <label htmlFor="requestNote" className="mb-2 block text-sm font-semibold text-[var(--text-main)]">
             Message (Optional)
           </label>
           <textarea
@@ -302,36 +289,32 @@ export default function RequestForm({
             value={note}
             onChange={(e) => setNote(e.target.value.slice(0, 300))}
             placeholder="E.g., Need to know if there are seats available now"
-            className="w-full resize-none rounded-lg border border-white/20 bg-slate-900/80 px-4 py-2 text-sm text-white placeholder:text-slate-400 outline-none transition focus:border-cyan-300/70 focus:ring-2 focus:ring-cyan-300/25"
+            className="themed-input w-full resize-none rounded-lg px-4 py-2 text-sm outline-none transition focus:border-[var(--surface-border-strong)] focus:ring-2 focus:ring-[var(--focus-ring)]"
             rows={3}
             maxLength={300}
           />
-          <p className="mt-1 text-xs text-slate-300">
-            {note.length}/300 characters
-          </p>
+          <p className="mt-1 text-xs text-[var(--text-muted)]">{note.length}/300 characters</p>
         </div>
 
-        <div className="rounded-lg border border-white/15 bg-white/5 p-3">
-          <p className="text-xs text-slate-300">
-            This request will be sent as:
-          </p>
-          <p className="mt-1 text-sm font-semibold text-white">{userName}</p>
-          <p className="mt-0.5 text-xs text-slate-300">
+        <div className="themed-inset rounded-lg p-3">
+          <p className="text-xs text-[var(--text-soft)]">This request will be sent as:</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--text-main)]">{userName}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-muted)]">
             {userRole === 'student' ? 'Student' : 'Volunteer'} ID: {userIdNumber}
           </p>
         </div>
 
         <motion.div whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}>
-        <AppButton
-          type="submit"
-          disabled={submitting || !selectedHallId}
-          fullWidth
-          variant="primary"
-          className="py-2.5 text-slate-950"
-        >
-          {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          {submitting ? 'Sending...' : 'Send Request'}
-        </AppButton>
+          <AppButton
+            type="submit"
+            disabled={submitting || !selectedHallId}
+            fullWidth
+            variant="primary"
+            className="py-2.5"
+          >
+            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {submitting ? 'Sending...' : 'Send Request'}
+          </AppButton>
         </motion.div>
       </form>
     </GlassCard>

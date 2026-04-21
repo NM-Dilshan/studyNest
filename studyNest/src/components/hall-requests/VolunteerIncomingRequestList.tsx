@@ -51,8 +51,8 @@ interface VolunteerIncomingRequestListProps {
   refreshTrigger?: number
 }
 
-const requestCardClassName = 'overflow-hidden rounded-xl border border-white/15 bg-slate-950/55'
-const idPillClassName = 'inline-block rounded-full border border-white/15 bg-white/10 px-2 py-0.5 text-xs font-semibold text-slate-100'
+const requestCardClassName = 'themed-surface overflow-hidden rounded-xl'
+const idPillClassName = 'inline-block rounded-full border border-[var(--surface-border)] bg-[var(--surface-inset)] px-2 py-0.5 text-xs font-semibold text-[var(--text-soft)]'
 
 export default function VolunteerIncomingRequestList({
   volunteerId,
@@ -89,11 +89,11 @@ export default function VolunteerIncomingRequestList({
       }
 
       setRequests(result.data || [])
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') {
+    } catch (fetchError) {
+      if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
         return
       }
-      console.error('Error fetching requests:', err)
+      console.error('Error fetching requests:', fetchError)
       setError('An error occurred while loading requests')
     } finally {
       inFlightRef.current = false
@@ -112,7 +112,7 @@ export default function VolunteerIncomingRequestList({
       fetchRequests()
     }
 
-    const interval = setInterval(fetchRequests, 5000) // Refresh every 5 seconds
+    const interval = setInterval(fetchRequests, 5000)
     fetchRequests()
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('online', onOnline)
@@ -151,7 +151,7 @@ export default function VolunteerIncomingRequestList({
         subtitle="Live queue from students and volunteers"
       >
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-cyan-300" />
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--button-primary-bg)]" />
         </div>
       </VolunteerPanelSection>
     )
@@ -159,16 +159,11 @@ export default function VolunteerIncomingRequestList({
 
   if (error) {
     return (
-      <div className="flex items-start gap-3 rounded-xl border border-rose-300/40 bg-rose-400/15 p-4">
-        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-300" />
+      <div className="themed-panel-danger flex items-start gap-3 rounded-xl p-4">
+        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
         <div>
-          <p className="text-sm font-semibold text-rose-100">{error}</p>
-          <AppButton
-            onClick={fetchRequests}
-            size="sm"
-            variant="danger"
-            className="mt-2"
-          >
+          <p className="text-sm font-semibold">{error}</p>
+          <AppButton onClick={fetchRequests} size="sm" variant="danger" className="mt-2">
             Try again
           </AppButton>
         </div>
@@ -185,7 +180,7 @@ export default function VolunteerIncomingRequestList({
         <VolunteerEmptyState
           title="No pending requests"
           description="Check back soon for new hall information requests."
-          icon={<Clock className="h-5 w-5 text-slate-400" />}
+          icon={<Clock className="h-5 w-5 text-[var(--text-muted)]" />}
         />
       </VolunteerPanelSection>
     )
@@ -193,14 +188,12 @@ export default function VolunteerIncomingRequestList({
 
   return (
     <div className="space-y-3">
-      {/* Header with count */}
-      <div className="rounded-xl border border-cyan-300/30 bg-cyan-400/10 px-4 py-2">
-        <p className="text-sm font-semibold text-cyan-100">
+      <div className="themed-panel-info rounded-xl px-4 py-2">
+        <p className="text-sm font-semibold">
           {requests.length} Pending Request{requests.length !== 1 ? 's' : ''}
         </p>
       </div>
 
-      {/* Request List */}
       {requests.map((request) => (
         <motion.div
           key={request.request_id}
@@ -209,24 +202,22 @@ export default function VolunteerIncomingRequestList({
           transition={{ duration: 0.2, ease: 'easeOut' }}
           className={requestCardClassName}
         >
-          {/* Request Header (Click to expand) */}
           <button
             onClick={() =>
               setExpandedRequestId(
                 expandedRequestId === request.request_id ? null : request.request_id
               )
             }
-            className="flex w-full items-start justify-between gap-4 p-4 text-left transition hover:bg-white/5"
+            className="flex w-full items-start justify-between gap-4 p-4 text-left transition hover:bg-[var(--surface-card-muted)]"
           >
-            {/* Left Side - Request Info */}
             <div className="flex-1">
               <div className="flex items-start gap-3">
                 <div className="flex-1">
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-[var(--text-main)]">
                     {request.lecture_halls.hall_name}
                   </h3>
-                  <p className="mt-0.5 text-sm text-slate-300">
-                    Requested by <span className="font-semibold text-white">{request.requester.name}</span>
+                  <p className="mt-0.5 text-sm text-[var(--text-soft)]">
+                    Requested by <span className="font-semibold text-[var(--text-main)]">{request.requester.name}</span>
                   </p>
                   <div className="mt-1 flex items-center gap-2">
                     <span className={idPillClassName}>
@@ -237,8 +228,7 @@ export default function VolunteerIncomingRequestList({
                 </div>
               </div>
 
-              {/* Hall Details */}
-              <div className="mt-2 flex items-center gap-2 text-xs text-slate-300">
+              <div className="mt-2 flex items-center gap-2 text-xs text-[var(--text-soft)]">
                 <span className="inline-block">
                   {request.lecture_halls.building}
                   {request.lecture_halls.floor && ` • Floor ${request.lecture_halls.floor}`}
@@ -250,19 +240,17 @@ export default function VolunteerIncomingRequestList({
                 )}
               </div>
 
-              {/* Time */}
-              <div className="mt-2 flex items-center gap-1 text-xs text-slate-400">
+              <div className="mt-2 flex items-center gap-1 text-xs text-[var(--text-muted)]">
                 <Clock className="h-3 w-3" />
                 <span>{formatDate(request.created_at)}</span>
               </div>
             </div>
 
-            {/* Right Side - Expand Button & Responded Indicator */}
             <div className="flex flex-col items-end gap-2">
               {request.hall_request_updates.length > 0 && (
                 <StatusBadge status="Responded" />
               )}
-              <div className="text-slate-400">
+              <div className="text-[var(--text-muted)]">
                 {expandedRequestId === request.request_id ? (
                   <ChevronUp className="h-5 w-5" />
                 ) : (
@@ -272,31 +260,25 @@ export default function VolunteerIncomingRequestList({
             </div>
           </button>
 
-          {/* Expanded Content */}
           {expandedRequestId === request.request_id && (
-            <div className="space-y-4 border-t border-white/10 bg-slate-900/45 p-4">
-              {/* Request Note */}
+            <div className="space-y-4 border-t border-[var(--surface-border)] bg-[var(--surface-card-muted)]/70 p-4">
               {request.request_note && (
-                <div className="rounded-lg border border-white/10 bg-black/30 p-3">
-                  <p className="mb-1 text-xs font-semibold text-slate-300">Request Message:</p>
-                  <p className="text-sm text-slate-100">{request.request_note}</p>
+                <div className="themed-inset rounded-lg p-3">
+                  <p className="mb-1 text-xs font-semibold text-[var(--text-soft)]">Request Message:</p>
+                  <p className="text-sm text-[var(--text-main)]">{request.request_note}</p>
                 </div>
               )}
 
-              {/* Previous Responses (if any) */}
               {request.hall_request_updates.length > 0 && (
-                <div className="rounded-lg border border-emerald-300/30 bg-emerald-400/10 p-3">
-                  <p className="mb-2 text-xs font-semibold text-emerald-100">
-                    Previous Response:
-                  </p>
+                <div className="themed-panel-success rounded-lg p-3">
+                  <p className="mb-2 text-xs font-semibold">Previous Response:</p>
                   {request.hall_request_updates.map((update) => (
                     <div key={update.update_id} className="text-xs">
-                      <p className="text-slate-200">
-                        <span className="font-semibold">{update.availability_status}</span> •{' '}
-                        {update.occupancy_level}
+                      <p className="text-[var(--text-soft)]">
+                        <span className="font-semibold">{update.availability_status}</span> • {update.occupancy_level}
                       </p>
                       {update.available_seats !== null && (
-                        <p className="mt-1 text-slate-300">
+                        <p className="mt-1 text-[var(--text-soft)]">
                           Available Seats: <span className="font-semibold">{update.available_seats}</span>
                         </p>
                       )}
@@ -305,7 +287,6 @@ export default function VolunteerIncomingRequestList({
                 </div>
               )}
 
-              {/* Response Form */}
               {respondingToId === request.request_id ? (
                 <VolunteerRequestResponseForm
                   requestId={request.request_id}
