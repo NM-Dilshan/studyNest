@@ -79,11 +79,12 @@ export default function AboutPage() {
 
             <div className="relative h-[280px] overflow-hidden rounded-[24px] border border-[var(--surface-border)] sm:h-[340px]">
               <Image
-                src="/logo.jpeg"
-                alt="StudyNest"
+                src="/login.png"
+                alt="Students collaborating in a modern StudyNest learning space"
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover"
+                priority
+                className="object-cover object-center"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-transparent" />
               <div className="absolute bottom-3 left-3 rounded-xl bg-slate-950/40 px-3 py-2 text-xs font-semibold text-white backdrop-blur">
