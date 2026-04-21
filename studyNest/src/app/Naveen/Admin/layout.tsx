@@ -12,13 +12,11 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SearchProvider>
-      <div className="flex h-screen bg-[#F4F9F8]">
+      <div className="flex h-screen bg-[var(--bg-main)]">
         <Sidebar />
         <main className="flex-1 overflow-auto flex flex-col">
           <AdminHeader />
-          <div className="flex-1 overflow-auto">
-            {children}
-          </div>
+          <div className="flex-1 overflow-auto">{children}</div>
         </main>
       </div>
     </SearchProvider>

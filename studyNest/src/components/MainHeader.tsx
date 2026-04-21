@@ -3,109 +3,156 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import HeaderStudentID from '@/components/HeaderStudentID'
-import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import VolunteerHeaderDashboard from '@/components/VolunteerHeaderDashboard'
+import { usePathname, useRouter } from 'next/navigation'
+import { useState, useSyncExternalStore } from 'react'
+import { Menu, MapPin } from 'lucide-react'
+import { useLocationTracking } from '@/hooks/useLocationTracking'
+import NotificationBellWrapper from '@/components/notifications/NotificationBellWrapper'
+import { clearStoredSession, readStoredUser, type ClientUser } from '@/lib/auth/clientUser'
+import HeaderShell from '@/components/navigation/HeaderShell'
+import MobileNavSheet from '@/components/navigation/MobileNavSheet'
+import NavItem from '@/components/navigation/NavItem'
+import ThemeToggle from '@/components/navigation/ThemeToggle'
 
-interface User {
-  user_id: string
-  student_id: string
-  name: string
-  email: string
-  role: 'student' | 'volunteer' | 'admin'
-  is_active: boolean
-  created_at: string
+interface MainHeaderProps {
+  showAuthActions?: boolean
+  showStudentId?: boolean
 }
 
-export default function MainHeader() {
+export default function MainHeader({ showAuthActions = true, showStudentId = true }: MainHeaderProps) {
   const router = useRouter()
-  const [user, setUser] = useState<User | null>(null)
-
-  useEffect(() => {
-    let parsedUser: User | null = null
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      try {
-        parsedUser = JSON.parse(userData)
-      } catch {
-        localStorage.removeItem('user')
-      }
-    }
-
-    const timer = setTimeout(() => {
-      setUser(parsedUser)
-    }, 0)
-
-    return () => clearTimeout(timer)
-  }, [])
+  const pathname = usePathname()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  )
+  const user: ClientUser | null = isHydrated ? readStoredUser() : null
+  const location = useLocationTracking(user?.user_id || null, true)
+  const gpsEnabled = location.permissionStatus === 'granted' && location.isTracking
 
   const handleLogout = (e: React.FormEvent) => {
     e.preventDefault()
-    localStorage.removeItem('user')
+    clearStoredSession()
     router.push('/login/signIN')
+  }
+
+  const toggleGPS = async () => {
+    if (!user) return
+
+    try {
+      if (gpsEnabled) {
+        await location.revokePermission()
+      } else {
+        await location.requestPermission()
+        location.startTracking()
+      }
+    } catch (err) {
+      console.error('Failed to toggle GPS:', err)
+    }
   }
 
   const isVolunteer = user?.role === 'volunteer'
 
+  const navItems = [
+    { href: '/home', label: 'Home' },
+    ...(user ? [{ href: '/requests', label: 'Requests' }] : []),
+    { href: '/student/halls', label: 'Halls' },
+    { href: '/study-areas', label: 'Study Areas' },
+    { href: '/about', label: 'About' },
+    { href: '/Naveen/my-complaints', label: 'Complaints' },
+    ...(isVolunteer ? [{ href: '/volunteer/requests', label: 'Dashboard' }] : []),
+  ]
+
+  const isActivePath = (href: string) => {
+    if (href === '/home') {
+      return pathname === '/home'
+    }
+    return pathname.startsWith(href)
+  }
+
   return (
-    <header className="bg-[#FBFDFD]/95 backdrop-blur border-b border-slate-200/70 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex justify-between items-center">
-          {/* Logo & Branding */}
-          <Link href="/home" className="flex items-center space-x-3 hover:opacity-80 transition">
-            <Image 
-              src="/logo.jpeg" 
-              alt="StudyNest Logo" 
+    <>
+      <HeaderShell>
+        <Link href="/home" className="flex items-center space-x-2 rounded-xl px-1 py-1 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]">
+            <Image
+              src="/logo.jpeg"
+              alt="StudyNest Logo"
               width={40}
               height={40}
-              className="rounded-lg shadow-md"
+              className="rounded-md w-10 h-10"
+              style={{ width: 'auto', height: 'auto' }}
             />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">StudyNest</h1>
-              <p className="text-xs text-gray-500">Campus Free Space Finder</p>
+            <div className="hidden sm:block">
+              <h1 className="text-lg font-black tracking-tight text-[var(--header-text)]">StudyNest</h1>
+              <p className="text-xs text-[var(--header-text-muted)]">Smart Space Finder</p>
             </div>
-          </Link>
+        </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center space-x-8">
-            <Link href="/home" className="text-[#2E6F95] font-semibold hover:text-[#255B79]">Home</Link>
-            <Link href="/student/halls" className="text-slate-600 hover:text-[#2E6F95]">Lecture Halls</Link>
-            <a href="/study-areas" className="text-slate-600 hover:text-[#2E6F95]">Study Areas</a>
-            <a href="/about" className="text-slate-600 hover:text-[#2E6F95]">About</a>
-            <Link href="/Naveen/my-complaints" className="text-slate-600 hover:text-[#2E6F95]">Complaints</Link>
-            {/* Show Volunteer button ONLY for volunteers */}
-            {isVolunteer && (
-              <a href="/Sunera/volunteer" className="px-4 py-2 bg-[#2E6F95] text-white rounded-full font-medium hover:bg-[#255B79] transition">
-                Volunteer
-              </a>
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-x-auto lg:flex" aria-label="Main navigation">
+          {navItems.map((item) => (
+            <NavItem key={item.href} href={item.href} label={item.label} active={isActivePath(item.href)} />
+          ))}
+        </nav>
+
+        <div className="ml-auto flex flex-shrink-0 items-center gap-2 sm:gap-3">
+            <ThemeToggle />
+
+            {user && (
+              <button
+                type="button"
+                onClick={toggleGPS}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-xl border px-2.5 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)] sm:px-3 ${
+                  gpsEnabled
+                    ? 'border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] text-[var(--header-accent-text)] hover:brightness-110'
+                    : 'border-[var(--header-border)] bg-[var(--header-button-bg)] text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]'
+                }`}
+                title={gpsEnabled ? 'GPS is active' : 'Enable GPS location'}
+                aria-label={gpsEnabled ? 'Disable GPS location tracking' : 'Enable GPS location tracking'}
+              >
+                <MapPin className="h-4 w-4" />
+                <span className="hidden lg:inline text-xs">{gpsEnabled ? 'GPS On' : 'GPS Off'}</span>
+              </button>
             )}
-          </nav>
 
-          {/* Student ID Display */}
-          <div className="hidden lg:block">
-            <HeaderStudentID />
-          </div>
+            {showStudentId && user && (
+              isVolunteer ? (
+                <div className="hidden lg:block border-r border-[var(--header-border)] pr-3"><VolunteerHeaderDashboard /></div>
+              ) : (
+                <div className="hidden lg:block border-r border-[var(--header-border)] pr-3"><HeaderStudentID /></div>
+              )
+            )}
 
-          {/* Right Actions */}
-          <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-slate-600 hover:text-[#2E6F95]">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-            {user ? (
+            {user && <NotificationBellWrapper userId={user.user_id} userRole={user.role} />}
+
+            {showAuthActions && (user ? (
               <form onSubmit={handleLogout}>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-[#255B79] hover:bg-[#2E6F95]/5 rounded-lg transition">
-                  Logout
-                </button>
+                <button type="submit" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--header-border)] bg-[var(--header-button-bg)] px-3 py-2 text-sm font-semibold text-[var(--header-text-soft)] transition hover:bg-[var(--header-button-hover)] hover:text-[var(--header-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]">Logout</button>
               </form>
             ) : (
-              <Link href="/login/signIN" className="px-4 py-2 text-sm font-medium text-[#2E6F95] hover:text-[#255B79] hover:bg-[#2E6F95]/5 rounded-lg transition">
-                Login
-              </Link>
-            )}
+              <Link href="/login/signIN" className="inline-flex min-h-11 items-center rounded-xl border border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] px-3 py-2 text-sm font-semibold text-[var(--header-accent-text)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]">Login</Link>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="inline-flex min-h-11 w-11 items-center justify-center rounded-xl border border-[var(--header-border)] bg-[var(--header-button-bg)] text-[var(--header-text)] transition hover:bg-[var(--header-button-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)] lg:hidden"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
           </div>
-        </div>
-      </div>
-    </header>
+      </HeaderShell>
+
+      <MobileNavSheet
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        title="StudyNest Menu"
+        navItems={navItems.map((item) => ({ ...item, active: isActivePath(item.href) }))}
+        footer={<ThemeToggle className="w-full justify-center" />}
+      />
+    </>
   )
 }

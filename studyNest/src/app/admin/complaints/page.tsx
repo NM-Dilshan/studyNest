@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -12,6 +12,9 @@ import {
   XCircle,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useNotifications } from '@/contexts/NotificationContext'
+import { useComplaintHighlight } from '@/hooks/useComplaintHighlight'
+import { buildComplaintNotification } from '@/utils/notificationService'
 
 interface Complaint {
   complaint_id: number
@@ -71,7 +74,27 @@ const priorityBadgeStyles: Record<string, string> = {
   High: 'bg-rose-50 text-rose-700 border-rose-200',
 }
 
+const normalizeStatus = (status: string) =>
+  status.trim().toLowerCase().replace(/[\s_]+/g, '-')
+
+const getStatusSelectClass = (status: string) => {
+  const variant =
+    normalizeStatus(status) === 'pending'
+      ? 'status-select--pending'
+      : normalizeStatus(status) === 'viewed'
+        ? 'status-select--viewed'
+        : normalizeStatus(status) === 'in-progress'
+          ? 'status-select--in-progress'
+          : normalizeStatus(status) === 'resolved'
+            ? 'status-select--resolved'
+            : 'status-select--pending'
+
+  return `admin-status-select ${variant}`
+}
+
 export default function AdminComplaintsPage() {
+  useComplaintHighlight()
+
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [hallSummary, setHallSummary] = useState<HallSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,12 +109,10 @@ export default function AdminComplaintsPage() {
   const [viewComplaint, setViewComplaint] = useState<Complaint | null>(null)
   const [viewGroup, setViewGroup] = useState<ComplaintGroup | null>(null)
   const [withdrawTarget, setWithdrawTarget] = useState<Complaint | null>(null)
+  const seenComplaintIdsRef = useRef<Set<number>>(new Set())
+  const { addNotification } = useNotifications()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       const [complaintsRes, summaryRes] = await Promise.all([
@@ -102,7 +123,23 @@ export default function AdminComplaintsPage() {
       if (complaintsRes.ok) {
         const data = await complaintsRes.json()
         if (data.success) {
-          setComplaints(Array.isArray(data.data) ? data.data : [])
+          const nextComplaints: Complaint[] = Array.isArray(data.data) ? data.data : []
+          setComplaints(nextComplaints)
+
+          if (seenComplaintIdsRef.current.size === 0) {
+            nextComplaints.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+            })
+          } else {
+            const newlyArrived = nextComplaints.filter(
+              (complaint) => !seenComplaintIdsRef.current.has(complaint.complaint_id)
+            )
+
+            newlyArrived.forEach((complaint) => {
+              seenComplaintIdsRef.current.add(complaint.complaint_id)
+              addNotification(buildComplaintNotification(complaint))
+            })
+          }
         }
       }
 
@@ -119,7 +156,13 @@ export default function AdminComplaintsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [addNotification])
+
+  useEffect(() => {
+    fetchData()
+    const interval = window.setInterval(fetchData, 30000)
+    return () => window.clearInterval(interval)
+  }, [fetchData])
 
   const getPriority = (complaintCount: number): string => {
     if (complaintCount > 10) return 'High'
@@ -274,6 +317,14 @@ export default function AdminComplaintsPage() {
     (c) => (c.priority || getPriority(c.complaint_count || 0)) === 'High'
   )
 
+  const handleHallSummaryClick = (hallId: string) => {
+    setActiveTab('complaints')
+    setHallFilter(hallId)
+    setStatusFilter('')
+    setStudyAreaFilter('')
+    setSearchQuery('')
+  }
+
   const studyAreaSummary: StudyAreaSummary[] = Object.values(
     complaints.reduce((acc, complaint) => {
       const studyAreaId = complaint.study_area_id
@@ -330,7 +381,7 @@ export default function AdminComplaintsPage() {
             <h1 className="text-4xl font-black tracking-tight text-slate-900">Complaint Management</h1>
             <p className="text-sm font-medium text-slate-500 mt-1">Manage and resolve student complaints</p>
           </div>
-          <Link href="/admin" className="text-sm font-bold text-[#2E6F95] hover:text-[#255B79]">
+          <Link href="/Naveen/Admin/dashboard" className="text-sm font-bold text-[#2E6F95] hover:text-[#255B79]">
             Back to Admin
           </Link>
         </header>
@@ -441,7 +492,11 @@ export default function AdminComplaintsPage() {
                   return (
                     <article
                       key={group.locationKey}
-                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)]"
+                      id={`complaint-${complaint.complaint_id}`}
+                      data-complaint-ids={group.complaints
+                        .map((item) => `|${item.complaint_id}|`)
+                        .join('')}
+                      className="rounded-[24px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-5 shadow-[0_16px_38px_rgba(30,41,59,0.08)] transition-all duration-300"
                     >
                       <div className="flex items-start justify-between gap-3 mb-3">
                         <div>
@@ -517,12 +572,12 @@ export default function AdminComplaintsPage() {
                             value={complaint.status}
                             onChange={(e) => handleStatusUpdate(complaint.complaint_id, e.target.value)}
                             disabled={statusUpdating === complaint.complaint_id}
-                            className="px-3 py-2 rounded-full border border-slate-300 text-xs font-black uppercase tracking-wide text-slate-700 bg-white"
+                            className={getStatusSelectClass(complaint.status)}
                           >
-                            <option value="Pending">Pending</option>
-                            <option value="Viewed">Viewed</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Resolved">Resolved</option>
+                            <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                            <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                            <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                            <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
                           </select>
 
                           <span className="px-4 py-2 rounded-full border text-xs font-black tracking-wide bg-emerald-50 text-emerald-600 border-emerald-100">
@@ -634,7 +689,7 @@ export default function AdminComplaintsPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
-                          Complaint (Hall ID)
+                          Complaint
                         </th>
                         <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                           Complaint Count
@@ -677,11 +732,20 @@ export default function AdminComplaintsPage() {
                           return (
                             <tr
                               key={hall.hall_id}
-                              className={`${idx !== arr.length - 1 ? 'border-b border-gray-100' : ''} hover:bg-gray-50`}
+                              className={`${idx !== arr.length - 1 ? 'border-b border-gray-100' : ''} cursor-pointer hover:bg-blue-50`}
+                              onClick={() => handleHallSummaryClick(hall.hall_id)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault()
+                                  handleHallSummaryClick(hall.hall_id)
+                                }
+                              }}
+                              tabIndex={0}
+                              role="button"
+                              aria-label={`View complaints for ${hall.hall_name}`}
                             >
                               <td className="px-5 py-4">
-                                <p className="text-sm font-semibold text-gray-900">{hall.hall_name}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">{hall.hall_id}</p>
+                                <p className="text-sm font-semibold text-blue-700 hover:underline">{hall.hall_name}</p>
                               </td>
                               <td className="px-5 py-4">
                                 <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -720,7 +784,7 @@ export default function AdminComplaintsPage() {
                       <thead className="bg-gray-50 border-b border-gray-200">
                         <tr>
                           <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
-                            Study Area (ID)
+                            Study Area
                           </th>
                           <th className="px-5 py-3 text-left text-xs font-bold uppercase tracking-wide text-gray-600">
                             Complaint Count
@@ -767,7 +831,6 @@ export default function AdminComplaintsPage() {
                               >
                                 <td className="px-5 py-4">
                                   <p className="text-sm font-semibold text-gray-900">{area.area_name}</p>
-                                  <p className="text-xs text-gray-500 mt-0.5">{area.study_area_id}</p>
                                 </td>
                                 <td className="px-5 py-4">
                                   <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
@@ -866,12 +929,12 @@ export default function AdminComplaintsPage() {
                       value={item.status}
                       onChange={(e) => handleStatusUpdate(item.complaint_id, e.target.value)}
                       disabled={statusUpdating === item.complaint_id}
-                      className="px-3 py-2 rounded-lg border border-slate-300 text-xs font-black uppercase tracking-wide text-slate-700 bg-white"
+                      className={getStatusSelectClass(item.status)}
                     >
-                      <option value="Pending">Pending</option>
-                      <option value="Viewed">Viewed</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
+                      <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                      <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                      <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                      <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
                     </select>
                   </div>
                 </div>
@@ -951,12 +1014,12 @@ export default function AdminComplaintsPage() {
                   value={viewComplaint.status}
                   onChange={(e) => handleStatusUpdate(viewComplaint.complaint_id, e.target.value)}
                   disabled={statusUpdating === viewComplaint.complaint_id}
-                  className="px-3 py-2 rounded-full border border-slate-300 text-xs font-black uppercase tracking-wide text-slate-700 bg-white"
+                  className={getStatusSelectClass(viewComplaint.status)}
                 >
-                  <option value="Pending">Pending</option>
-                  <option value="Viewed">Viewed</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Resolved">Resolved</option>
+                  <option value="Pending" className="status-option status-option--pending">PENDING</option>
+                  <option value="Viewed" className="status-option status-option--viewed">VIEWED</option>
+                  <option value="In Progress" className="status-option status-option--in-progress">IN PROGRESS</option>
+                  <option value="Resolved" className="status-option status-option--resolved">RESOLVED</option>
                 </select>
                 <span className={`px-4 py-2 rounded-full border text-xs font-black uppercase tracking-wide ${getStatusClass(viewComplaint.status)}`}>
                   {statusUpdating === viewComplaint.complaint_id ? 'Updating...' : viewComplaint.status}

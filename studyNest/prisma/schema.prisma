@@ -91,6 +91,7 @@ model lecture_halls {
   timetable              timetable[]
   update_request_pings   update_request_pings[]
   volunteer_hall_updates volunteer_hall_updates[]
+  hall_requests          hall_requests[]
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -103,6 +104,20 @@ model notifications {
   is_read           Boolean?  @default(false)
   created_at        DateTime? @default(now()) @db.Timestamp(6)
   users             users     @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model admin_broadcast_messages {
+  message_id    Int       @id @default(autoincrement())
+  title         String    @db.VarChar(150)
+  message       String
+  scheduled_at  DateTime  @default(now()) @db.Timestamptz(6)
+  expires_at    DateTime? @db.Timestamptz(6)
+  is_active     Boolean   @default(true)
+  created_by    String?   @db.VarChar(120)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([is_active, scheduled_at], map: "idx_admin_messages_active_time")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -123,6 +138,9 @@ model study_areas {
   building                     String?                        @db.VarChar(50)
   floor                        Int?
   capacity                     Int?
+  latitude                     Float?
+  longitude                    Float?
+  radius_meters                Int?                           @default(20)
   wifi                         Boolean?                       @default(false)
   charging_ports               Boolean?                       @default(false)
   silent_zone                  Boolean?                       @default(false)
@@ -176,6 +194,7 @@ model update_request_pings {
 model users {
   user_id                                                 String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   student_id                                              String?                        @unique @db.VarChar(20)
+  volunteer_id                                            String?                        @unique @db.VarChar(20)
   name                                                    String                         @db.VarChar(100)
   email                                                   String                         @unique @db.VarChar(150)
   mobile                                                  String?                        @db.VarChar(15)
@@ -195,6 +214,9 @@ model users {
   volunteer_reviews_volunteer_reviews_volunteer_idTousers volunteer_reviews[]            @relation("volunteer_reviews_volunteer_idTousers")
   volunteer_scores                                        volunteer_scores?
   volunteer_study_area_updates                            volunteer_study_area_updates[]
+  hall_requests_requester                                 hall_requests[]                @relation("requester")
+  hall_request_updates_responder                          hall_request_updates[]         @relation("responder")
+  volunteer_feedback_given                                volunteer_feedback[]           @relation("feedback_giver")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -232,19 +254,38 @@ model volunteer_reviews {
 }
 
 model volunteer_scores {
-  score_id         Int       @id @default(autoincrement())
-  volunteer_id     String    @unique @db.Uuid
-  total_updates    Int?      @default(0)
-  total_reviews    Int?      @default(0)
-  average_rating   Decimal?  @default(0) @db.Decimal(4, 2)
-  accurate_count   Int?      @default(0)
-  inaccurate_count Int?      @default(0)
-  score            Decimal?  @default(0) @db.Decimal(6, 2)
-  updated_at       DateTime? @default(now()) @db.Timestamp(6)
-  users            users     @relation(fields: [volunteer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  score_id                    Int                      @id @default(autoincrement())
+  volunteer_id                String                   @unique @db.Uuid
+  total_updates               Int?                     @default(0)
+  total_reviews               Int?                     @default(0)
+  average_rating              Decimal?                 @default(0) @db.Decimal(4, 2)
+  accurate_count              Int?                     @default(0)
+  inaccurate_count            Int?                     @default(0)
+  score                       Decimal?                 @default(0) @db.Decimal(6, 2)
+  total_responses             Int?                     @default(0) // New: responses submitted to hall requests
+  total_feedback_received     Int?                     @default(0) // New: feedback count from users
+  average_feedback_rating     Decimal?                 @default(0) @db.Decimal(3, 2) // New: average star rating from feedback
+  total_points                Int?                     @default(0) // New: gamification points
+  level                       Int?                     @default(1) // New: volunteer level (1-5)
+  updated_at                  DateTime?                @default(now()) @db.Timestamp(6)
+  users                       users                    @relation(fields: [volunteer_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// Area occupancy tracking for study areas
+/// Location permission tracking for GDPR compliance
+model location_permissions {
+  permission_id    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String    @db.Uuid
+  permission_status String   @db.VarChar(20) // 'granted', 'denied', 'revoked'
+  granted_at       DateTime?
+  last_used_at     DateTime?
+  revoked_at       DateTime?
+  created_at       DateTime  @default(now())
+
+  @@unique([user_id])
+}
+
 model volunteer_study_area_updates {
   area_update_id    Int                 @id @default(autoincrement())
   volunteer_id      String              @db.Uuid
@@ -278,4 +319,70 @@ model live_locations {
   study_areas   study_areas? @relation(fields: [study_area_id], references: [study_area_id], onUpdate: NoAction)
 
   @@index([updated_at])
+}
+
+/// Real-time lecture hall information request system
+model hall_requests {
+  request_id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  requester_id         String                   @db.Uuid
+  requester_role       String                   @db.VarChar(20) // 'student', 'volunteer'
+  requester_id_number  String                   @db.VarChar(20) // student_id or volunteer_id for display
+  hall_id              String                   @db.Uuid
+  request_note         String?                  @db.VarChar(300)
+  request_status       String                   @default("Pending") @db.VarChar(20) // 'Pending', 'Responded', 'Expired', 'Closed'
+  created_at           DateTime?                @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?                @default(now()) @db.Timestamp(6)
+  expires_at           DateTime?                @db.Timestamp(6)
+  requester            users                    @relation("requester", fields: [requester_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  lecture_halls        lecture_halls            @relation(fields: [hall_id], references: [hall_id], onDelete: NoAction, onUpdate: NoAction)
+  hall_request_updates hall_request_updates[]
+  feedback             volunteer_feedback[]
+  
+  @@index([requester_id])
+  @@index([hall_id])
+  @@index([request_status])
+  @@index([created_at])
+}
+
+/// Responses/updates from volunteers to hall requests
+model hall_request_updates {
+  update_id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id         String        @db.Uuid
+  responder_id       String        @db.Uuid
+  availability_status String       @db.VarChar(30) // 'Free', 'Partially Busy', 'Busy'
+  occupancy_level    String        @db.VarChar(30) // 'Empty', 'Low', 'Medium', 'High', 'Full'
+  available_seats    Int?
+  volunteer_note     String?       @db.VarChar(300)
+  confidence_level   String?       @default("Medium") @db.VarChar(20) // 'Low', 'Medium', 'High'
+  expires_at         DateTime?     @db.Timestamp(6)
+  created_at         DateTime?     @default(now()) @db.Timestamp(6)
+  hall_request       hall_requests @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+  responder          users         @relation("responder", fields: [responder_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  feedback           volunteer_feedback[]
+  
+  @@index([request_id])
+  @@index([responder_id])
+  @@index([created_at])
+}
+
+/// User feedback for volunteer responses - part of volunteer level-up system
+model volunteer_feedback {
+  feedback_id      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  response_id      String              @db.Uuid // Reference to hall_request_updates
+  request_id       String              @db.Uuid // Reference to hall_requests
+  given_by_user_id String              @db.Uuid // The requester giving feedback
+  stars            Int                 // 1 to 5 stars
+  comment          String?             @db.VarChar(300) // Optional comment
+  created_at       DateTime?           @default(now()) @db.Timestamp(6)
+  
+  // Relations
+  response         hall_request_updates @relation(fields: [response_id], references: [update_id], onDelete: Cascade, onUpdate: NoAction)
+  request          hall_requests       @relation(fields: [request_id], references: [request_id], onDelete: Cascade, onUpdate: NoAction)
+  given_by         users               @relation("feedback_giver", fields: [given_by_user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction)
+  
+  // Constraints
+  @@unique([response_id, given_by_user_id]) // One feedback per user per response
+  @@index([request_id])
+  @@index([given_by_user_id])
+  @@index([created_at])
 }

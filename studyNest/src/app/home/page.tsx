@@ -1,264 +1,395 @@
-'use client';
+"use client";
 
-import Link from 'next/link'
-import MainHeader from '@/components/MainHeader'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import dynamic from "next/dynamic";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import { Activity, BarChart3, BellRing, Clock3, MapPin, Radar, Send } from "lucide-react";
+import MainHeader from "@/components/MainHeader";
+import AppBackground from "@/components/AppBackground";
+import AnimatedSection from "@/components/ui/AnimatedSection";
+import PageHeader from "@/components/ui/PageHeader";
+import StatCard from "@/components/ui/StatCard";
+import GlassCard from "@/components/ui/GlassCard";
+import EmptyState from "@/components/ui/EmptyState";
+import AppLinkButton from "@/components/ui/AppLinkButton";
+import FeatureSpotlightCard from "@/components/home/FeatureSpotlightCard";
+import GPSPermissionModal from "@/components/home/GPSPermissionModal";
+import RecentUpdatesPanel, { type HomeRecentUpdate } from "@/components/home/RecentUpdatesPanel";
+import { readStoredUser, type ClientUser } from "@/lib/auth/clientUser";
 
-type RecentUpdate = {
-  type: 'Hall' | 'Study Area'
-  name: string | null | undefined
-  building: string | null | undefined
-  occupancy: string
-  reporter: string | null | undefined
-  time: string
-}
+const ParticleHero = dynamic(() => import("@/components/effects/ParticleHero"), { ssr: false });
+const FloatingCampusNodes = dynamic(() => import("@/components/3d/FloatingCampusNodes"), {
+  ssr: false,
+  loading: () => <div className="themed-inset h-[320px] animate-pulse rounded-2xl" />,
+});
 
-interface User {
-  user_id: string
-  student_id: string
-  name: string
-  email: string
-  role: 'student' | 'volunteer' | 'admin'
-  is_active: boolean
-  created_at: string
-}
+type AdminBroadcastMessage = {
+  message_id: number;
+  title: string;
+  message: string;
+  scheduled_at: string;
+  expires_at: string | null;
+  created_by: string | null;
+};
 
 export default function HomePage() {
-  const router = useRouter()
+  const router = useRouter();
+  const [showGPSDialog, setShowGPSDialog] = useState(false);
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "requesting" | "enabled" | "denied">("idle");
+  const [user] = useState<ClientUser | null>(() => readStoredUser());
+  const [adminMessages, setAdminMessages] = useState<AdminBroadcastMessage[]>([]);
+  const [loadingAdminMessages, setLoadingAdminMessages] = useState(true);
+  const [activeAdminMessageIndex, setActiveAdminMessageIndex] = useState(0);
+  const isHydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
-  // Keep initial render identical on server and client to avoid hydration mismatch.
-  const [user, setUser] = useState<User | null>(null)
+  const [recentUpdates] = useState<HomeRecentUpdate[]>(() => {
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString();
+    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString();
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString();
 
-  // Initialize recent updates without setState in effect
-  const [recentUpdates] = useState<RecentUpdate[]>(() => {
-    const now = new Date()
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60000).toISOString()
-    const fifteenMinutesAgo = new Date(now.getTime() - 15 * 60000).toISOString()
-    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60000).toISOString()
-    
     return [
       {
-        type: 'Hall' as const,
-        name: 'Lecture Hall A101',
-        building: 'Building A',
-        occupancy: 'FREE',
-        reporter: 'John Doe',
+        type: "Hall",
+        name: "Lecture Hall A101",
+        building: "Building A",
+        occupancy: "FREE",
+        reporter: "John Doe",
         time: fiveMinutesAgo,
       },
       {
-        type: 'Study Area' as const,
-        name: 'Main Library',
-        building: 'Building B',
-        occupancy: 'MEDIUM',
-        reporter: 'Jane Smith',
+        type: "Study Area",
+        name: "Main Library",
+        building: "Building B",
+        occupancy: "MEDIUM",
+        reporter: "Jane Smith",
         time: fifteenMinutesAgo,
       },
       {
-        type: 'Hall' as const,
-        name: 'Lecture Hall B205',
-        building: 'Building C',
-        occupancy: 'OCCUPIED',
-        reporter: 'Mike Johnson',
+        type: "Hall",
+        name: "Lecture Hall B205",
+        building: "Building C",
+        occupancy: "OCCUPIED",
+        reporter: "Mike Johnson",
         time: thirtyMinutesAgo,
       },
-    ]
-  })
-
-  const [loading] = useState(false)
-  const [isHydrated, setIsHydrated] = useState(false)
+    ];
+  });
 
   useEffect(() => {
-    let parsedUser: User | null = null
-    const userData = localStorage.getItem('user')
-    if (userData) {
+    if (!user) {
+      router.push("/login/signIN");
+      return;
+    }
+
+    const gpsDialogShown = localStorage.getItem(`gpsDialogShown_${user.user_id}`);
+    if (!gpsDialogShown) {
+      const timer = setTimeout(() => {
+        setShowGPSDialog(true);
+      }, 900);
+      return () => clearTimeout(timer);
+    }
+  }, [user, router]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const loadAdminMessages = async () => {
       try {
-        parsedUser = JSON.parse(userData)
-      } catch {
-        localStorage.removeItem('user')
+        setLoadingAdminMessages(true);
+        const response = await fetch("/api/admin/messages/active?limit=3", {
+          signal: abortController.signal,
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || "Failed to fetch admin messages");
+        }
+
+        setAdminMessages(Array.isArray(data.messages) ? data.messages : []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          console.error("Failed to load admin broadcast messages:", error);
+          setAdminMessages([]);
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoadingAdminMessages(false);
+        }
       }
-    }
+    };
 
-    const timer = setTimeout(() => {
-      setUser(parsedUser)
-      setIsHydrated(true)
-    }, 0)
+    loadAdminMessages();
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => {
+      abortController.abort();
+    };
+  }, []);
 
   useEffect(() => {
-    if (isHydrated && !user) {
-      router.push('/login/signIN')
+    if (adminMessages.length <= 1) {
+      setActiveAdminMessageIndex(0);
+      return;
     }
-  }, [isHydrated, user, router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FBFDFD] to-slate-100 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    )
-  }
+    const intervalId = window.setInterval(() => {
+      setActiveAdminMessageIndex((previous) => (previous + 1) % adminMessages.length);
+    }, 10000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [adminMessages]);
+
+  const requestGPSPermission = async () => {
+    if (!user) return;
+
+    setGpsStatus("requesting");
+
+    try {
+      const permission = await navigator.permissions.query({ name: "geolocation" });
+
+      if (permission.state === "denied") {
+        setGpsStatus("denied");
+        localStorage.setItem(`gpsDialogShown_${user.user_id}`, "true");
+        setTimeout(() => setShowGPSDialog(false), 1800);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setGpsStatus("enabled");
+          localStorage.setItem(`gpsEnabled_${user.user_id}`, "true");
+          localStorage.setItem(`gpsDialogShown_${user.user_id}`, "true");
+
+          fetch("/api/location", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: user.user_id,
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            }),
+          }).catch(console.error);
+
+          setTimeout(() => setShowGPSDialog(false), 1200);
+        },
+        () => {
+          setGpsStatus("denied");
+          localStorage.setItem(`gpsDialogShown_${user.user_id}`, "true");
+          setTimeout(() => setShowGPSDialog(false), 1800);
+        }
+      );
+    } catch {
+      setGpsStatus("denied");
+      localStorage.setItem(`gpsDialogShown_${user.user_id}`, "true");
+      setTimeout(() => setShowGPSDialog(false), 1800);
+    }
+  };
+
+  const handleSkipGPS = () => {
+    if (user) {
+      localStorage.setItem(`gpsDialogShown_${user.user_id}`, "true");
+    }
+    setShowGPSDialog(false);
+  };
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FBFDFD] to-slate-100 flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    )
+      <AppBackground>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="text-[var(--text-soft)]">Preparing your smart campus workspace...</div>
+        </div>
+      </AppBackground>
+    );
   }
 
-  const profile = user ? { name: user.name } : null
+  if (!user) {
+    return null;
+  }
+
+  const firstName = user.name?.split(" ")[0] || "Student";
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FBFDFD] to-slate-100">
-      {/* Modern Header */}
+    <AppBackground>
       <MainHeader />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Welcome Section */}
-        <div className="mb-12">
-          <div className="flex items-center space-x-3 mb-4">
-            <h2 className="text-4xl font-bold text-gray-900">Welcome, {profile?.name?.split(' ')[0] || 'Student'}!</h2>
-            <span className="text-4xl">👋</span>
-          </div>
-          <p className="text-lg text-gray-600 mb-6">Find your perfect study space on campus</p>
+      <GPSPermissionModal show={showGPSDialog} status={gpsStatus} onEnable={requestGPSPermission} onSkip={handleSkipGPS} />
 
-          {/* Search Bar */}
-          <div className="relative">
-            <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search for lecture halls, study areas..."
-              className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#2E6F95] text-gray-900 placeholder-gray-500"
-            />
-          </div>
-        </div>
+      <main className="themed-page-main relative overflow-hidden">
+        <ParticleHero />
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Free Lecture Hall Finder */}
-          <Link href="/student/halls" className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden block">
-            <div className="p-6">
-              <div className="h-12 w-12 bg-[#eaf4fa] rounded-lg flex items-center justify-center mb-4">
-                <svg className="h-6 w-6 text-[#2E6F95]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Free Lecture Hall Finder</h3>
-              <p className="text-gray-600 mb-4">Find available lecture halls with real-time updates</p>
-              <div className="flex items-center text-sm text-[#2E6F95] font-medium">
-                <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8L5.257 19.879A2 2 0 005 21H3a2 2 0 01-2-2v-2c0-.253.045-.506.13-.75L13 7z" />
-                </svg>
-                Real-time finder
-              </div>
-            </div>
-          </Link>
-
-          {/* Study Area Finder */}
-          <a href="/study-areas" className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden block">
-            <div className="p-6">
-              <div className="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Study Area Finder</h3>
-              <p className="text-gray-600 mb-4">Check crowd levels in libraries and study spaces in real-time</p>
-              <div className="flex items-center text-sm text-green-600 font-medium">
-                <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                </svg>
-                Real-time GPS tracking
-              </div>
-            </div>
-          </a>
-
-          {/* Submit Complaint */}
-          <Link href="/Naveen/complaints">
-            <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition overflow-hidden cursor-pointer">
-              <div className="p-6">
-                <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Submit Complaint</h3>
-                <p className="text-gray-600 mb-4">Report issues with facilities or study spaces</p>
-                <div className="flex items-center text-sm text-blue-600 font-medium">
-                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
-                  </svg>
-                  2-3 days response
-                </div>
-              </div>
-            </div>
-          </Link>
-        </div>
-
-        {/* Recent Updates */}
-        <div>
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Recent Updates</h3>
-            <p className="text-gray-600 text-sm mt-1">Real-time status changes</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            {recentUpdates.length === 0 ? (
-              <div className="text-center py-12">
-                <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                </svg>
-                <p className="text-gray-600 font-medium">No recent updates</p>
-                <p className="text-gray-500 text-sm mt-1">Check back later for space availability updates</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {recentUpdates.map((update, idx) => (
-                  <div key={idx} className="border-l-4 border-[#2E6F95] pl-4 py-2 hover:bg-gray-50 transition">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
-                          {update.type === 'Hall' ? (
-                            <div className="h-8 w-8 bg-[#eaf4fa] rounded-lg flex items-center justify-center">
-                              <svg className="h-4 w-4 text-[#2E6F95]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                              </svg>
-                            </div>
-                          ) : (
-                            <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-                              <svg className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              </svg>
-                            </div>
-                          )}
-                          <div>
-                            <p className="font-bold text-gray-900">{update.name}</p>
-                            <p className="text-xs text-gray-500">{update.building} minutes ago</p>
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${
-                        update.occupancy === 'FREE' 
-                          ? 'bg-green-100 text-green-800' 
-                          : update.occupancy === 'MEDIUM' 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {update.occupancy || 'Unknown'}
-                      </span>
+        <div className="mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-8 lg:pt-14">
+          <AnimatedSection className="themed-hero-surface relative overflow-hidden rounded-[2rem] px-6 py-7 md:px-8 md:py-8">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-start">
+              <div>
+                <PageHeader
+                  eyebrow="StudyNest Smart Campus"
+                  title={`Welcome back, ${firstName}`}
+                  subtitle="Real-time occupancy, volunteer-powered hall intelligence, and data-driven campus operations in one premium workspace."
+                  actions={
+                    <div className="flex flex-wrap gap-2">
+                      <AppLinkButton href="/study-areas" variant="primary">
+                        Explore Study Areas
+                      </AppLinkButton>
+                      <AppLinkButton href="/requests" variant="secondary">
+                        Open Hall Requests
+                      </AppLinkButton>
                     </div>
-                  </div>
-                ))}
+                  }
+                />
               </div>
+
+              <div
+                className="flex h-full flex-col rounded-2xl border p-4 md:p-5 lg:max-h-[290px]"
+                style={{
+                  borderColor: "var(--panel-info-border)",
+                  background:
+                    "linear-gradient(140deg, var(--panel-info-bg) 0%, color-mix(in srgb, var(--surface-card) 82%, var(--panel-info-bg) 18%) 100%)",
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <BellRing className="h-5 w-5 text-[var(--accent-text)]" />
+                  <h2 className="text-lg font-semibold text-[var(--text-main)]">Broadcasts Massage</h2>
+                </div>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">Important announcements published from Massage.</p>
+
+                {loadingAdminMessages ? (
+                  <p className="mt-4 text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+                ) : adminMessages.length > 0 ? (
+                  <div className="mt-4 flex min-h-0 flex-1 flex-col justify-between gap-3">
+                    <div
+                      key={adminMessages[activeAdminMessageIndex]?.message_id ?? activeAdminMessageIndex}
+                      className="admin-broadcast-swap rounded-2xl border p-4"
+                      style={{
+                        borderColor: "var(--panel-info-border)",
+                        background:
+                          "linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 78%, transparent) 0%, var(--surface-inset-strong) 100%)",
+                        boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 70%, transparent)",
+                      }}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-base font-semibold text-[var(--text-main)]">
+                          {adminMessages[activeAdminMessageIndex]?.title}
+                        </h3>
+                        <span className="text-xs text-[var(--text-soft)]">
+                          {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="mt-2 line-clamp-3 text-sm text-[var(--text-soft)]">
+                        {adminMessages[activeAdminMessageIndex]?.message}
+                      </p>
+                      {adminMessages[activeAdminMessageIndex]?.created_by && (
+                        <p className="mt-2 text-xs text-[var(--text-soft)]">
+                          Published by {adminMessages[activeAdminMessageIndex]?.created_by}
+                        </p>
+                      )}
+                    </div>
+
+                    {adminMessages.length > 1 && (
+                      <div className="flex items-center justify-center gap-2">
+                        {adminMessages.map((message, index) => (
+                          <button
+                            key={message.message_id}
+                            type="button"
+                            onClick={() => setActiveAdminMessageIndex(index)}
+                            aria-label={`Show announcement ${index + 1}`}
+                            className={`h-2.5 w-2.5 rounded-full transition-all ${
+                              index === activeAdminMessageIndex
+                                ? "bg-[var(--accent-text)]"
+                                : "bg-[var(--surface-border)] hover:bg-[var(--text-soft)]"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                )}
+              </div>
+            </div>
+          </AnimatedSection>
+
+ 
+
+          <AnimatedSection className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" delay={0.05}>
+            <StatCard title="Live Updates" value={recentUpdates.length} helper="Community status pulses" icon={<Activity className="h-5 w-5" />} />
+            <StatCard title="Role" value={user.role.toUpperCase()} helper="Adaptive experience enabled" icon={<Radar className="h-5 w-5" />} />
+            <StatCard title="Access" value="Realtime" helper="Polling and notification sync" icon={<Clock3 className="h-5 w-5" />} />
+            <StatCard title="Signal" value="Stable" helper="Campus telemetry online" icon={<BarChart3 className="h-5 w-5" />} />
+          </AnimatedSection>
+
+          <AnimatedSection className="mt-10 grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]" delay={0.08}>
+            <GlassCard className="p-5 md:p-6">
+              <h2 className="text-xl font-semibold text-[var(--text-main)]">Core Modules</h2>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">Navigate quickly to the most-used student, volunteer, and admin workflows.</p>
+              <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FeatureSpotlightCard
+                  href="/study-areas"
+                  title="Study Areas"
+                  description="Live occupancy indicators with practical card-based insights."
+                  badge="Low / Medium / High"
+                  icon={MapPin}
+                />
+                <FeatureSpotlightCard
+                  href="/requests"
+                  title="Hall Requests"
+                  description="Task-focused request-response flow between students and volunteers."
+                  badge="Pending"
+                  icon={Send}
+                />
+                <FeatureSpotlightCard
+                  href="/Sunera/volunteer"
+                  title="Volunteer Updates"
+                  description="Fast update submission and confidence-driven hall status responses."
+                  badge="Responded"
+                  icon={Activity}
+                />
+                <FeatureSpotlightCard
+                  href="/Naveen/Admin/dashboard"
+                  title="Admin Analytics"
+                  description="Complaints, activity trends, and operational summary visualization."
+                  badge="Resolved"
+                  icon={BarChart3}
+                />
+              </div>
+            </GlassCard>
+
+            <GlassCard className="p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[var(--accent-text)]">Campus signal graph</p>
+              <FloatingCampusNodes />
+            </GlassCard>
+          </AnimatedSection>
+
+          <AnimatedSection className="mt-10" delay={0.12}>
+            <div className="mb-4 flex items-end justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold text-[var(--text-main)]">Recent Activity Feed</h2>
+                <p className="mt-1 text-sm text-[var(--text-soft)]">Latest crowd and hall updates reported by your campus network.</p>
+              </div>
+            </div>
+            {recentUpdates.length > 0 ? (
+              <RecentUpdatesPanel updates={recentUpdates} />
+            ) : (
+              <EmptyState
+                title="No activity yet"
+                description="When volunteers and students report space updates, they will appear here with occupancy signals."
+                icon={<Activity className="h-6 w-6" />}
+                action={
+                  <AppLinkButton href="/requests" variant="secondary" size="sm">
+                    Create First Request
+                  </AppLinkButton>
+                }
+              />
             )}
-          </div>
+          </AnimatedSection>
         </div>
       </main>
-    </div>
-  )
+    </AppBackground>
+  );
 }

@@ -66,9 +66,6 @@ export async function GET() {
       where: {
         day_of_week: currentDay,
         is_reserved: true,
-        hall_id: {
-          not: null,
-        },
       },
       orderBy: {
         start_time: 'asc',

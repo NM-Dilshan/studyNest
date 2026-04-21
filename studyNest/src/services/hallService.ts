@@ -36,7 +36,7 @@ export const hallService = {
     const json = await parseJsonApiResponse(res);
 
     // Map from DB field names to LectureHall type
-    return (json.data || []).map((hall: any) => ({
+    return (json.data || json.halls || []).map((hall: any) => ({
       id: hall.hall_id,
       name: hall.hall_name,
       building: hall.building || '',

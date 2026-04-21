@@ -1,11 +1,14 @@
-'use client';
-import React, { useState, useMemo, useEffect } from 'react';
-import { RefreshCw, Sparkles } from 'lucide-react';
-import { HallFilters, FilterState } from '../../../components/halls/HallFilters';
-import { HallCard } from '../../../components/halls/HallCard';
-import { PreferencesPanel } from '../../../components/preferences/PreferencesPanel';
-import { FreeFavouritesButton } from '../../../components/favourites/FreeFavouritesButton';
-import { UsageInsightChip } from '../../../components/insights/UsageInsightChip';
+'use client'
+import React, { useState, useMemo, useEffect } from 'react'
+import { RefreshCw, Sparkles } from 'lucide-react'
+import AppBackground from '@/components/AppBackground'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
+import { HallFilters, FilterState } from '../../../components/halls/HallFilters'
+import { HallCard } from '../../../components/halls/HallCard'
+import { PreferencesPanel } from '../../../components/preferences/PreferencesPanel'
+import { FreeFavouritesButton } from '../../../components/favourites/FreeFavouritesButton'
+import { UsageInsightChip } from '../../../components/insights/UsageInsightChip'
 
 // Hooks
 import { useFreeHalls } from '../../../hooks/useFreeHalls';
@@ -246,7 +249,7 @@ export default function FreeHallFinder() {
   }, [displayHalls]);
 
   return (
-    <div className="min-h-screen bg-[#FBFDFD] text-slate-900 relative overflow-hidden">
+    <AppBackground>
       <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
         <svg width="100%" height="100%" aria-hidden="true">
           <pattern id="hall-grid" width="36" height="36" patternUnits="userSpaceOnUse">
@@ -258,27 +261,20 @@ export default function FreeHallFinder() {
 
       <MainHeader />
 
-      <div className="max-w-7xl mx-auto relative z-10 p-4 md:p-8">
-        
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
-          <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#2E6F95]">
-              StudyNest Spaces
-            </p>
-            <h1 className="mt-2 text-4xl md:text-5xl font-black tracking-tight text-slate-900">
-              Find a Study Space
-            </h1>
-            <p className="text-slate-500 mt-2 text-lg font-medium">
-              Discover free lecture halls instantly based on your preferences.
-            </p>
-          </div>
-          
-          <FreeFavouritesButton 
-            isActive={showOnlyFavourites}
-            onClick={() => setShowOnlyFavourites(!showOnlyFavourites)}
-            count={favourites.length}
-          />
-        </div>
+      <div className="relative z-10 mx-auto max-w-7xl p-4 md:p-8">
+        <PageHeader
+          eyebrow="StudyNest Spaces"
+          title="Find a Study Space"
+          subtitle="Discover free lecture halls instantly and rank them by your live preferences."
+          actions={
+            <FreeFavouritesButton
+              isActive={showOnlyFavourites}
+              onClick={() => setShowOnlyFavourites(!showOnlyFavourites)}
+              count={favourites.length}
+            />
+          }
+          className="mb-8"
+        />
 
         <div className="mb-8">
           <HallFilters 
@@ -288,31 +284,31 @@ export default function FreeHallFinder() {
           />
         </div>
 
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
+        <div className="themed-surface mb-6 rounded-2xl px-4 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+              <span className="themed-badge-success inline-flex items-center gap-1 rounded-full px-3 py-1">
                 Free now: {shownStatusSummary.freeNow}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-3 py-1 text-amber-700">
+              <span className="themed-badge-warning inline-flex items-center gap-1 rounded-full px-3 py-1">
                 Occupied: {shownStatusSummary.occupied}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-3 py-1 text-rose-700">
+              <span className="themed-badge-danger inline-flex items-center gap-1 rounded-full px-3 py-1">
                 Blocked: {shownStatusSummary.blocked}
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+              <span className="themed-badge-neutral inline-flex items-center gap-1 rounded-full px-3 py-1">
                 Showing: {shownStatusSummary.total} / {liveStatusSummary.total}
               </span>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="text-xs font-semibold text-slate-500">
+              <span className="text-xs font-semibold text-[var(--text-muted)]">
                 Last synced: {formatUpdatedTime(lastUpdated)}
               </span>
               <button
                 onClick={handleManualRefresh}
                 disabled={hallsLoading || refreshingNow}
-                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="themed-input inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-semibold text-[var(--text-soft)] transition hover:bg-[var(--button-hover)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${hallsLoading || refreshingNow ? 'animate-spin' : ''}`} />
                 Refresh
@@ -321,10 +317,10 @@ export default function FreeHallFinder() {
           </div>
 
           {refreshNotice && (
-            <p className="mt-3 text-xs font-semibold text-sky-700">{refreshNotice}</p>
+            <p className="mt-3 text-xs font-semibold text-[var(--brand-primary)]">{refreshNotice}</p>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-slate-200 pt-3 text-[11px] font-semibold text-slate-500">
+          <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-[var(--surface-border)] pt-3 text-[11px] font-semibold text-[var(--text-muted)]">
             <span className="inline-flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500" />
               Card left border green = Bookable now
@@ -341,18 +337,18 @@ export default function FreeHallFinder() {
         </div>
 
         {topRecommendedHalls.length > 0 && (
-          <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50/60 px-4 py-4 shadow-sm">
-            <div className="mb-3 flex items-center gap-2 text-sm font-black text-sky-900">
+          <div className="themed-surface-muted mb-6 rounded-2xl border-[var(--accent-border)] px-4 py-4">
+            <div className="mb-3 flex items-center gap-2 text-sm font-black text-[var(--accent-text)]">
               <Sparkles className="h-4 w-4" />
               Top Picks Right Now
             </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
               {topRecommendedHalls.map((hall, index) => (
-                <div key={hall.id} className="rounded-xl border border-sky-200 bg-white px-3 py-2">
-                  <p className="text-xs font-black uppercase tracking-wide text-sky-700">Rank #{index + 1}</p>
-                  <p className="mt-1 text-sm font-bold text-slate-900">{hall.name}</p>
-                  <p className="text-xs font-semibold text-slate-500">{hall.building}</p>
-                  <p className="mt-1 text-xs font-semibold text-emerald-700">
+                <div key={hall.id} className="themed-surface rounded-xl px-3 py-2">
+                  <p className="text-xs font-black uppercase tracking-wide text-[var(--accent-text)]">Rank #{index + 1}</p>
+                  <p className="mt-1 text-sm font-bold text-[var(--text-main)]">{hall.name}</p>
+                  <p className="text-xs font-semibold text-[var(--text-muted)]">{hall.building}</p>
+                  <p className="mt-1 text-xs font-semibold text-emerald-500">
                     {buildTopPickReason(hall)}
                   </p>
                 </div>
@@ -361,35 +357,37 @@ export default function FreeHallFinder() {
           </div>
         )}
 
-        {hallsError && <div className="mb-6 p-4 rounded-2xl bg-rose-50 text-rose-600 text-sm font-semibold border border-rose-100">{hallsError}</div>}
+        {hallsError && (
+          <div className="mb-6 rounded-2xl border border-rose-300/40 bg-rose-500/10 p-4 text-sm font-semibold text-rose-500">
+            {hallsError}
+          </div>
+        )}
 
         {hallsLoading || scoringLoading ? (
-          <div className="flex justify-center items-center py-20">
-            <div className="w-10 h-10 border-4 border-[#2E6F95]/20 border-t-[#2E6F95] rounded-full animate-spin"></div>
+          <div className="themed-surface flex items-center justify-center rounded-[28px] py-20">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[var(--brand-primary)]/20 border-t-[var(--brand-primary)]"></div>
           </div>
         ) : displayHalls.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {displayHalls.map((hall) => renderHallCard(hall))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-[#F8FBFD] border border-slate-200 rounded-[28px] shadow-sm shadow-slate-100/60">
-            <div className="w-20 h-20 bg-[#2E6F95]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-3xl">🪹</span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2 uppercase tracking-tight">No halls available</h3>
-            <p className="text-slate-500 max-w-sm mx-auto">
-              We couldn&apos;t find any free halls matching your current filters. Try relaxing your capacity requirements or changing your preferences.
-            </p>
-            <button 
-              onClick={() => {
-                setFilters({ searchQuery: '', minCapacity: 0, status: 'all' });
-                setShowOnlyFavourites(false);
-              }}
-              className="mt-6 px-6 py-2.5 bg-[#2E6F95] text-white rounded-xl font-semibold hover:bg-[#255B79] transition-colors"
-            >
-              Clear Filters
-            </button>
-          </div>
+          <EmptyState
+            title="No halls available"
+            description="No halls match your current filters. Try widening capacity, status, or keyword filters."
+            icon={<span className="text-3xl">🪹</span>}
+            action={
+              <button
+                onClick={() => {
+                  setFilters({ searchQuery: '', minCapacity: 0, status: 'all' });
+                  setShowOnlyFavourites(false);
+                }}
+                className="rounded-xl bg-[var(--brand-primary)] px-6 py-2.5 font-semibold text-white transition-colors hover:bg-[var(--brand-primary-dark)]"
+              >
+                Clear Filters
+              </button>
+            }
+          />
         )}
 
       </div>
@@ -401,6 +399,6 @@ export default function FreeHallFinder() {
         onSave={updatePreferences}
         isLoading={prefsLoading}
       />
-    </div>
-  );
+    </AppBackground>
+  )
 }

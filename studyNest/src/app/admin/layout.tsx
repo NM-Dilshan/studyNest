@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/components/Sidebar'
 import AdminHeader from '@/components/AdminHeader'
+import AdminChatWidget from '@/components/admin-chat/AdminChatWidget'
 import { SearchProvider } from '@/contexts/SearchContext'
 import { ReactNode } from 'react'
 
@@ -12,7 +13,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SearchProvider>
-      <div className="flex h-screen bg-[#F4F9F8]">
+      <div className="flex h-screen bg-[var(--bg-main)]">
         {/* Sidebar */}
         <Sidebar />
 
@@ -20,12 +21,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <main className="flex-1 overflow-auto flex flex-col">
           {/* Header */}
           <AdminHeader />
-          
+
           {/* Page Content */}
-          <div className="flex-1 overflow-auto">
-            {children}
-          </div>
+          <div className="flex-1 overflow-auto">{children}</div>
         </main>
+
+        <AdminChatWidget />
       </div>
     </SearchProvider>
   )

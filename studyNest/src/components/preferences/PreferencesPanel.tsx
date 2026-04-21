@@ -14,6 +14,8 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
   const [localPrefs, setLocalPrefs] = useState<Partial<UserPreferences>>(preferences);
 
   useEffect(() => {
+    // Keep drawer-local draft in sync when preferences are refreshed externally.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalPrefs(preferences);
   }, [preferences, isOpen]);
 
@@ -35,19 +37,19 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-neutral-900/40 backdrop-blur-sm z-40 transition-opacity"
+        className="fixed inset-0 z-40 bg-slate-900/45 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
       
       {/* Drawer */}
-      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-neutral-900 shadow-2xl z-50 overflow-y-auto transform transition-transform border-l border-neutral-200 dark:border-neutral-800">
+      <div className="fixed bottom-0 right-0 top-0 z-50 w-full max-w-md transform overflow-y-auto border-l border-[var(--surface-border)] bg-[var(--surface-card)] shadow-2xl transition-transform">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-neutral-900 dark:text-white">
-              <SlidersHorizontal className="w-5 h-5 text-blue-500" />
+            <h2 className="flex items-center gap-2 text-xl font-bold text-[var(--text-main)]">
+              <SlidersHorizontal className="h-5 w-5 text-[var(--brand-primary)]" />
               Smart Preferences
             </h2>
-            <button onClick={onClose} className="p-2 -mr-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+            <button onClick={onClose} className="-mr-2 rounded-full p-2 text-[var(--text-muted)] transition-colors hover:bg-[var(--button-hover)] hover:text-[var(--text-main)]">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -55,7 +57,7 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
           <div className="space-y-6">
             {/* Purpose */}
             <div>
-              <label className="block text-sm font-semibold mb-3 text-neutral-800 dark:text-neutral-200">Main Study Purpose</label>
+              <label className="mb-3 block text-sm font-semibold text-[var(--text-soft)]">Main Study Purpose</label>
               <div className="grid grid-cols-2 gap-2">
                 {purposes.map((p) => (
                   <button
@@ -63,8 +65,8 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
                     onClick={() => setLocalPrefs({ ...localPrefs, preferred_purpose: p.value })}
                     className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-colors border ${
                       localPrefs.preferred_purpose === p.value
-                        ? 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20'
-                        : 'bg-white text-neutral-600 border-neutral-200 hover:bg-neutral-50 dark:bg-neutral-900 dark:text-neutral-400 dark:border-neutral-800 dark:hover:bg-neutral-800'
+                        ? 'border-[var(--accent-border)] bg-[var(--accent-bg)] text-[var(--accent-text)]'
+                        : 'border-[var(--surface-border)] bg-[var(--surface-card-muted)] text-[var(--text-soft)] hover:bg-[var(--button-hover)]'
                     }`}
                   >
                     {p.label}
@@ -75,22 +77,22 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
 
             {/* Group Size */}
             <div>
-              <label className="block text-sm font-semibold mb-2 text-neutral-800 dark:text-neutral-200">Group Size</label>
+              <label className="mb-2 block text-sm font-semibold text-[var(--text-soft)]">Group Size</label>
               <input 
                 type="range" 
                 min="1" max="50" 
                 value={localPrefs.group_size || 1}
                 onChange={(e) => setLocalPrefs({ ...localPrefs, group_size: parseInt(e.target.value) })}
-                className="w-full accent-blue-500"
+                className="w-full accent-[var(--brand-primary)]"
               />
-              <div className="text-center font-medium mt-2 text-blue-600 dark:text-blue-400">
+              <div className="mt-2 text-center font-medium text-[var(--brand-primary)]">
                 {localPrefs.group_size} {localPrefs.group_size === 1 ? 'Person' : 'People'}
               </div>
             </div>
 
             {/* Facilities */}
             <div>
-              <label className="block text-sm font-semibold mb-3 text-neutral-800 dark:text-neutral-200">Required Facilities</label>
+              <label className="mb-3 block text-sm font-semibold text-[var(--text-soft)]">Required Facilities</label>
               <div className="space-y-3">
                 {[
                   { key: 'require_wifi', label: 'Strong WiFi' },
@@ -107,13 +109,13 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
                         type="checkbox" 
                         checked={!!localPrefs[key as keyof UserPreferences]}
                         onChange={(e) => setLocalPrefs({ ...localPrefs, [key]: e.target.checked })}
-                        className="peer w-5 h-5 appearance-none rounded-md border-2 border-neutral-300 dark:border-neutral-700 checked:bg-blue-500 checked:border-blue-500 transition-colors cursor-pointer"
+                        className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border-2 border-[var(--surface-border)] transition-colors checked:border-[var(--brand-primary)] checked:bg-[var(--brand-primary)]"
                       />
                       <svg className="absolute w-3.5 h-3.5 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M1 5L5 9L13 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
-                    <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300 group-hover:text-neutral-900 dark:group-hover:text-white transition-colors">
+                    <span className="text-sm font-medium text-[var(--text-soft)] transition-colors group-hover:text-[var(--text-main)]">
                       {label}
                     </span>
                   </label>
@@ -123,11 +125,11 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
           </div>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-neutral-200 dark:border-neutral-800">
+          <div className="mt-8 border-t border-[var(--surface-border)] pt-6">
             <button 
               onClick={handleSave}
               disabled={isLoading}
-              className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold shadow-lg shadow-blue-500/30 transition-all active:scale-[0.98] disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--brand-primary)] py-3 font-semibold text-white shadow-lg shadow-[color-mix(in_srgb,var(--brand-primary)_30%,transparent)] transition-all active:scale-[0.98] hover:bg-[var(--brand-primary-dark)] disabled:opacity-70"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -138,7 +140,7 @@ export function PreferencesPanel({ isOpen, onClose, preferences, onSave, isLoadi
                 </>
               )}
             </button>
-            <p className="text-xs text-center text-neutral-500 mt-3">
+            <p className="mt-3 text-center text-xs text-[var(--text-muted)]">
               These preferences affect your personalized suitability scores.
             </p>
           </div>

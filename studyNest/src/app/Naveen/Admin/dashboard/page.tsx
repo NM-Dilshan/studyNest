@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   BarChart,
   Bar,
@@ -10,26 +12,55 @@ import {
   Tooltip,
   LineChart,
   Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
   ResponsiveContainer,
 } from "recharts";
-import { AlertCircle, Clock, MapPin, Users, Eye, TrendingUp, Plus } from "lucide-react";
+import { AlertCircle, Clock, MapPin, Users, Download, Activity } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import AnimatedSection from "@/components/ui/AnimatedSection";
+import EmptyState from "@/components/ui/EmptyState";
+import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
+import AppButton from "@/components/ui/AppButton";
+import AppLinkButton from "@/components/ui/AppLinkButton";
+import DashboardStatCard from "@/components/admin-dashboard/DashboardStatCard";
+import DashboardSection from "@/components/admin-dashboard/DashboardSection";
+import DashboardChartCard from "@/components/admin-dashboard/DashboardChartCard";
+import ComplaintInsightCard from "@/components/admin-dashboard/ComplaintInsightCard";
 
-// Data
-const lectureHallsData = [
-  { name: "Hall A101", usage: 148 },
-  { name: "Hall B205", usage: 132 },
-  { name: "Hall C301", usage: 118 },
-  { name: "Hall D102", usage: 96 },
-  { name: "Hall A205", usage: 74 },
-];
+interface ComplaintItem {
+  complaint_id: number;
+  issue_category: string;
+  status: string;
+  created_at: string;
+  complaint_count?: number;
+  lecture_halls?: {
+    hall_name: string;
+  };
+  study_areas?: {
+    area_name: string;
+  };
+}
 
-const studyAreasData = [
-  { name: "Main Library", usage: 245 },
-  { name: "Science Library", usage: 210 },
-  { name: "Student Center", usage: 178 },
-  { name: "Engineering Study", usage: 125 },
-  { name: "24/7 Study Hall", usage: 110 },
-];
+interface TopUsageItem {
+  name: string;
+  usage: number;
+}
+
+interface DashboardSummaryResponse {
+  success?: boolean;
+  summary?: {
+    activeSpaces: number;
+    activeHalls: number;
+    activeStudyAreas: number;
+    totalVolunteers: number;
+    activeVolunteersToday: number;
+  };
+  topLectureHalls?: TopUsageItem[];
+  topStudyAreas?: TopUsageItem[];
+}
 
 const peakHoursData = [
   { hour: "8AM", students: 30 },
@@ -54,269 +85,397 @@ const weeklyData = [
   { day: "Sun", visits: 180 },
 ];
 
-const complaintsData = [
-  {
-    id: 1,
-    location: "Lecture Hall A101",
-    issue: "AC not working",
-    priority: "High" as const,
-    status: "Pending" as const,
-    time: "10 min ago",
-  },
-  {
-    id: 2,
-    location: "Main Library",
-    issue: "Wi-Fi connectivity",
-    priority: "Medium" as const,
-    status: "In Progress" as const,
-    time: "30 min ago",
-  },
-  {
-    id: 3,
-    location: "Study Room 3",
-    issue: "Lighting issue",
-    priority: "Low" as const,
-    status: "Resolved" as const,
-    time: "1 hour ago",
-  },
-];
+const statTileClassName = "themed-chart-frame rounded-xl p-4";
+const chartGridStroke = "var(--chart-grid)";
+const chartAxisStroke = "var(--chart-axis)";
+const chartAxisTick = { fontSize: 12, fill: "var(--chart-axis-text)" };
+const chartCursor = { fill: "var(--accent-bg)" };
 
-// Badges
-const PriorityBadge = ({ priority }: { priority: "High" | "Medium" | "Low" }) => {
-  const colors = {
-    High: "bg-red-100 text-red-700 border-red-200",
-    Medium: "bg-amber-100 text-amber-700 border-amber-200",
-    Low: "bg-green-100 text-green-700 border-green-200",
-  };
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[priority]}`}
-    >
-      {priority}
-    </span>
-  );
+const getPriorityFromCount = (count: number) => {
+  if (count > 10) return "High" as const;
+  if (count > 6) return "Medium" as const;
+  return "Normal" as const;
 };
 
-const StatusBadge = ({ status }: { status: "Pending" | "In Progress" | "Resolved" }) => {
-  const colors = {
-    Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    Resolved: "bg-green-100 text-green-700 border-green-200",
-  };
-  return (
-    <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[status]}`}
-    >
-      {status}
-    </span>
-  );
+const getRelativeTime = (timestamp: string) => {
+  const ms = Date.now() - new Date(timestamp).getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
 };
-
-// Summary Card
-const SummaryCard = ({
-  title,
-  value,
-  description,
-  icon,
-  trend,
-  trendPositive = true,
-}: {
-  title: string;
-  value: string | number;
-  description: string;
-  icon: React.ReactNode;
-  trend?: string;
-  trendPositive?: boolean;
-}) => {
-  return (
-    <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-shadow p-6 flex justify-between items-start">
-      <div>
-        <p className="text-gray-500 text-sm font-medium">{title}</p>
-        <p className="text-4xl font-bold text-gray-900 mt-2">{value}</p>
-        {trend ? (
-          <div
-            className={`flex items-center text-xs font-medium mt-2 ${
-              trendPositive ? "text-green-600" : "text-red-600"
-            }`}
-          >
-            <TrendingUp className="w-3 h-3 mr-1" />
-            <span>{trend}</span>
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400 mt-2">{description}</p>
-        )}
-      </div>
-      <div className="text-[#2E6F95]">{icon}</div>
-    </div>
-  );
-};
-
-// Chart Wrapper
-const ChartCard = ({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) => (
-  <div className="bg-white rounded-2xl shadow-md p-6">
-    <div className="mb-6">
-      <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-      <p className="text-sm text-gray-500">{subtitle}</p>
-    </div>
-    {children}
-  </div>
-);
 
 export default function AdminDashboard() {
+  const shouldReduceMotion = useReducedMotion();
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(true);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse["summary"] | null>(null);
+  const [topLectureHalls, setTopLectureHalls] = useState<TopUsageItem[]>([]);
+  const [topStudyAreas, setTopStudyAreas] = useState<TopUsageItem[]>([]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchDashboardSummary = async () => {
+      try {
+        setSummaryLoading(true);
+        const response = await fetch("/api/admin/dashboard/summary", {
+          signal: controller.signal,
+        });
+        const data = (await response.json()) as DashboardSummaryResponse;
+
+        if (response.ok && data.success && data.summary) {
+          setDashboardSummary(data.summary);
+          setTopLectureHalls(Array.isArray(data.topLectureHalls) ? data.topLectureHalls : []);
+          setTopStudyAreas(Array.isArray(data.topStudyAreas) ? data.topStudyAreas : []);
+        } else {
+          setDashboardSummary(null);
+          setTopLectureHalls([]);
+          setTopStudyAreas([]);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("Error fetching dashboard summary:", error);
+        setDashboardSummary(null);
+        setTopLectureHalls([]);
+        setTopStudyAreas([]);
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
+    fetchDashboardSummary();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const fetchComplaints = async () => {
+      try {
+        setComplaintsLoading(true);
+        const response = await fetch("/api/admin/complaints", {
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (response.ok && data.success && Array.isArray(data.data)) {
+          setComplaints(data.data);
+        } else {
+          setComplaints([]);
+        }
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        console.error("Error fetching admin complaints:", error);
+        setComplaints([]);
+      } finally {
+        setComplaintsLoading(false);
+      }
+    };
+
+    fetchComplaints();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const complaintStats = useMemo(() => {
+    const pending = complaints.filter((c) => (c.status || "").toLowerCase().includes("pending")).length;
+    const viewed = complaints.filter((c) => (c.status || "").toLowerCase().includes("view")).length;
+    const inProgress = complaints.filter((c) => (c.status || "").toLowerCase().includes("progress")).length;
+    const resolved = complaints.filter((c) => (c.status || "").toLowerCase().includes("resolve")).length;
+
+    return {
+      total: complaints.length,
+      pending,
+      viewed,
+      pendingAndViewed: pending + viewed,
+      inProgress,
+      resolved,
+    };
+  }, [complaints]);
+
+  const recentComplaints = useMemo(() => complaints.slice(0, 6), [complaints]);
+
+  const complaintStatusChartData = useMemo(
+    () => [
+      { name: "Pending", value: complaintStats.pending, color: "#9ca3af" },
+      { name: "Viewed", value: complaintStats.viewed, color: "#2563eb" },
+      { name: "In Progress", value: complaintStats.inProgress, color: "#f59e0b" },
+      { name: "Resolved", value: complaintStats.resolved, color: "#16a34a" },
+    ],
+    [complaintStats]
+  );
+
+  const chartTooltipStyle = {
+    backgroundColor: "var(--chart-tooltip-bg)",
+    border: "1px solid var(--chart-tooltip-border)",
+    borderRadius: 10,
+    color: "var(--chart-tooltip-text)",
+  };
+
   return (
-    <div className="min-h-screen bg-[#F4F9F8]">
+    <div className="themed-page-main min-h-screen">
       <div className="px-4 py-8 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto max-w-7xl">
+          <AnimatedSection className="mb-8 rounded-[2rem] themed-hero-surface px-6 py-8 sm:px-8">
+            <PageHeader
+              eyebrow="Admin Analytics"
+              title="Campus Operations Dashboard"
+              subtitle="Track complaint flow, usage pressure, and response health in one place."
+              actions={(
+                <AppButton variant="primary">
+                  <Download className="h-4 w-4" />
+                  Generate Report
+                </AppButton>
+              )}
+            />
+          </AnimatedSection>
 
+          <AnimatedSection delay={0.04} className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <DashboardStatCard
+              title="Total Complaints"
+              value={complaintStats.total}
+              loading={complaintsLoading}
+              icon={<AlertCircle className="h-10 w-10" />}
+              trend={complaintsLoading ? undefined : `${complaintStats.resolved} resolved so far`}
+              trendPositive
+            />
+            <DashboardStatCard
+              title="Pending"
+              value={complaintStats.pendingAndViewed}
+              loading={complaintsLoading}
+              description="Requires attention"
+              icon={<Clock className="h-10 w-10" />}
+            />
+            <DashboardStatCard
+              title="Active Spaces"
+              value={dashboardSummary?.activeSpaces ?? 0}
+              loading={summaryLoading}
+              description={
+                summaryLoading
+                  ? "Loading..."
+                  : `${dashboardSummary?.activeHalls ?? 0} halls, ${dashboardSummary?.activeStudyAreas ?? 0} areas`
+              }
+              icon={<MapPin className="h-10 w-10" />}
+            />
+            <DashboardStatCard
+              title="Volunteers"
+              value={dashboardSummary?.totalVolunteers ?? 0}
+              loading={summaryLoading}
+              icon={<Users className="h-10 w-10" />}
+              trend={summaryLoading ? undefined : `+${dashboardSummary?.activeVolunteersToday ?? 0} active today`}
+              trendPositive
+            />
+          </AnimatedSection>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <SummaryCard
-            title="Total Complaints"
-            value="248"
-            description=""
-            icon={<AlertCircle className="w-10 h-10" />}
-            trend="+12% from last month"
-            trendPositive={false}
-          />
-          <SummaryCard
-            title="Pending"
-            value="23"
-            description="Requires attention"
-            icon={<Clock className="w-10 h-10" />}
-          />
-          <SummaryCard
-            title="Active Spaces"
-            value="42"
-            description="18 halls, 24 areas"
-            icon={<MapPin className="w-10 h-10" />}
-          />
-          <SummaryCard
-            title="Volunteers"
-            value="156"
-            description=""
-            icon={<Users className="w-10 h-10" />}
-            trend="+8 active today"
-            trendPositive={true}
-          />
-        </div>
-
-        {/* Horizontal Bar Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ChartCard title="Most Used Lecture Halls" subtitle="This week's statistics">
-            <div style={{ width: '100%', height: 320 }}>
+          <AnimatedSection delay={0.08} className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <DashboardChartCard
+              title="Most Used Lecture Halls"
+              subtitle="This week's statistics"
+              isLoading={summaryLoading}
+              isEmpty={topLectureHalls.length === 0}
+              loadingText="Loading lecture hall usage..."
+              emptyText="No lecture hall usage data available"
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={lectureHallsData} margin={{ top: 10, right: 30, left: 90, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 160]} stroke="#9ca3af" />
-                  <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 13, fill: "#6b7280" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Bar dataKey="usage" fill="#7FB89B" radius={[0, 8, 8, 0]} barSize={24} />
+                <BarChart layout="vertical" data={topLectureHalls} margin={{ top: 10, right: 24, left: 90, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartGridStroke} />
+                  <XAxis type="number" stroke={chartAxisStroke} tick={chartAxisTick} />
+                  <YAxis type="category" dataKey="name" width={85} tick={chartAxisTick} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
+                  <Bar dataKey="usage" fill="#6ee7b7" radius={[0, 8, 8, 0]} barSize={22} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </ChartCard>
+            </DashboardChartCard>
 
-          <ChartCard title="Most Used Study Areas" subtitle="This week's statistics">
-            <div style={{ width: '100%', height: 320 }}>
+            <DashboardChartCard
+              title="Most Used Study Areas"
+              subtitle="This week's statistics"
+              isLoading={summaryLoading}
+              isEmpty={topStudyAreas.length === 0}
+              loadingText="Loading study area usage..."
+              emptyText="No study area usage data available"
+            >
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart layout="vertical" data={studyAreasData} margin={{ top: 10, right: 30, left: 120, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e5e7eb" />
-                  <XAxis type="number" domain={[0, 260]} stroke="#9ca3af" />
-                  <YAxis type="category" dataKey="name" width={115} tick={{ fontSize: 13, fill: "#6b7280" }} />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Bar dataKey="usage" fill="#2E6F95" radius={[0, 8, 8, 0]} barSize={24} />
+                <BarChart layout="vertical" data={topStudyAreas} margin={{ top: 10, right: 24, left: 90, bottom: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartGridStroke} />
+                  <XAxis type="number" stroke={chartAxisStroke} tick={chartAxisTick} />
+                  <YAxis type="category" dataKey="name" width={85} tick={chartAxisTick} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
+                  <Bar dataKey="usage" fill="#38bdf8" radius={[0, 8, 8, 0]} barSize={22} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        </div>
+            </DashboardChartCard>
+          </AnimatedSection>
 
-        {/* Complaints Table */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Recent Complaints</h2>
-              <p className="text-sm text-gray-500">Latest issues reported by students</p>
-            </div>
-            <button className="text-sm font-semibold text-[#2E6F95] hover:text-[#1f4b66] transition-colors">
-              View All
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Location</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Issue</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Priority</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {complaintsData.map((complaint) => (
-                  <tr key={complaint.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{complaint.location}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{complaint.issue}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <PriorityBadge priority={complaint.priority} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <StatusBadge status={complaint.status} />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{complaint.time}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors">
-                        <Eye className="w-4 h-4 mr-1" /> View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          <AnimatedSection delay={0.12} className="mb-8">
+            <DashboardSection
+              title="Recent Complaints"
+              subtitle="Latest issues reported by students"
+              action={(
+                <Link href="/admin/complaints" className="rounded text-sm font-semibold text-[var(--accent-text)] transition-colors hover:text-[var(--text-main)]">
+                  View All
+                </Link>
+              )}
+            >
+              {complaintsLoading ? (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <LoadingSkeleton key={index} className="h-28 w-full themed-inset" />
+                  ))}
+                </div>
+              ) : recentComplaints.length === 0 ? (
+                <EmptyState
+                  title="No Complaints Available"
+                  description="No complaint records are currently available for display."
+                />
+              ) : (
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {recentComplaints.map((complaint) => (
+                    <ComplaintInsightCard
+                      key={complaint.complaint_id}
+                      location={complaint.lecture_halls?.hall_name || complaint.study_areas?.area_name || "Unknown Location"}
+                      issueCategory={complaint.issue_category}
+                      priorityLabel={getPriorityFromCount(complaint.complaint_count || 0)}
+                      status={complaint.status}
+                      timeText={getRelativeTime(complaint.created_at)}
+                    />
+                  ))}
+                </div>
+              )}
+            </DashboardSection>
+          </AnimatedSection>
 
-        {/* Vertical Bar & Line Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <ChartCard title="Peak Usage Time" subtitle="Average student count per hour">
-            <div style={{ width: '100%', height: 320 }}>
+          <AnimatedSection delay={0.14} className="mb-8">
+            <DashboardSection
+              title="Complaint Status Overview"
+              subtitle="Live status distribution from database complaints"
+            >
+              {complaintsLoading ? (
+                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-[var(--text-soft)]">Loading chart data...</div>
+              ) : complaintStatusChartData.every((item) => item.value === 0) ? (
+                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-[var(--text-soft)]">No complaint data available for chart</div>
+              ) : (
+                <div className="grid grid-cols-1 items-center gap-6 xl:grid-cols-2">
+                  <div style={{ width: "100%", height: 280 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={complaintStatusChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={56}
+                          outerRadius={92}
+                          paddingAngle={3}
+                        >
+                          {complaintStatusChartData.map((entry) => (
+                            <Cell key={entry.name} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={chartTooltipStyle} />
+                        <Legend wrapperStyle={{ color: "var(--chart-axis-text)" }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {complaintStatusChartData.map((item) => (
+                      <div key={item.name} className={statTileClassName}>
+                        <div className="mb-1 flex items-center gap-2">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">{item.name}</p>
+                        </div>
+                        <p className="text-2xl font-black text-[var(--text-main)]">{item.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </DashboardSection>
+          </AnimatedSection>
+
+          <AnimatedSection delay={0.18} className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <DashboardChartCard
+              title="Peak Usage Time"
+              subtitle="Average student count per hour"
+              isLoading={false}
+              isEmpty={false}
+              loadingText=""
+              emptyText=""
+              className="xl:col-span-2"
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={peakHoursData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="hour" tick={{ fontSize: 13, fill: "#6b7280" }} stroke="#9ca3af" />
-                  <YAxis domain={[0, 180]} tick={{ fontSize: 13, fill: "#6b7280" }} stroke="#9ca3af" />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Bar dataKey="students" fill="#4FA3C7" radius={[8, 8, 0, 0]} barSize={32} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridStroke} />
+                  <XAxis dataKey="hour" tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <YAxis domain={[0, 180]} tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
+                  <Bar dataKey="students" fill="#38bdf8" radius={[8, 8, 0, 0]} barSize={28} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          </ChartCard>
+            </DashboardChartCard>
 
-          <ChartCard title="Weekly Usage Trend" subtitle="Student visits per day">
-            <div style={{ width: '100%', height: 320 }}>
+            <DashboardSection
+              title="Activity Snapshot"
+              subtitle="Static trend references"
+              className="xl:col-span-1"
+            >
+              <div className="space-y-4">
+                <div className={statTileClassName}>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">Peak Hour</p>
+                  <p className="mt-1 text-2xl font-black text-[var(--text-main)]">1PM</p>
+                  <p className="text-xs text-[var(--text-muted)]">Highest load from configured trend data</p>
+                </div>
+                <div className={statTileClassName}>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">Weekly Growth</p>
+                  <p className="mt-1 text-2xl font-black text-emerald-600">+17%</p>
+                  <p className="text-xs text-[var(--text-muted)]">Compared to weekend baseline</p>
+                </div>
+                <AppLinkButton href="/admin/complaints" size="sm" variant="secondary">
+                  <Activity className="h-4 w-4" />
+                  Open Complaint Workflow
+                </AppLinkButton>
+              </div>
+            </DashboardSection>
+          </AnimatedSection>
+
+          <motion.div
+            initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.28, ease: "easeOut", delay: 0.24 }}
+            className="mt-6"
+          >
+            <DashboardChartCard
+              title="Weekly Usage Trend"
+              subtitle="Student visits per day"
+              isLoading={false}
+              isEmpty={false}
+              loadingText=""
+              emptyText=""
+            >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-                  <XAxis dataKey="day" tick={{ fontSize: 13, fill: "#6b7280" }} stroke="#9ca3af" />
-                  <YAxis domain={[0, 500]} tick={{ fontSize: 13, fill: "#6b7280" }} stroke="#9ca3af" />
-                  <Tooltip contentStyle={{ backgroundColor: "#fff", border: "1px solid #e5e7eb", borderRadius: 8 }} />
-                  <Line type="monotone" dataKey="visits" stroke="#7FB89B" strokeWidth={3} dot={{ fill: "#7FB89B", r: 5 }} activeDot={{ r: 7 }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridStroke} />
+                  <XAxis dataKey="day" tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <YAxis domain={[0, 500]} tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <Tooltip contentStyle={chartTooltipStyle} />
+                  <Line type="monotone" dataKey="visits" stroke="#6ee7b7" strokeWidth={3} dot={{ fill: "#6ee7b7", r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          </ChartCard>
-        </div>
+            </DashboardChartCard>
+          </motion.div>
         </div>
       </div>
     </div>

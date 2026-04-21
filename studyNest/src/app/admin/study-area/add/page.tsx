@@ -16,39 +16,117 @@ import {
   CheckCircle2,
   AlertCircle,
   Plus,
+  MapPin,
 } from 'lucide-react'
+import {
+  validateFormData,
+  formDataToPayload,
+  STUDY_AREA_VALIDATION,
+  validateAreaName,
+  validateBuilding,
+  validateFloor,
+  validateCapacity,
+  type StudyAreaFormData,
+  type ValidationErrors,
+} from '@/lib/validation/studyAreaValidation'
+import DeviceLocationPicker from '@/components/admin/DeviceLocationPicker'
 
 export default function AddStudyAreaPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({})
+  const [location, setLocation] = useState({
+    latitude: null as number | null,
+    longitude: null as number | null,
+    source: null as 'device' | 'manual' | null,
+    radius: 20,
+  })
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StudyAreaFormData>({
     area_name: '',
     building: '',
     floor: '',
     capacity: '',
+    latitude: '0',
+    longitude: '0',
+    radius_meters: '20',
+    area_status: 'available',
     wifi: false,
     charging_ports: false,
     silent_zone: false,
     ac: false,
-    area_status: 'available',
   })
 
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2E6F95] focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/10'
+
+  // Real-time field validation
+  const validateField = (name: string, value: any): string | null => {
+    switch (name) {
+      case 'area_name':
+        return validateAreaName(value as string)
+      case 'building':
+        return validateBuilding(value as string)
+      case 'floor':
+        return validateFloor(value as string)
+      case 'capacity':
+        return validateCapacity(value as string)
+      default:
+        return null
+    }
+  }
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
+    const newValue = type === 'checkbox' ? checked : value
 
+    // Update form data
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: newValue,
     }))
+
+    // Real-time validation - only if field has been touched
+    if (touchedFields[name]) {
+      const error = validateField(name, newValue)
+      setFieldErrors((prev) => {
+        const updated = { ...prev }
+        if (error) {
+          updated[name] = error
+        } else {
+          delete updated[name]
+        }
+        return updated
+      })
+    }
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+
+    // Mark field as touched
+    setTouchedFields((prev) => ({
+      ...prev,
+      [name]: true,
+    }))
+
+    // Validate on blur
+    const error = validateField(name, value)
+    setFieldErrors((prev) => {
+      const updated = { ...prev }
+      if (error) {
+        updated[name] = error
+      } else {
+        delete updated[name]
+      }
+      return updated
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -56,57 +134,79 @@ export default function AddStudyAreaPage() {
     setError('')
     setMessage('')
 
-    if (!formData.area_name.trim()) {
-      setError('Area name is required')
+    // Validate location is selected
+    if (!location.latitude || !location.longitude) {
+      setError('Location must be selected on the map')
       return
     }
 
-    if (formData.capacity && isNaN(parseInt(formData.capacity, 10))) {
-      setError('Capacity must be a number')
+    // Mark all fields as touched
+    setTouchedFields({
+      area_name: true,
+      building: true,
+      floor: true,
+      capacity: true,
+    })
+
+    // Update formData with location values and dynamic radius
+    const updatedFormData: StudyAreaFormData = {
+      ...formData,
+      latitude: String(location.latitude),
+      longitude: String(location.longitude),
+      radius_meters: String(location.radius), // Use radius from location picker
+    }
+
+    // Validate form data
+    const validationResult = validateFormData(updatedFormData)
+
+    if (!validationResult.isValid) {
+      setFieldErrors(validationResult.errors)
+      setError(
+        Object.keys(validationResult.errors).length === 1
+          ? Object.values(validationResult.errors)[0]
+          : 'Please fix all validation errors before submitting'
+      )
       return
     }
 
-    if (formData.floor && isNaN(parseInt(formData.floor, 10))) {
-      setError('Floor must be a number')
-      return
-    }
+    setFieldErrors({})
 
     try {
       setLoading(true)
+
+      // Convert form data to API payload
+      const payload = formDataToPayload(updatedFormData)
 
       const response = await fetch('/api/study-areas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          capacity: formData.capacity ? parseInt(formData.capacity, 10) : null,
-          floor: formData.floor ? parseInt(formData.floor, 10) : null,
-        }),
+        body: JSON.stringify(payload),
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        let errorMessage = 'Failed to create study area'
-        try {
-          const data = await response.json()
-          errorMessage = data.error || errorMessage
-        } catch {
-          errorMessage = `Server error: ${response.status} ${response.statusText}`
+        // Handle server validation errors
+        if (responseData.errors) {
+          setFieldErrors(responseData.errors)
+          setError(responseData.error || 'Please fix the validation errors below')
+        } else {
+          setError(responseData.error || 'Failed to create study area. Please try again.')
         }
-        setError(errorMessage)
         return
       }
 
-      await response.json()
-      setMessage('Study area created successfully!')
+      setMessage('✓ Study area created successfully!')
+      setFieldErrors({})
 
       setTimeout(() => {
         router.push('/admin/study-area')
       }, 1500)
     } catch (err: unknown) {
       const errorMessage =
-        err instanceof Error ? err.message : 'An error occurred'
+        err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -185,9 +285,18 @@ export default function AddStudyAreaPage() {
                   name="area_name"
                   value={formData.area_name}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   placeholder="e.g., Library Zone A"
-                  className={inputClass}
+                  maxLength={STUDY_AREA_VALIDATION.AREA_NAME.MAX_LENGTH}
+                  className={`${inputClass} ${touchedFields.area_name && fieldErrors.area_name ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                 />
+                {touchedFields.area_name && fieldErrors.area_name ? (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.area_name}</p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-400">
+                    {formData.area_name.length}/{STUDY_AREA_VALIDATION.AREA_NAME.MAX_LENGTH}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -201,9 +310,13 @@ export default function AddStudyAreaPage() {
                     name="building"
                     value={formData.building}
                     onChange={handleChange}
+                    onBlur={handleBlur}
                     placeholder="e.g., Building A"
-                    className={inputClass}
+                    className={`${inputClass} ${touchedFields.building && fieldErrors.building ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
+                  {touchedFields.building && fieldErrors.building && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.building}</p>
+                  )}
                 </div>
 
                 <div>
@@ -216,46 +329,60 @@ export default function AddStudyAreaPage() {
                     name="floor"
                     value={formData.floor}
                     onChange={handleChange}
-                    placeholder="e.g., 2"
-                    className={inputClass}
+                    onBlur={handleBlur}
+                    min="0"
+                    placeholder="e.g., 1, 2, 3"
+                    className={`${inputClass} ${touchedFields.floor && fieldErrors.floor ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
                   />
+                  {touchedFields.floor && fieldErrors.floor ? (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.floor}</p>
+                  ) : (
+                    <p className="mt-1 text-[11px] text-slate-400">Only positive numbers allowed</p>
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                <div>
-                  <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    <Users size={14} />
-                    Capacity
-                  </label>
-                  <input
-                    type="number"
-                    name="capacity"
-                    value={formData.capacity}
-                    onChange={handleChange}
-                    placeholder="e.g., 50"
-                    className={inputClass}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-2 ml-1 block text-[10px] font-black uppercase tracking-widest text-slate-400">
-                    Status
-                  </label>
-                  <select
-                    name="area_status"
-                    value={formData.area_status}
-                    onChange={handleChange}
-                    className={inputClass}
-                  >
-                    <option value="available">Available</option>
-                    <option value="under_maintenance">Under Maintenance</option>
-                    <option value="closed">Closed</option>
-                    <option value="crowded">Crowded</option>
-                  </select>
-                </div>
+              <div>
+                <label className="mb-2 ml-1 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <Users size={14} />
+                  Capacity *
+                </label>
+                <input
+                  type="number"
+                  name="capacity"
+                  value={formData.capacity}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  min="1"
+                  placeholder="e.g., 50"
+                  className={`${inputClass} ${touchedFields.capacity && fieldErrors.capacity ? 'border-rose-500 focus:ring-rose-500/10 focus:border-rose-500' : ''}`}
+                />
+                {touchedFields.capacity && fieldErrors.capacity ? (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium">{fieldErrors.capacity}</p>
+                ) : (
+                  <p className="mt-1 text-[11px] text-slate-400">Only positive numbers allowed. Max: 2000</p>
+                )}
               </div>
             </div>
+          </div>
+
+          {/* Location */}
+          <div className="rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-sm sm:p-8">
+            <div className="mb-8 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#2E6F95]/10 text-[#2E6F95]">
+                <MapPin size={20} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-800">Location</h3>
+            </div>
+
+            <p className="mb-6 text-sm font-medium text-slate-500">
+              Select a location for this study area. Click on the map to place a marker or use your device location.
+            </p>
+
+            <DeviceLocationPicker
+              value={location}
+              onChange={setLocation}
+            />
           </div>
 
           {/* Features */}
@@ -301,14 +428,25 @@ export default function AddStudyAreaPage() {
 
           {/* Alerts */}
           {error && (
-            <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 shadow-sm">
+            <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-4 text-sm font-bold text-rose-700 shadow-sm">
               <AlertCircle size={18} className="mt-0.5 shrink-0" />
-              <span>{error}</span>
+              <div>
+                <p>{error}</p>
+                {Object.keys(fieldErrors).length > 1 && (
+                  <ul className="mt-2 ml-2 space-y-1 text-[11px]">
+                    {Object.entries(fieldErrors).map(([field, msg]) => (
+                      <li key={field} className="list-disc">
+                        {msg}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
 
           {message && (
-            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm">
+            <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm font-bold text-emerald-700 shadow-sm">
               <CheckCircle2 size={18} className="mt-0.5 shrink-0" />
               <span>{message}</span>
             </div>

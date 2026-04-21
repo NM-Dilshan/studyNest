@@ -15,17 +15,17 @@ interface HallFiltersProps {
 
 export function HallFilters({ filters, onChange, onOpenPreferences }: HallFiltersProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center w-full rounded-[24px] border border-slate-200 border-l-4 border-l-[#2E6F95] bg-[#F8FBFD] p-4 shadow-sm shadow-slate-100/60">
+    <div className="themed-surface flex w-full flex-col items-stretch gap-4 rounded-[24px] border-l-4 border-l-[var(--brand-primary)] p-4 md:flex-row md:items-center">
       
       {/* Search Input */}
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]" />
         <input 
           type="text"
           placeholder="Search by building, hall, or property..."
           value={filters.searchQuery}
           onChange={(e) => onChange({ ...filters, searchQuery: e.target.value })}
-          className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-[#2E6F95]/20 focus:border-[#2E6F95] outline-none placeholder:text-slate-400"
+          className="themed-input w-full rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium outline-none"
         />
       </div>
 
@@ -34,7 +34,7 @@ export function HallFilters({ filters, onChange, onOpenPreferences }: HallFilter
         <select 
           value={filters.minCapacity}
           onChange={(e) => onChange({ ...filters, minCapacity: Number(e.target.value) })}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
+          className="themed-input rounded-xl px-3 py-2.5 text-sm font-medium outline-none"
         >
           <option value={0}>Any Size</option>
           <option value={10}>10+ Seats</option>
@@ -47,7 +47,7 @@ export function HallFilters({ filters, onChange, onOpenPreferences }: HallFilter
         <select
           value={filters.status}
           onChange={(e) => onChange({ ...filters, status: e.target.value as FilterState['status'] })}
-          className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 outline-none"
+          className="themed-input rounded-xl px-3 py-2.5 text-sm font-medium outline-none"
         >
           <option value="all">All Status</option>
           <option value="free">Free Now</option>
@@ -58,7 +58,7 @@ export function HallFilters({ filters, onChange, onOpenPreferences }: HallFilter
         {/* Preferences Toggle */}
         <button 
           onClick={onOpenPreferences}
-          className="p-2.5 bg-white rounded-xl hover:bg-slate-50 transition-colors text-slate-700 shadow-sm border border-slate-200"
+          className="themed-input rounded-xl p-2.5 text-[var(--text-soft)] transition-colors hover:bg-[var(--button-hover)]"
           title="Advanced Preferences"
         >
           <SlidersHorizontal className="w-5 h-5" />

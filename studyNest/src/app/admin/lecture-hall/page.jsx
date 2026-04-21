@@ -5,6 +5,42 @@ import Link from 'next/link'
 import { useSearch } from '@/contexts/SearchContext'
 import { HighlightText } from '@/components/HighlightText'
 
+const BOOLEAN_TRUE_VALUES = new Set(['true', '1', 'yes', 'on', 't', 'y'])
+
+function toBool(value) {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'number') return value === 1
+  if (typeof value === 'string') {
+    return BOOLEAN_TRUE_VALUES.has(value.trim().toLowerCase())
+  }
+  return false
+}
+
+function normalizeStatus(value) {
+  const normalized = String(value || '').trim().toLowerCase()
+  return normalized || 'available'
+}
+
+function getFeatureLabels(hall) {
+  const labels = []
+  if (toBool(hall.projector)) labels.push('Projector')
+  if (toBool(hall.wifi)) labels.push('WiFi')
+  if (toBool(hall.ac)) labels.push('AC')
+  if (toBool(hall.whiteboard)) labels.push('Whiteboard')
+  return labels
+}
+
+function normalizeHall(hall) {
+  return {
+    ...hall,
+    maintenance_status: normalizeStatus(hall.maintenance_status),
+    projector: toBool(hall.projector),
+    wifi: toBool(hall.wifi),
+    ac: toBool(hall.ac),
+    whiteboard: toBool(hall.whiteboard),
+  }
+}
+
 export default function LectureHallListPage() {
   const { searchValue } = useSearch()
   const [halls, setHalls] = useState([])
@@ -31,7 +67,7 @@ export default function LectureHallListPage() {
         try {
           const data = await response.json()
           errorMessage = data.error || errorMessage
-        } catch (parseError) {
+        } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
         setError(errorMessage)
@@ -39,7 +75,7 @@ export default function LectureHallListPage() {
       }
 
       const data = await response.json()
-      setHalls(data.data || [])
+      setHalls((data.halls || data.data || []).map(normalizeHall))
     } catch (err) {
       setError(err.message || 'An error occurred while fetching data')
     } finally {
@@ -59,14 +95,13 @@ export default function LectureHallListPage() {
         try {
           const data = await response.json()
           errorMessage = data.error || errorMessage
-        } catch (parseError) {
+        } catch {
           errorMessage = `Server error: ${response.status} ${response.statusText}`
         }
         setError(errorMessage)
         return
       }
 
-      const data = await response.json()
       setHalls(halls.filter(hall => hall.hall_id !== id))
       setDeleteConfirm(null)
     } catch (err) {
@@ -106,7 +141,7 @@ export default function LectureHallListPage() {
       case 'closed':
         return '✕ Closed'
       default:
-        return status
+        return status || 'Not Set'
     }
   }
 
@@ -114,7 +149,7 @@ export default function LectureHallListPage() {
   const filteredHalls = halls.filter((hall) => {
     const searchLower = searchValue.toLowerCase()
     return (
-      hall.hall_name.toLowerCase().includes(searchLower) ||
+      (hall.hall_name || '').toLowerCase().includes(searchLower) ||
       (hall.building && hall.building.toLowerCase().includes(searchLower))
     )
   })
@@ -174,7 +209,7 @@ export default function LectureHallListPage() {
           </div>
         ) : filteredHalls.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-12 text-center">
-            <p className="text-gray-500 text-lg">No results found for "{searchValue}"</p>
+            <p className="text-gray-500 text-lg">No results found for &quot;{searchValue}&quot;</p>
             <p className="text-gray-400 text-sm mt-2">Try adjusting your search terms</p>
           </div>
         ) : (
@@ -208,16 +243,19 @@ export default function LectureHallListPage() {
                         {hall.hall_type === 'lecture_hall' ? 'Lecture Hall' : 'Lab'}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(hall.maintenance_status)}`}>
+                        <span className={`inline-block min-w-[112px] px-3 py-1 rounded-full text-xs font-medium text-center ${getStatusColor(hall.maintenance_status)}`}>
                           {getStatusBadge(hall.maintenance_status)}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm">
                         <div className="flex gap-2 flex-wrap">
-                          {hall.projector && <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">Projector</span>}
-                          {hall.wifi && <span className="bg-cyan-100 text-cyan-800 px-2 py-1 rounded text-xs">WiFi</span>}
-                          {hall.ac && <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs">AC</span>}
-                          {hall.whiteboard && <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">Whiteboard</span>}
+                          {getFeatureLabels(hall).length > 0 ? (
+                            getFeatureLabels(hall).map((feature) => (
+                              <span key={feature} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">{feature}</span>
+                            ))
+                          ) : (
+                            <span className="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs">None</span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-sm">
