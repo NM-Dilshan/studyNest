@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, X, Check } from 'lucide-react'
 import { useOptionalNotifications } from '@/contexts/NotificationContext'
+import NotificationItem from './NotificationItem'
 
 interface HallRequestNotification {
   notification_id: number
@@ -36,6 +37,8 @@ export default function NotificationBell({
   const optionalNotifications = useOptionalNotifications()
   const complaintNotifications = optionalNotifications?.notifications || []
   const complaintUnreadCount = optionalNotifications?.unreadCount || 0
+  const markAllComplaintAsRead = optionalNotifications?.markAllAsRead
+  const clearAllComplaintNotifications = optionalNotifications?.clearAllNotifications
 
   // Combine both notification types
   const totalUnreadCount = unreadCount + complaintUnreadCount
@@ -85,9 +88,17 @@ export default function NotificationBell({
 
       {open && (
         <div className="absolute right-0 mt-2 w-96 max-w-[90vw] overflow-hidden rounded-xl border border-[var(--header-border)] bg-[var(--header-surface-solid)] shadow-xl z-50">
-          <div className="flex items-center justify-between border-b border-[var(--header-border)] px-4 py-3">
+          <div
+            className="flex items-center justify-between border-b border-[var(--header-accent-border)] px-4 py-3"
+            style={{
+              background:
+                'linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 88%, var(--header-surface-solid) 12%) 0%, color-mix(in srgb, var(--accent-bg) 52%, var(--header-surface-solid) 48%) 100%)',
+            }}
+          >
             <h3 className="text-sm font-semibold text-[var(--header-text)]">Notifications</h3>
-            <span className="text-xs text-[var(--header-text-muted)]">{totalUnreadCount} unread</span>
+            <span className="rounded-full border border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] px-2.5 py-0.5 text-xs font-semibold text-[var(--header-accent-text)]">
+              {totalUnreadCount} unread
+            </span>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -133,22 +144,44 @@ export default function NotificationBell({
               </>
             )}
 
+            {complaintNotifications.length > 0 && (
+              <>
+                {complaintNotifications.map((notification) => (
+                  <NotificationItem
+                    key={notification.id}
+                    notification={notification}
+                    onClose={() => setOpen(false)}
+                  />
+                ))}
+              </>
+            )}
+
             {/* Empty State */}
             {notifications.length === 0 && complaintNotifications.length === 0 && (
               <div className="p-6 text-center text-sm text-[var(--header-text-muted)]">No notifications yet</div>
             )}
           </div>
 
-          {notifications.length > 0 && (
+          {(notifications.length > 0 || complaintNotifications.length > 0) && (
             <div className="flex items-center justify-between gap-2 border-t border-[var(--header-border)] bg-[var(--header-button-bg)] px-3 py-2">
-              {unreadCount > 0 && (
-                <button
-                  onClick={onMarkAllAsRead}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]"
-                >
-                  <Check size={14} /> Mark all read
-                </button>
-              )}
+              <div className="flex items-center gap-2">
+                {unreadCount > 0 && onMarkAllAsRead && (
+                  <button
+                    onClick={onMarkAllAsRead}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]"
+                  >
+                    <Check size={14} /> Mark hall read
+                  </button>
+                )}
+                {complaintUnreadCount > 0 && markAllComplaintAsRead && (
+                  <button
+                    onClick={markAllComplaintAsRead}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]"
+                  >
+                    <Check size={14} /> Mark all read
+                  </button>
+                )}
+              </div>
               {isVolunteer && notifications.length > 0 && (
                 <a
                   href="/volunteer/requests"
@@ -156,6 +189,14 @@ export default function NotificationBell({
                 >
                   View requests →
                 </a>
+              )}
+              {!isVolunteer && complaintNotifications.length > 0 && clearAllComplaintNotifications && (
+                <button
+                  onClick={clearAllComplaintNotifications}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]"
+                >
+                  Clear all
+                </button>
               )}
             </div>
           )}
