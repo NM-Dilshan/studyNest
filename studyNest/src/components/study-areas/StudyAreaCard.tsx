@@ -39,6 +39,8 @@ interface StudyAreaCardProps {
     id: string;
     label: string;
     joinedAt: number;
+    latitude: number;
+    longitude: number;
   }[];
   latitude?: number | null;
   longitude?: number | null;
@@ -133,6 +135,7 @@ export function StudyAreaCard({
               radiusMeters={radiusMeters}
               currentCount={currentCount}
               crowdTone={crowdTone}
+              insideUsers={safeInsideUsers}
               userLocation={userLocation}
             />
           </div>

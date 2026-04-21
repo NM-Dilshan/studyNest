@@ -10,6 +10,7 @@ export async function GET() {
         },
       },
       select: {
+        user_id: true,
         study_area_id: true,
         lat: true,
         lng: true,
@@ -20,6 +21,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       students: activeLocations.map((location) => ({
+        user_id: location.user_id,
         study_area_id: location.study_area_id,
         latitude: location.lat,
         longitude: location.lng,
