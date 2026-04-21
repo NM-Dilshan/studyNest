@@ -3,5 +3,5 @@ interface LoadingSkeletonProps {
 }
 
 export default function LoadingSkeleton({ className = "" }: LoadingSkeletonProps) {
-  return <div className={`animate-pulse rounded-xl bg-slate-700/50 ${className}`} aria-hidden="true" />;
+  return <div className={`animate-pulse rounded-xl bg-[var(--surface-card-muted)] ${className}`} aria-hidden="true" />;
 }

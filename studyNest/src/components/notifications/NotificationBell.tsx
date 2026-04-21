@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Bell, X, Check } from 'lucide-react'
-import NotificationDropdownList from './NotificationDropdownList'
 import { useOptionalNotifications } from '@/contexts/NotificationContext'
 
 interface HallRequestNotification {
@@ -73,7 +72,7 @@ export default function NotificationBell({
     <div className="relative" ref={panelRef}>
       <button
         onClick={() => setOpen((p) => !p)}
-        className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+        className="relative rounded-xl border border-[var(--header-border)] bg-[var(--header-button-bg)] p-2 text-[var(--header-text-soft)] transition hover:bg-[var(--header-button-hover)] hover:text-[var(--header-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]"
         aria-label="Open notifications"
       >
         <Bell size={20} />
@@ -85,10 +84,10 @@ export default function NotificationBell({
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
-            <span className="text-xs text-slate-500">{totalUnreadCount} unread</span>
+        <div className="absolute right-0 mt-2 w-96 max-w-[90vw] overflow-hidden rounded-xl border border-[var(--header-border)] bg-[var(--header-surface-solid)] shadow-xl z-50">
+          <div className="flex items-center justify-between border-b border-[var(--header-border)] px-4 py-3">
+            <h3 className="text-sm font-semibold text-[var(--header-text)]">Notifications</h3>
+            <span className="text-xs text-[var(--header-text-muted)]">{totalUnreadCount} unread</span>
           </div>
 
           <div className="max-h-96 overflow-y-auto">
@@ -98,21 +97,21 @@ export default function NotificationBell({
                 {notifications.map((notification) => (
                   <div
                     key={notification.notification_id}
-                    className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition ${
-                      !notification.is_read ? 'bg-blue-50' : ''
+                    className={`border-b border-[var(--header-border)] px-4 py-3 transition ${
+                      !notification.is_read ? 'bg-[var(--header-accent-bg)]' : 'hover:bg-[var(--header-button-hover)]'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900">{notification.title}</p>
-                        <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">{notification.message}</p>
-                        <p className="text-xs text-gray-400 mt-1">{formatTime(notification.created_at)}</p>
+                        <p className="text-sm font-semibold text-[var(--header-text)]">{notification.title}</p>
+                        <p className="mt-0.5 line-clamp-2 text-xs text-[var(--header-text-soft)]">{notification.message}</p>
+                        <p className="mt-1 text-xs text-[var(--header-text-muted)]">{formatTime(notification.created_at)}</p>
                       </div>
                       <div className="flex items-center gap-1 flex-shrink-0">
                         {!notification.is_read && onMarkAsRead && (
                           <button
                             onClick={() => onMarkAsRead(notification.notification_id)}
-                            className="p-1 text-blue-600 hover:bg-blue-100 rounded transition"
+                            className="rounded p-1 text-[var(--header-accent-text)] transition hover:bg-[var(--header-accent-bg)]"
                             title="Mark as read"
                           >
                             <Check className="h-4 w-4" />
@@ -121,7 +120,7 @@ export default function NotificationBell({
                         {onDeleteNotification && (
                           <button
                             onClick={() => onDeleteNotification(notification.notification_id)}
-                            className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                            className="rounded p-1 text-[var(--header-text-muted)] transition hover:bg-rose-500/10 hover:text-rose-500"
                             title="Delete"
                           >
                             <X className="h-4 w-4" />
@@ -136,16 +135,16 @@ export default function NotificationBell({
 
             {/* Empty State */}
             {notifications.length === 0 && complaintNotifications.length === 0 && (
-              <div className="p-6 text-center text-sm text-slate-500">No notifications yet</div>
+              <div className="p-6 text-center text-sm text-[var(--header-text-muted)]">No notifications yet</div>
             )}
           </div>
 
           {notifications.length > 0 && (
-            <div className="px-3 py-2 border-t border-gray-100 bg-slate-50 flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 border-t border-[var(--header-border)] bg-[var(--header-button-bg)] px-3 py-2">
               {unreadCount > 0 && (
                 <button
                   onClick={onMarkAllAsRead}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white rounded-md border border-slate-200"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)]"
                 >
                   <Check size={14} /> Mark all read
                 </button>
@@ -153,7 +152,7 @@ export default function NotificationBell({
               {isVolunteer && notifications.length > 0 && (
                 <a
                   href="/volunteer/requests"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:bg-white rounded-md border border-blue-200"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[var(--header-accent-border)] px-3 py-1.5 text-xs font-semibold text-[var(--header-accent-text)] hover:bg-[var(--header-accent-bg)]"
                 >
                   View requests →
                 </a>

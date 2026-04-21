@@ -7,6 +7,8 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import AppBackground from '@/components/AppBackground'
 import MainHeader from '@/components/MainHeader'
+import PageHeader from '@/components/ui/PageHeader'
+import EmptyState from '@/components/ui/EmptyState'
 
 export default function MyComplaintsPage() {
   const router = useRouter()
@@ -15,6 +17,7 @@ export default function MyComplaintsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [deleting, setDeleting] = useState(null)
+  const [fetchError, setFetchError] = useState('')
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
@@ -29,13 +32,18 @@ export default function MyComplaintsPage() {
     const fetchComplaints = async () => {
       try {
         setLoading(true)
+        setFetchError('')
         const response = await fetch(`/api/complaints?studentId=${studentId}`)
         const data = await response.json()
         if (data.success) {
           setComplaints(Array.isArray(data.data) ? data.data : [])
+        } else {
+          setFetchError(data.message || 'Failed to load complaints')
+          setComplaints([])
         }
       } catch (err) {
         console.error('Error fetching complaints:', err)
+        setFetchError('Unable to load complaints right now. Please refresh and try again.')
         setComplaints([])
       } finally {
         setLoading(false)
@@ -146,35 +154,36 @@ export default function MyComplaintsPage() {
       <MainHeader />
 
       <main className="relative z-10 max-w-6xl mx-auto px-6 py-10">
-        {/* TITLE & ACTION BAR */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-          <div>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">My Complaints</h2>
-            <p className="text-slate-500 font-medium mt-1">Track and manage your submitted reports</p>
-          </div>
-          <Link
-            href="/Naveen/complaints"
-            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-[#2E6F95] text-white font-bold shadow-lg shadow-[#2E6F95]/25 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-[#2E6F95]/30 transition-all active:scale-95"
-          >
-            <Plus size={20} strokeWidth={3} /> File New Complaint
-          </Link>
-        </div>
+        <PageHeader
+          eyebrow="Complaint Center"
+          title="My Complaints"
+          subtitle="Track and manage your submitted reports with status visibility and quick actions."
+          actions={
+            <Link
+              href="/Naveen/complaints"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--brand-primary)] px-8 py-3 font-bold text-white shadow-lg shadow-[color-mix(in_srgb,var(--brand-primary)_28%,transparent)] transition-all hover:-translate-y-0.5 hover:bg-[var(--brand-primary-dark)]"
+            >
+              <Plus size={20} strokeWidth={3} /> File New Complaint
+            </Link>
+          }
+          className="mb-10"
+        />
 
         {/* SEARCH & FILTER BAR */}
-        <div className="mb-8 rounded-[28px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-4 shadow-[0_16px_40px_rgba(30,41,59,0.08)]">
+        <div className="themed-surface mb-8 rounded-[28px] p-4">
           <div className="flex gap-4 flex-col sm:flex-row">
             <div className="relative flex-1 group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#2E6F95] transition-colors" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] transition-colors group-focus-within:text-[var(--brand-primary)]" size={18} />
               <input
                 type="text"
                 placeholder="Search complaints..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[var(--bg-card)] border border-slate-200 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-[#2E6F95]/10 focus:border-[#2E6F95] transition-all shadow-sm"
+                className="themed-input w-full rounded-2xl py-4 pl-12 pr-4 shadow-sm"
               />
             </div>
             <div className="relative sm:min-w-[210px]">
-              <Filter size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#2E6F95]" />
+              <Filter size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--brand-primary)]" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -190,6 +199,12 @@ export default function MyComplaintsPage() {
           </div>
         </div>
 
+        {fetchError ? (
+          <div className="mb-7 rounded-2xl border border-rose-300/40 bg-rose-500/10 px-4 py-3 text-sm font-semibold text-rose-500">
+            {fetchError}
+          </div>
+        ) : null}
+
         {/* COMPLAINTS LIST */}
         <div className="space-y-6">
           <AnimatePresence>
@@ -202,7 +217,7 @@ export default function MyComplaintsPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.07 }}
                   key={item.complaint_id}
-                  className="rounded-[30px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md p-6 shadow-[0_18px_45px_rgba(30,41,59,0.09)] hover:shadow-[0_22px_50px_rgba(30,41,59,0.12)] transition-all"
+                  className="themed-surface rounded-[30px] p-6 transition-all hover:shadow-[var(--surface-shadow-strong)]"
                 >
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-5">
                     {/* Left - Complaint Info */}
@@ -213,20 +228,20 @@ export default function MyComplaintsPage() {
                         >
                           {item.status}
                         </span>
-                        <span className="text-xs text-slate-500 font-bold tracking-wide">
+                        <span className="text-xs font-bold tracking-wide text-[var(--text-muted)]">
                           Reference #{item.complaint_id}
                         </span>
                       </div>
 
-                      <h3 className="text-2xl font-black text-slate-900 tracking-tight mb-2">
+                      <h3 className="mb-2 text-2xl font-black tracking-tight text-[var(--text-main)]">
                         {item.issue_category}
                       </h3>
 
-                      <p className="text-sm text-slate-600 mb-3 font-medium">
-                        <span className="font-bold text-[#2E6F95]">
+                      <p className="mb-3 text-sm font-medium text-[var(--text-soft)]">
+                        <span className="font-bold text-[var(--brand-primary)]">
                           {item.lecture_halls?.hall_name || item.study_areas?.area_name || 'Unknown Location'}
                         </span>
-                        <span className="mx-2 text-slate-300">•</span>
+                        <span className="mx-2 text-[var(--surface-border-strong)]">•</span>
                         <span>
                           {new Date(item.created_at).toLocaleDateString('en-US', {
                             month: 'numeric',
@@ -236,7 +251,7 @@ export default function MyComplaintsPage() {
                         </span>
                       </p>
 
-                      <p className="text-sm text-slate-500 leading-relaxed line-clamp-2">
+                      <p className="line-clamp-2 text-sm leading-relaxed text-[var(--text-muted)]">
                         {item.description}
                       </p>
                     </div>
@@ -245,7 +260,7 @@ export default function MyComplaintsPage() {
                     <div className="flex gap-3 flex-wrap lg:flex-col lg:min-w-[180px]">
                       <Link
                         href={`/Naveen/my-complaints/${item.complaint_id}`}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#2E6F95] text-white text-sm font-bold shadow-md shadow-[#2E6F95]/25 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2E6F95]/30 transition-all"
+                        className="inline-flex items-center justify-center gap-2 rounded-full bg-[var(--brand-primary)] px-5 py-3 text-sm font-bold text-white shadow-md shadow-[color-mix(in_srgb,var(--brand-primary)_28%,transparent)] transition-all hover:-translate-y-0.5 hover:bg-[var(--brand-primary-dark)]"
                       >
                         <Eye size={15} />
                         View Details
@@ -253,7 +268,7 @@ export default function MyComplaintsPage() {
                       <button
                         onClick={() => handleDelete(item.complaint_id)}
                         disabled={deleting === item.complaint_id}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-rose-300 bg-transparent text-rose-600 text-sm font-bold hover:bg-rose-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center justify-center gap-2 rounded-full border border-rose-300/45 bg-rose-500/10 px-5 py-3 text-sm font-bold text-rose-500 transition-all hover:bg-rose-500/20 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Trash2 size={15} />
                         {deleting === item.complaint_id ? 'Removing...' : 'Remove'}
@@ -266,9 +281,23 @@ export default function MyComplaintsPage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-center py-16 rounded-[28px] border border-white/70 bg-[var(--bg-glass)] backdrop-blur-md shadow-[0_16px_40px_rgba(30,41,59,0.08)]"
+                className="py-4"
               >
-                <p className="text-slate-500 font-semibold">No complaints found matching your search</p>
+                <EmptyState
+                  title="No complaints found"
+                  description="No complaints match your current search and status filters."
+                  action={
+                    <button
+                      onClick={() => {
+                        setSearchQuery('')
+                        setStatusFilter('')
+                      }}
+                      className="rounded-xl bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[var(--brand-primary-dark)]"
+                    >
+                      Clear Filters
+                    </button>
+                  }
+                />
               </motion.div>
             )}
           </AnimatePresence>
@@ -280,11 +309,11 @@ export default function MyComplaintsPage() {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-[30px] border border-white/70 bg-[var(--bg-glass)] p-8 animate-pulse shadow-[0_18px_45px_rgba(30,41,59,0.09)]">
-      <div className="h-6 w-40 bg-slate-200 rounded-full mb-6" />
-      <div className="h-8 w-2/3 bg-slate-200 rounded-xl mb-4" />
-      <div className="h-4 w-1/2 bg-slate-100 rounded-lg mb-8" />
-      <div className="h-20 w-full bg-slate-100 rounded-2xl" />
+    <div className="themed-surface animate-pulse rounded-[30px] p-8">
+      <div className="mb-6 h-6 w-40 rounded-full bg-[var(--surface-card-muted)]" />
+      <div className="mb-4 h-8 w-2/3 rounded-xl bg-[var(--surface-card-muted)]" />
+      <div className="mb-8 h-4 w-1/2 rounded-lg bg-[var(--surface-card-muted)]" />
+      <div className="h-20 w-full rounded-2xl bg-[var(--surface-card-muted)]" />
     </div>
   )
 }

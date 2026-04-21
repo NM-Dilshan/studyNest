@@ -5,6 +5,7 @@ import MainHeader from '@/components/MainHeader'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useState } from 'react'
+import { Activity, Compass, ShieldCheck, Sparkles, Users, Wifi } from 'lucide-react'
 
 interface User {
   user_id: string
@@ -21,6 +22,7 @@ export default function AboutPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem('user')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUser(raw ? (JSON.parse(raw) as User) : null)
     } catch (error) {
       console.error('Failed to parse user:', error)
@@ -31,305 +33,208 @@ export default function AboutPage() {
 
   return (
     <AppBackground>
-      {/* Header Component */}
+      <div className="pointer-events-none fixed inset-0 opacity-[0.03]">
+        <svg width="100%" height="100%" aria-hidden="true">
+          <pattern id="about-grid" width="42" height="42" patternUnits="userSpaceOnUse">
+            <path d="M0 42 L42 0" fill="transparent" stroke="#2E6F95" strokeWidth="1" />
+          </pattern>
+          <rect width="100%" height="100%" fill="url(#about-grid)" />
+        </svg>
+      </div>
+
       <MainHeader />
 
-      <main>
-        {/* Hero Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <main className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <section className="themed-surface relative overflow-hidden rounded-[32px] p-8 md:p-12">
+          <div className="pointer-events-none absolute -right-28 -top-20 h-64 w-64 rounded-full bg-[var(--brand-primary)]/15 blur-3xl" />
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="text-5xl font-bold text-gray-900 mb-6">About StudyNest</h2>
-              <p className="text-xl text-gray-600 mb-4">
-                StudyNest is a campus space management solution designed to help students find the perfect study environment in real-time.
+              <p className="inline-flex rounded-full border border-[var(--accent-border)] bg-[var(--accent-bg)] px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-[var(--accent-text)]">
+                About StudyNest
               </p>
-              <p className="text-lg text-gray-600 mb-6">
-                We understand the challenges of campus life: finding a quiet place to study, locating available lecture halls, and managing your academic workload. StudyNest solves these problems with real-time occupancy tracking and community-driven updates.
+              <h1 className="mt-4 text-4xl font-black tracking-tight text-[var(--text-main)] md:text-5xl">
+                Smarter Campus Spaces, In Real Time
+              </h1>
+              <p className="mt-4 text-lg text-[var(--text-soft)]">
+                StudyNest helps students find the right environment for focused work, collaboration, and revision with live occupancy signals.
               </p>
-              <div className="flex gap-4">
+              <p className="mt-2 text-[var(--text-muted)]">
+                Built for campus realities: limited space, shifting schedules, and changing crowd patterns.
+              </p>
+              <div className="mt-7 flex flex-wrap gap-3">
                 {user ? (
-                  <Link href="/study-areas" className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">
+                  <Link href="/study-areas" className="rounded-xl bg-[var(--brand-primary)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--brand-primary-dark)]">
                     Explore Study Areas
                   </Link>
                 ) : (
-                  <Link href="/login/signIN" className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition">
+                  <Link href="/login/signIN" className="rounded-xl bg-[var(--brand-primary)] px-6 py-3 font-semibold text-white transition hover:bg-[var(--brand-primary-dark)]">
                     Get Started Now
                   </Link>
                 )}
-                <a href="#mission" className="px-6 py-3 border border-gray-300 text-gray-900 rounded-lg font-medium hover:bg-gray-50 transition">
+                <a href="#mission" className="themed-input rounded-xl px-6 py-3 font-semibold text-[var(--text-soft)] transition hover:bg-[var(--button-hover)]">
                   Learn More
                 </a>
               </div>
             </div>
-            <div className="hidden lg:block">
-              <div className="relative h-96 w-full rounded-lg overflow-hidden shadow-xl">
-                <Image
-                  src="/logo.jpeg"
-                  alt="StudyNest"
-                  fill
-                  className="object-cover"
-                />
+
+            <div className="relative h-[280px] overflow-hidden rounded-[24px] border border-[var(--surface-border)] sm:h-[340px]">
+              <Image
+                src="/logo.jpeg"
+                alt="StudyNest"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-transparent" />
+              <div className="absolute bottom-3 left-3 rounded-xl bg-slate-950/40 px-3 py-2 text-xs font-semibold text-white backdrop-blur">
+                Live insights for lecture halls and study zones
               </div>
             </div>
           </div>
         </section>
 
-        {/* Mission Section */}
-        <section id="mission" className="bg-white py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h3 className="text-4xl font-bold text-gray-900 mb-4">Our Mission</h3>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                To empower students with real-time information about campus study spaces, enabling them to make informed decisions and maximize their academic productivity.
+        <section id="mission" className="mt-8">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div className="themed-surface rounded-3xl p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-emerald-500/15 p-3 text-emerald-400">
+                <Activity className="h-5 w-5" />
+              </div>
+              <h2 className="text-xl font-bold text-[var(--text-main)]">Real-time Updates</h2>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                Instant signals from student volunteers and connected feeds help you avoid crowded spaces.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Mission Card 1 */}
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-8">
-                <div className="h-12 w-12 bg-blue-600 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Real-Time Updates</h4>
-                <p className="text-gray-700">
-                  Get instant access to occupancy levels of study areas and lecture halls as reported by our volunteer community.
-                </p>
+            <div className="themed-surface rounded-3xl p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-blue-500/15 p-3 text-blue-400">
+                <ShieldCheck className="h-5 w-5" />
               </div>
-
-              {/* Mission Card 2 */}
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-8">
-                <div className="h-12 w-12 bg-green-600 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Privacy First</h4>
-                <p className="text-gray-700">
-                  Your exact location is never stored. We only count occupancy data anonymously and securely.
-                </p>
-              </div>
-
-              {/* Mission Card 3 */}
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-8">
-                <div className="h-12 w-12 bg-purple-600 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20h12a6 6 0 00-6-6 6 6 0 00-6 6z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-2">Community Driven</h4>
-                <p className="text-gray-700">
-                  Volunteer contributors keep data accurate by reporting space availability and facility issues.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h3 className="text-4xl font-bold text-gray-900 mb-4">Key Features</h3>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Everything you need to find your perfect study space
+              <h2 className="text-xl font-bold text-[var(--text-main)]">Privacy by Design</h2>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                Occupancy is anonymous and aggregated. No personal location trails are stored.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {/* Feature 1 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Real-time Occupancy</h4>
-                <p className="text-gray-600">
-                  Check live occupancy levels of study areas and lecture halls updated by our volunteer community.
-                </p>
+            <div className="themed-surface rounded-3xl p-6">
+              <div className="mb-4 inline-flex rounded-xl bg-fuchsia-500/15 p-3 text-fuchsia-400">
+                <Users className="h-5 w-5" />
               </div>
-
-              {/* Feature 2 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">GPS Location Tracking</h4>
-                <p className="text-gray-600">
-                  Find study spaces near you with our interactive map showing available locations and distances.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Peak Hour Insights</h4>
-                <p className="text-gray-600">
-                  Learn when study spaces are typically crowded and find the best times to study.
-                </p>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-red-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 0v2m0-2h2m-2 0h-2" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Report Issues</h4>
-                <p className="text-gray-600">
-                  Submit complaints about facility conditions to help improve campus spaces for everyone.
-                </p>
-              </div>
-
-              {/* Feature 5 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Volunteer Opportunities</h4>
-                <p className="text-gray-600">
-                  Become a volunteer and help keep occupancy data accurate for the entire campus community.
-                </p>
-              </div>
-
-              {/* Feature 6 */}
-              <div className="bg-white rounded-lg shadow-md hover:shadow-lg transition p-8">
-                <div className="h-14 w-14 bg-pink-100 rounded-lg flex items-center justify-center mb-4">
-                  <svg className="h-8 w-8 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h4 className="text-lg font-bold text-gray-900 mb-2">Privacy Protected</h4>
-                <p className="text-gray-600">
-                  Your personal data is never stored or shared. Complete anonymity guaranteed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Team Section */}
-        <section className="bg-white py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h3 className="text-4xl font-bold text-gray-900 mb-4">Our Team</h3>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-                Built by students, for students, with the support of dedicated volunteers and academic advisors
+              <h2 className="text-xl font-bold text-[var(--text-main)]">Community Powered</h2>
+              <p className="mt-2 text-sm text-[var(--text-soft)]">
+                Volunteers and students keep availability data fresh for everyone on campus.
               </p>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Team Member 1 */}
-              <div className="text-center">
-                <div className="h-32 w-32 mx-auto bg-gradient-to-br from-indigo-400 to-blue-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                  <svg className="h-16 w-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-1">Development Team</h4>
-                <p className="text-gray-600">
-                  Full-stack developers dedicated to building a seamless user experience
-                </p>
-              </div>
-
-              {/* Team Member 2 */}
-              <div className="text-center">
-                <div className="h-32 w-32 mx-auto bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                  <svg className="h-16 w-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-1">Volunteer Coordinator</h4>
-                <p className="text-gray-600">
-                  Managing our community of volunteers who keep data accurate
-                </p>
-              </div>
-
-              {/* Team Member 3 */}
-              <div className="text-center">
-                <div className="h-32 w-32 mx-auto bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-lg">
-                  <svg className="h-16 w-16 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                  </svg>
-                </div>
-                <h4 className="text-xl font-bold text-gray-900 mb-1">Product Manager</h4>
-                <p className="text-gray-600">
-                  Ensuring StudyNest meets the real needs of campus students
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="bg-gradient-to-r from-indigo-600 to-blue-600 py-16">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 className="text-4xl font-bold text-white mb-4">Ready to Find Your Perfect Study Space?</h3>
-            <p className="text-xl text-indigo-100 mb-8">
-              Join thousands of students already using StudyNest to make smarter study decisions
+        <section id="features" className="mt-12">
+          <div className="mb-6 text-center">
+            <h3 className="text-3xl font-black text-[var(--text-main)]">Why Students Choose StudyNest</h3>
+            <p className="mx-auto mt-2 max-w-2xl text-[var(--text-soft)]">
+              Designed with a calm, productivity-first flow from search to decision.
             </p>
-            {user ? (
-              <Link href="/study-areas" className="inline-block px-8 py-3 bg-white text-indigo-600 rounded-lg font-bold hover:bg-gray-100 transition">
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: 'Live Occupancy',
+                desc: 'View space usage in real time and decide faster.',
+                icon: <Activity className="h-5 w-5" />,
+              },
+              {
+                title: 'GPS Awareness',
+                desc: 'Discover nearby spaces and reduce campus walking time.',
+                icon: <Compass className="h-5 w-5" />,
+              },
+              {
+                title: 'Peak Trends',
+                desc: 'Plan around crowd cycles and exam-week pressure.',
+                icon: <Sparkles className="h-5 w-5" />,
+              },
+              {
+                title: 'Issue Reporting',
+                desc: 'Flag problems quickly and track complaint updates.',
+                icon: <ShieldCheck className="h-5 w-5" />,
+              },
+              {
+                title: 'Volunteer Loop',
+                desc: 'Contributors improve data quality for everyone.',
+                icon: <Users className="h-5 w-5" />,
+              },
+              {
+                title: 'Reliable Connectivity',
+                desc: 'Filter spaces with stable network and power support.',
+                icon: <Wifi className="h-5 w-5" />,
+              },
+            ].map((feature) => (
+              <article key={feature.title} className="themed-surface rounded-2xl p-6">
+                <div className="mb-3 inline-flex rounded-lg bg-[var(--accent-bg)] p-2 text-[var(--accent-text)]">
+                  {feature.icon}
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-main)]">{feature.title}</h4>
+                <p className="mt-2 text-sm text-[var(--text-soft)]">{feature.desc}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <article className="themed-surface rounded-2xl p-6 lg:col-span-2">
+            <h3 className="text-2xl font-black text-[var(--text-main)]">Our Team</h3>
+            <p className="mt-2 text-[var(--text-soft)]">
+              Built by students, supported by volunteers, guided by academic mentors.
+            </p>
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {['Development Team', 'Volunteer Coordinator', 'Product Manager'].map((role) => (
+                <div key={role} className="themed-surface-muted rounded-xl p-4 text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-bg)] text-[var(--accent-text)]">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <h4 className="font-semibold text-[var(--text-main)]">{role}</h4>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="themed-surface rounded-2xl p-6">
+            <h3 className="text-xl font-black text-[var(--text-main)]">StudyNest At A Glance</h3>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-[var(--text-muted)]">Platform focus</dt>
+                <dd className="font-semibold text-[var(--text-main)]">Campus spaces</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-[var(--text-muted)]">Core value</dt>
+                <dd className="font-semibold text-[var(--text-main)]">Live availability</dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt className="text-[var(--text-muted)]">Privacy model</dt>
+                <dd className="font-semibold text-[var(--text-main)]">Anonymous counts</dd>
+              </div>
+            </dl>
+          </article>
+        </section>
+
+        <section className="mt-12 overflow-hidden rounded-3xl border border-[var(--accent-border)] bg-[var(--accent-bg)] p-8 text-center">
+          <h3 className="text-3xl font-black text-[var(--text-main)]">Ready to Find Your Ideal Study Spot?</h3>
+          <p className="mx-auto mt-3 max-w-2xl text-[var(--text-soft)]">
+            Join students who use StudyNest to plan smarter sessions and avoid unnecessary crowding.
+          </p>
+          <div className="mt-6">
+            {isHydrated && user ? (
+              <Link href="/study-areas" className="inline-block rounded-xl bg-[var(--brand-primary)] px-8 py-3 font-bold text-white transition hover:bg-[var(--brand-primary-dark)]">
                 Explore Now
               </Link>
             ) : (
-              <Link href="/login/signIN" className="inline-block px-8 py-3 bg-white text-indigo-600 rounded-lg font-bold hover:bg-gray-100 transition">
+              <Link href="/login/signIN" className="inline-block rounded-xl bg-[var(--brand-primary)] px-8 py-3 font-bold text-white transition hover:bg-[var(--brand-primary-dark)]">
                 Get Started Free
               </Link>
             )}
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-900 text-gray-400 py-12">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-              <div>
-                <h4 className="text-white font-bold mb-4">StudyNest</h4>
-                <p className="text-sm">Campus Free Space Finder</p>
-              </div>
-              <div>
-                <h4 className="text-white font-bold mb-4">Product</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#features" className="hover:text-white">Features</a></li>
-                  <li><a href="#about" className="hover:text-white">About</a></li>
-                  <li><a href="#" className="hover:text-white">Privacy</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-white font-bold mb-4">Company</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white">Blog</a></li>
-                  <li><a href="#" className="hover:text-white">Contact</a></li>
-                  <li><a href="#" className="hover:text-white">Careers</a></li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="text-white font-bold mb-4">Connect</h4>
-                <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="hover:text-white">Twitter</a></li>
-                  <li><a href="#" className="hover:text-white">LinkedIn</a></li>
-                  <li><a href="#" className="hover:text-white">GitHub</a></li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-gray-800 pt-8">
-              <p className="text-center text-sm">
-                © 2026 StudyNest. All rights reserved.
-              </p>
-            </div>
-          </div>
+        <footer className="mt-10 rounded-2xl border border-[var(--surface-border)] bg-[var(--surface-card)] px-6 py-5 text-center text-sm text-[var(--text-muted)]">
+          � 2026 StudyNest. All rights reserved.
         </footer>
       </main>
     </AppBackground>

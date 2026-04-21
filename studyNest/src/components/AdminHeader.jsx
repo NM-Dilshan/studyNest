@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, Search } from 'lucide-react'
+import { CalendarDays, Search } from 'lucide-react'
 import { useSearch } from '@/contexts/SearchContext'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import { useRouter } from 'next/navigation'
+import HeaderShell from '@/components/navigation/HeaderShell'
+import ThemeToggle from '@/components/navigation/ThemeToggle'
+import UserMenu from '@/components/navigation/UserMenu'
 
 export default function AdminHeader() {
   const router = useRouter()
-  const [profileOpen, setProfileOpen] = useState(false)
   const { searchValue, setSearchValue } = useSearch()
+  const [searchFocused, setSearchFocused] = useState(false)
 
   const handleLogout = (e) => {
     e.preventDefault()
@@ -29,96 +32,60 @@ export default function AdminHeader() {
   }
 
   return (
-    <header className="w-full bg-gradient-to-r from-sky-50 to-blue-50 border-b border-sky-100 sticky top-0 z-40">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
-          {/* Search */}
+    <HeaderShell className="z-40">
+      <div className="flex w-full flex-col gap-3 py-2">
+        <div className="flex items-center justify-between gap-3">
           <div className="relative hidden md:block w-full max-w-xl">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--header-text-muted)]" />
             <input
               type="text"
               value={searchValue}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => setSearchFocused(false)}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search halls, study areas, buildings..."
-              className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2E6F95]/30 focus:border-[#2E6F95]"
+              className={`w-full rounded-xl border bg-[var(--header-button-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--header-text)] placeholder:text-[var(--header-text-muted)] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)] ${searchFocused ? 'border-[var(--header-border-strong)]' : 'border-[var(--header-border)] hover:border-[var(--header-border-strong)]'}`}
             />
           </div>
 
-          {/* Right Section - Notifications, Profile & Date */}
-          <div className="flex items-center gap-6">
-            {/* Date - Hidden on mobile */}
-            <div className="hidden lg:flex flex-col items-end">
-              <p className="text-xs font-medium text-gray-500">Today</p>
-              <p className="text-sm font-semibold text-gray-900">{getCurrentDate().split(', ')[0]}</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden lg:flex items-center gap-2 rounded-xl border border-[var(--header-border)] bg-[var(--header-button-bg)] px-3 py-2">
+              <CalendarDays className="h-4 w-4 text-[var(--header-text-muted)]" />
+              <div className="flex flex-col items-start leading-tight">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-[var(--header-text-muted)]">Today</p>
+                <p className="text-xs font-semibold text-[var(--header-text)]">{getCurrentDate().split(', ')[0]}</p>
+              </div>
             </div>
 
-            {/* Notification Bell */}
-            <NotificationBell />
+            <ThemeToggle />
+            <NotificationBell userRole="admin" />
 
-            {/* Admin Profile Section */}
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setProfileOpen(!profileOpen)
-                }}
-                className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                {/* Avatar */}
-                <div className="flex items-center justify-center h-8 w-8 rounded-full text-white font-bold text-sm bg-gradient-to-br from-blue-500 to-blue-700" style={{ backgroundColor: '#2E6F95' }}>
-                  A
-                </div>
-
-                {/* Name & Role - Hidden on small screens */}
-                <div className="hidden sm:flex flex-col items-start">
-                  <p className="text-sm font-semibold text-gray-900">Admin</p>
-                  <p className="text-xs text-gray-500">Administrator</p>
-                </div>
-
-                {/* Dropdown Icon */}
-                <ChevronDown size={16} className="text-gray-400 hidden sm:block" />
-              </button>
-
-              {/* Profile Dropdown */}
-              {profileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-2">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">Admin</p>
-                    <p className="text-xs text-gray-500">Administrator</p>
-                  </div>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    Profile Settings
-                  </a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    Account Settings
-                  </a>
-                  <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                    Help & Support
-                  </a>
-                  <div className="border-t border-gray-100 mt-2 pt-2">
-                    <a href="/login/admin" onClick={handleLogout} className="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                      Logout
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
+            <UserMenu
+              name="Admin"
+              roleLabel="Administrator"
+              initials="A"
+              onLogout={handleLogout}
+              items={[
+                { href: '/admin/complaints', label: 'Complaint Center' },
+                { href: '/Naveen/Admin/messages', label: 'Student Messages' },
+              ]}
+            />
           </div>
         </div>
 
-        {/* Mobile Search */}
-        <div className="mt-3 md:hidden">
+        <div className="md:hidden">
           <div className="relative">
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--header-text-muted)]" />
             <input
               type="text"
               value={searchValue}
               onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search..."
-              className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#2E6F95]/30 focus:border-[#2E6F95]"
+              className="w-full rounded-xl border border-[var(--header-border)] bg-[var(--header-button-bg)] pl-10 pr-4 py-2.5 text-sm text-[var(--header-text)] placeholder:text-[var(--header-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--focus-offset)]"
             />
           </div>
         </div>
       </div>
-    </header>
+    </HeaderShell>
   )
 }

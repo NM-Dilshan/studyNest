@@ -13,30 +13,24 @@ interface UserData {
 }
 
 export default function VolunteerHeaderDashboard() {
-  const [user, setUser] = useState<UserData | null>(null);
-  const [isStatsOpen, setIsStatsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Load user data from localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('user');
-        console.log('Stored user:', storedUser);
-
-        if (storedUser) {
-          const userData = JSON.parse(storedUser) as UserData;
-          console.log('Parsed user:', userData);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Failed to parse user data:', error);
-      } finally {
-        setLoading(false);
-      }
+  const [user] = useState<UserData | null>(() => {
+    if (typeof window === 'undefined') {
+      return null;
     }
-  }, []);
+
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (!storedUser) {
+        return null;
+      }
+      return JSON.parse(storedUser) as UserData;
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+      return null;
+    }
+  });
+  const [isStatsOpen, setIsStatsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle click outside to close popup
   useEffect(() => {
@@ -57,7 +51,7 @@ export default function VolunteerHeaderDashboard() {
     }
   }, [isStatsOpen]);
 
-  if (loading || !user || user.role !== 'volunteer') {
+  if (!user || user.role !== 'volunteer') {
     return null;
   }
 
@@ -66,15 +60,15 @@ export default function VolunteerHeaderDashboard() {
       {/* Volunteer Stats Button */}
       <button
         onClick={() => setIsStatsOpen(!isStatsOpen)}
-        className="flex items-center gap-2 px-4 py-2 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors cursor-pointer"
+        className="flex cursor-pointer items-center gap-2 rounded-xl border border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] px-4 py-2 transition hover:brightness-110"
         title="View your volunteer stats"
       >
-        <FiAward className="w-5 h-5 text-purple-600" />
+        <FiAward className="h-5 w-5 text-[var(--header-accent-text)]" />
         <div className="flex flex-col text-left">
-          <p className="text-xs font-semibold text-purple-600 uppercase">
+          <p className="text-xs font-semibold uppercase text-[var(--header-accent-text)]">
             Stats
           </p>
-          <p className="text-sm font-bold text-purple-900">
+          <p className="text-sm font-bold text-[var(--header-text)]">
             {user.volunteer_id || 'Volunteer'}
           </p>
         </div>

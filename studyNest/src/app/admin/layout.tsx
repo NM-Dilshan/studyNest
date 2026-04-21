@@ -13,7 +13,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SearchProvider>
-      <div className="flex h-screen bg-[#F4F9F8]">
+      <div className="flex h-screen bg-[var(--bg-main)]">
         {/* Sidebar */}
         <Sidebar />
 

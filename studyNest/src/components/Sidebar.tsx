@@ -77,9 +77,9 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="w-64 bg-white shadow-lg min-h-screen flex flex-col">
+    <aside className="flex min-h-screen w-64 flex-col border-r border-[var(--header-border)] bg-[var(--header-surface-solid)] shadow-lg">
       {/* Logo Section */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="border-b border-[var(--header-border)] p-6">
         <div className="flex items-center gap-3">
           <Image
             src="/logo.jpeg"
@@ -90,8 +90,8 @@ export function Sidebar() {
             style={{ width: 'auto', height: 'auto' }}
           />
           <div>
-            <h1 className="text-lg font-bold text-gray-900">StudyNest</h1>
-            <p className="text-xs text-gray-500">Admin Panel</p>
+            <h1 className="text-lg font-bold text-[var(--header-text)]">StudyNest</h1>
+            <p className="text-xs text-[var(--header-text-muted)]">Admin Panel</p>
           </div>
         </div>
       </div>
@@ -109,8 +109,8 @@ export function Sidebar() {
                   href={item.href}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative ${
                     active
-                      ? 'bg-[#2E6F95] text-white shadow-md'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? 'bg-[var(--header-accent-bg)] text-[var(--header-accent-text)] shadow-md border border-[var(--header-accent-border)]'
+                      : 'text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)] hover:text-[var(--header-text)]'
                   }`}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
@@ -134,8 +134,8 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
-        <p className="text-xs text-gray-500 text-center">
+      <div className="border-t border-[var(--header-border)] p-4">
+        <p className="text-center text-xs text-[var(--header-text-muted)]">
           StudyNest © 2024
         </p>
       </div>

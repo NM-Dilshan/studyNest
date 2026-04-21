@@ -12,7 +12,7 @@ export default function AppBackground({
   contentClassName,
 }: AppBackgroundProps) {
   return (
-    <div className={`relative min-h-screen overflow-x-hidden bg-white ${className ?? ''}`}>
+    <div className={`themed-page-shell relative min-h-screen overflow-x-hidden bg-[var(--bg-main)] ${className ?? ''}`}>
 
       <div className={`relative z-10 ${contentClassName ?? ''}`}>{children}</div>
     </div>
