@@ -11,12 +11,20 @@ export interface StudyAreaGridItem {
   id: string;
   name: string;
   building: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  radiusMeters?: number;
   currentCount: number;
   availableSeats: number;
   occupancyPercentage: number;
   crowdStatus: CrowdStatus;
   capacity: number;
   updatedAt?: string;
+  insideUsers?: {
+    id: string;
+    label: string;
+    joinedAt: number;
+  }[];
   features?: {
     wifi?: boolean;
     quietZone?: boolean;
@@ -29,10 +37,14 @@ export interface StudyAreaGridItem {
 interface StudyAreaGridProps {
   isLoading: boolean;
   items: StudyAreaGridItem[];
+  userLocation?: {
+    latitude: number;
+    longitude: number;
+  } | null;
   onAreaHover?: (areaId: string | null) => void;
 }
 
-export default function StudyAreaGrid({ isLoading, items, onAreaHover }: StudyAreaGridProps) {
+export default function StudyAreaGrid({ isLoading, items, userLocation, onAreaHover }: StudyAreaGridProps) {
   const shouldReduceMotion = useReducedMotion();
 
   if (isLoading) {
@@ -76,12 +88,17 @@ export default function StudyAreaGrid({ isLoading, items, onAreaHover }: StudyAr
             id={item.id}
             name={item.name}
             building={item.building}
+            latitude={item.latitude}
+            longitude={item.longitude}
+            radiusMeters={item.radiusMeters}
+            userLocation={userLocation}
             currentCount={item.currentCount}
             availableSeats={item.availableSeats}
             occupancyPercentage={item.occupancyPercentage}
             crowdStatus={item.crowdStatus}
             capacity={item.capacity}
             updatedAt={item.updatedAt}
+            insideUsers={item.insideUsers}
             features={item.features}
           />
         </motion.div>

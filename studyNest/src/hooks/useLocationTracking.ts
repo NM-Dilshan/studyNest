@@ -116,6 +116,33 @@ export function useLocationTracking(
       setIsTracking(true);
       setError(null);
 
+      // Send an immediate location snapshot so occupancy can update
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const immediateLocation: LocationData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy || null,
+            timestamp: position.timestamp,
+          };
+
+          try {
+            await sendLocationUpdate(userId, immediateLocation);
+          } finally {
+            setCurrentLocation(immediateLocation);
+            lastLocationRef.current = immediateLocation;
+          }
+        },
+        () => {
+          // Ignore here; watchPosition error handling will cover ongoing tracking errors
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 10000,
+        }
+      );
+
       // Use watchPosition for continuous updates
       watchIdRef.current = navigator.geolocation.watchPosition(
         async (position) => {
@@ -131,11 +158,13 @@ export function useLocationTracking(
             return;
           }
 
-          setCurrentLocation(newLocation);
-          lastLocationRef.current = newLocation;
-
-          // Send to backend
-          await sendLocationUpdate(userId, newLocation);
+          try {
+            // Send to backend first so subsequent UI refresh sees latest count
+            await sendLocationUpdate(userId, newLocation);
+          } finally {
+            setCurrentLocation(newLocation);
+            lastLocationRef.current = newLocation;
+          }
         },
         (err) => {
           const deniedReasons: Record<GeolocationPositionError['code'], string> = {
@@ -246,10 +275,45 @@ export function useLocationTracking(
 
   // Auto-request permission on mount if user is logged in
   useEffect(() => {
-    if (enabled && userId && permissionStatus === 'prompt') {
-      // Don't auto-request, wait for user action
-    }
-  }, [enabled, userId, permissionStatus]);
+    let cancelled = false;
+
+    const initializePermission = async () => {
+      if (!enabled || !userId || !navigator.geolocation) {
+        return;
+      }
+
+      try {
+        if (navigator.permissions?.query) {
+          const permission = await navigator.permissions.query({ name: 'geolocation' });
+
+          if (cancelled) return;
+
+          if (permission.state === 'granted') {
+            setPermissionStatus('granted');
+            return;
+          }
+
+          if (permission.state === 'denied') {
+            setPermissionStatus('denied');
+            return;
+          }
+        }
+
+        await requestPermission();
+      } catch (err) {
+        if (!cancelled) {
+          const message = err instanceof Error ? err.message : 'Unknown error';
+          setError(message);
+        }
+      }
+    };
+
+    void initializePermission();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, requestPermission, userId]);
 
   return {
     permissionStatus,

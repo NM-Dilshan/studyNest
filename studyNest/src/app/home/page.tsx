@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, BarChart3, Clock3, MapPin, Radar, Send } from "lucide-react";
+import { Activity, BarChart3, BellRing, Clock3, MapPin, Radar, Send } from "lucide-react";
 import MainHeader from "@/components/MainHeader";
 import SearchBar from "@/components/SearchBar";
 import AppBackground from "@/components/AppBackground";
@@ -24,11 +24,23 @@ const FloatingCampusNodes = dynamic(() => import("@/components/3d/FloatingCampus
   loading: () => <div className="themed-inset h-[320px] animate-pulse rounded-2xl" />,
 });
 
+type AdminBroadcastMessage = {
+  message_id: number;
+  title: string;
+  message: string;
+  scheduled_at: string;
+  expires_at: string | null;
+  created_by: string | null;
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [showGPSDialog, setShowGPSDialog] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<"idle" | "requesting" | "enabled" | "denied">("idle");
   const [user] = useState<ClientUser | null>(() => readStoredUser());
+  const [adminMessages, setAdminMessages] = useState<AdminBroadcastMessage[]>([]);
+  const [loadingAdminMessages, setLoadingAdminMessages] = useState(true);
+  const [activeAdminMessageIndex, setActiveAdminMessageIndex] = useState(0);
   const isHydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -83,6 +95,56 @@ export default function HomePage() {
       return () => clearTimeout(timer);
     }
   }, [user, router]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+
+    const loadAdminMessages = async () => {
+      try {
+        setLoadingAdminMessages(true);
+        const response = await fetch("/api/admin/messages/active?limit=3", {
+          signal: abortController.signal,
+        });
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(data?.error || "Failed to fetch admin messages");
+        }
+
+        setAdminMessages(Array.isArray(data.messages) ? data.messages : []);
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          console.error("Failed to load admin broadcast messages:", error);
+          setAdminMessages([]);
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoadingAdminMessages(false);
+        }
+      }
+    };
+
+    loadAdminMessages();
+
+    return () => {
+      abortController.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (adminMessages.length <= 1) {
+      setActiveAdminMessageIndex(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setActiveAdminMessageIndex((previous) => (previous + 1) % adminMessages.length);
+    }, 10000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [adminMessages]);
 
   const requestGPSPermission = async () => {
     if (!user) return;
@@ -184,6 +246,76 @@ export default function HomePage() {
           <AnimatedSection className="mt-7">
             <GlassCard className="p-4">
               <SearchBar />
+            </GlassCard>
+          </AnimatedSection>
+
+          <AnimatedSection className="mt-7" delay={0.03}>
+            <GlassCard
+              className="p-5 md:p-6"
+              style={{
+                borderColor: "var(--panel-info-border)",
+                background:
+                  "linear-gradient(140deg, var(--panel-info-bg) 0%, color-mix(in srgb, var(--surface-card) 82%, var(--panel-info-bg) 18%) 100%)",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <BellRing className="h-5 w-5 text-[var(--accent-text)]" />
+                <h2 className="text-lg font-semibold text-[var(--text-main)]">Admin Broadcasts</h2>
+              </div>
+              <p className="mt-1 text-sm text-[var(--text-soft)]">Important announcements published from admin dashboard.</p>
+
+              {loadingAdminMessages ? (
+                <p className="mt-4 text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+              ) : adminMessages.length > 0 ? (
+                <div className="mt-4 space-y-3">
+                  <div
+                    className="rounded-2xl border p-4"
+                    style={{
+                      borderColor: "var(--panel-info-border)",
+                      background:
+                        "linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 78%, transparent) 0%, var(--surface-inset-strong) 100%)",
+                      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 70%, transparent)",
+                    }}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-base font-semibold text-[var(--text-main)]">
+                        {adminMessages[activeAdminMessageIndex]?.title}
+                      </h3>
+                      <span className="text-xs text-[var(--text-soft)]">
+                        {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-[var(--text-soft)]">
+                      {adminMessages[activeAdminMessageIndex]?.message}
+                    </p>
+                    {adminMessages[activeAdminMessageIndex]?.created_by && (
+                      <p className="mt-2 text-xs text-[var(--text-soft)]">
+                        Published by {adminMessages[activeAdminMessageIndex]?.created_by}
+                      </p>
+                    )}
+                  </div>
+
+                  {adminMessages.length > 1 && (
+                    <div className="flex items-center justify-center gap-2">
+                      {adminMessages.map((message, index) => (
+                        <button
+                          key={message.message_id}
+                          type="button"
+                          onClick={() => setActiveAdminMessageIndex(index)}
+                          aria-label={`Show announcement ${index + 1}`}
+                          className={`h-2.5 w-2.5 rounded-full transition-all ${
+                            index === activeAdminMessageIndex
+                              ? "bg-[var(--accent-text)]"
+                              : "bg-[var(--surface-border)] hover:bg-[var(--text-soft)]"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+              )}
             </GlassCard>
           </AnimatedSection>
 

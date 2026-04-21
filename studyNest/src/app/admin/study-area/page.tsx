@@ -1,9 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useSearch } from '@/contexts/SearchContext'
-import { Wifi, PlugZap, VolumeX, Wind, Plus, Trash2, Edit2, AlertCircle, Users, TrendingUp } from 'lucide-react'
+import { Wifi, PlugZap, VolumeX, Wind, Plus, Trash2, Edit2, AlertCircle, Users } from 'lucide-react'
+
+const StudyAreaCardMapPreview = dynamic(
+  () => import('@/components/admin/StudyAreaCardMapPreview'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-36 w-full bg-gray-100 text-gray-500 text-sm flex items-center justify-center">
+        Loading map...
+      </div>
+    ),
+  }
+)
 
 export default function StudyAreaListPage() {
   const { searchValue } = useSearch()
@@ -196,6 +209,22 @@ export default function StudyAreaListPage() {
 
                   {/* Card Body */}
                   <div className="p-6 space-y-4">
+                    {/* Map Preview */}
+                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                      {typeof area.latitude === 'number' && typeof area.longitude === 'number' ? (
+                        <StudyAreaCardMapPreview
+                          latitude={area.latitude}
+                          longitude={area.longitude}
+                          radiusMeters={area.radius_meters || 20}
+                          title={area.area_name}
+                        />
+                      ) : (
+                        <div className="h-36 w-full bg-gray-100 text-gray-500 text-sm flex items-center justify-center">
+                          Map location not available
+                        </div>
+                      )}
+                    </div>
+
                     {/* Available Seats */}
                     <div className="bg-green-50 rounded-lg p-4">
                       <p className="text-xs font-semibold text-gray-600 mb-1">Available Seats</p>

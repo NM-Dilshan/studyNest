@@ -118,11 +118,11 @@ export default function LocationMapContent({
         [markerPosition.lat, markerPosition.lng],
         {
           radius: radius, // Dynamic radius in meters
-          color: '#3b82f6',
+          color: '#2563eb',
           fillColor: '#60a5fa',
-          fillOpacity: 0.1,
-          weight: 2,
-          dashArray: '5, 5',
+          fillOpacity: 0.24,
+          weight: 3,
+          dashArray: undefined,
         }
       ).addTo(map.current!)
     }
