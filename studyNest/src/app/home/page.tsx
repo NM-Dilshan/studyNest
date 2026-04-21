@@ -243,46 +243,51 @@ export default function HomePage() {
           </AnimatedSection>
 
           <AnimatedSection className="mt-7" delay={0.03}>
-            <GlassCard
-              className="p-5 md:p-6"
-              style={{
-                borderColor: "var(--panel-info-border)",
-                background:
-                  "linear-gradient(140deg, var(--panel-info-bg) 0%, color-mix(in srgb, var(--surface-card) 82%, var(--panel-info-bg) 18%) 100%)",
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <BellRing className="h-5 w-5 text-[var(--accent-text)]" />
-                <h2 className="text-lg font-semibold text-[var(--text-main)]">Admin Broadcasts</h2>
+            <GlassCard className="overflow-hidden p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <div className="themed-panel-info inline-flex rounded-xl p-2.5">
+                      <BellRing className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--text-main)]">Admin Broadcasts</h2>
+                      <p className="mt-1 text-sm text-[var(--text-soft)]">
+                        Important announcements published from the admin dashboard.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="themed-badge-info rounded-full px-3 py-1 text-xs font-semibold">
+                  Live notices
+                </div>
               </div>
-              <p className="mt-1 text-sm text-[var(--text-soft)]">Important announcements published from admin dashboard.</p>
 
               {loadingAdminMessages ? (
-                <p className="mt-4 text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+                <div className="themed-inset mt-4 rounded-2xl p-4">
+                  <p className="text-sm text-[var(--text-soft)]">Loading latest announcements...</p>
+                </div>
               ) : adminMessages.length > 0 ? (
                 <div className="mt-4 space-y-3">
-                  <div
-                    className="rounded-2xl border p-4"
-                    style={{
-                      borderColor: "var(--panel-info-border)",
-                      background:
-                        "linear-gradient(135deg, color-mix(in srgb, var(--panel-info-bg) 78%, transparent) 0%, var(--surface-inset-strong) 100%)",
-                      boxShadow: "inset 0 0 0 1px color-mix(in srgb, var(--accent-border) 70%, transparent)",
-                    }}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <h3 className="text-base font-semibold text-[var(--text-main)]">
+                  <div className="themed-inset-strong rounded-2xl p-4 md:p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                          Current announcement
+                        </p>
+                        <h3 className="mt-2 text-base font-semibold text-[var(--text-main)] md:text-lg">
                         {adminMessages[activeAdminMessageIndex]?.title}
-                      </h3>
-                      <span className="text-xs text-[var(--text-soft)]">
+                        </h3>
+                      </div>
+                      <div className="themed-surface-muted rounded-xl px-3 py-2 text-right text-xs font-medium text-[var(--text-soft)]">
                         {new Date(adminMessages[activeAdminMessageIndex]?.scheduled_at).toLocaleString()}
-                      </span>
+                      </div>
                     </div>
-                    <p className="mt-2 text-sm text-[var(--text-soft)]">
+                    <p className="mt-3 text-sm leading-7 text-[var(--text-soft)]">
                       {adminMessages[activeAdminMessageIndex]?.message}
                     </p>
                     {adminMessages[activeAdminMessageIndex]?.created_by && (
-                      <p className="mt-2 text-xs text-[var(--text-soft)]">
+                      <p className="mt-4 text-xs font-medium uppercase tracking-[0.12em] text-[var(--text-muted)]">
                         Published by {adminMessages[activeAdminMessageIndex]?.created_by}
                       </p>
                     )}
@@ -307,7 +312,9 @@ export default function HomePage() {
                   )}
                 </div>
               ) : (
-                <p className="mt-4 text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                <div className="themed-inset mt-4 rounded-2xl p-4">
+                  <p className="text-sm text-[var(--text-soft)]">No active announcements right now.</p>
+                </div>
               )}
             </GlassCard>
           </AnimatedSection>
