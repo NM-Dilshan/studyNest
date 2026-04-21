@@ -34,6 +34,56 @@ function normalizeStatus(value) {
   return VALID_STATUSES.has(normalized) ? normalized : 'available'
 }
 
+async function deleteLectureHallDependencies(tx, hallId) {
+  const hallUpdateIds = await tx.volunteer_hall_updates.findMany({
+    where: { hall_id: hallId },
+    select: { hall_update_id: true },
+  })
+
+  const dependentUpdateIds = hallUpdateIds.map((item) => item.hall_update_id)
+
+  if (dependentUpdateIds.length > 0) {
+    await tx.volunteer_reviews.deleteMany({
+      where: {
+        hall_update_id: {
+          in: dependentUpdateIds,
+        },
+      },
+    })
+  }
+
+  await tx.complaints.updateMany({
+    where: { hall_id: hallId },
+    data: { hall_id: null },
+  })
+
+  await tx.timetable.updateMany({
+    where: { hall_id: hallId },
+    data: { hall_id: null },
+  })
+
+  await tx.update_request_pings.updateMany({
+    where: { hall_id: hallId },
+    data: { hall_id: null },
+  })
+
+  await tx.favorite_halls.deleteMany({
+    where: { hall_id: hallId },
+  })
+
+  await tx.hall_usage_logs.deleteMany({
+    where: { hall_id: hallId },
+  })
+
+  await tx.volunteer_hall_updates.deleteMany({
+    where: { hall_id: hallId },
+  })
+
+  await tx.hall_requests.deleteMany({
+    where: { hall_id: hallId },
+  })
+}
+
 // GET single lecture hall
 export async function GET(request, { params }) {
   try {
@@ -234,9 +284,12 @@ export async function DELETE(request, { params }) {
       )
     }
 
-    // Delete lecture hall
-    await prisma.lecture_halls.delete({
-      where: { hall_id: id },
+    await prisma.$transaction(async (tx) => {
+      await deleteLectureHallDependencies(tx, id)
+
+      await tx.lecture_halls.delete({
+        where: { hall_id: id },
+      })
     })
 
     return Response.json({
@@ -244,7 +297,12 @@ export async function DELETE(request, { params }) {
       message: 'Lecture hall deleted successfully',
     })
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Failed to delete lecture hall'
+    const errorMessage =
+      error?.code === 'P2003'
+        ? 'This lecture hall is still linked to protected records and could not be deleted automatically.'
+        : error instanceof Error
+          ? error.message
+          : 'Failed to delete lecture hall'
     console.error('Error deleting lecture hall:', error)
     return Response.json(
       {
