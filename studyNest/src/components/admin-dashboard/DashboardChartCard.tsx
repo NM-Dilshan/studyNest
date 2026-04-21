@@ -31,7 +31,7 @@ export default function DashboardChartCard({
           <div className="space-y-3 py-3">
             <LoadingSkeleton className="h-6 w-2/3" />
             <LoadingSkeleton className="h-56 w-full" />
-            <p className="text-sm font-medium text-slate-300">{loadingText}</p>
+            <p className="text-sm font-medium text-[var(--text-soft)]">{loadingText}</p>
           </div>
         ) : isEmpty ? (
           <div className="pt-6">

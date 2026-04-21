@@ -11,7 +11,6 @@ export function Sidebar() {
   const [complaintsCount, setComplaintsCount] = useState<number>(0)
 
   useEffect(() => {
-    // Fetch complaints count
     const fetchComplaints = async () => {
       try {
         const response = await fetch('/api/admin/complaints/summary')
@@ -29,64 +28,31 @@ export function Sidebar() {
   }, [])
 
   const menuItems = [
-    {
-      label: 'Dashboard',
-      icon: Home,
-      href: '/Naveen/Admin/dashboard',
-    },
-    {
-      label: 'Lecture Halls',
-      icon: Building,
-      href: '/admin/lecture-hall',
-    },
-    {
-      label: 'Study Areas',
-      icon: MapPin,
-      href: '/admin/study-area',
-    },
-    {
-      label: 'Complaints',
-      icon: AlertCircle,
-      href: '/admin/complaints',
-    },
-    {
-      label: 'Timetables',
-      icon: Calendar,
-      href: '/admin/timetable',
-    },
-    {
-      label: 'Student Messages',
-      icon: Megaphone,
-      href: '/Naveen/Admin/messages',
-    },
-    {
-      label: 'Conflict Overrides',
-      icon: AlertTriangle,
-      href: '/admin/conflicts',
-    },
+    { label: 'Dashboard', icon: Home, href: '/Naveen/Admin/dashboard' },
+    { label: 'Lecture Halls', icon: Building, href: '/admin/lecture-hall' },
+    { label: 'Study Areas', icon: MapPin, href: '/admin/study-area' },
+    { label: 'Complaints', icon: AlertCircle, href: '/admin/complaints' },
+    { label: 'Timetables', icon: Calendar, href: '/admin/timetable' },
+    { label: 'Student Messages', icon: Megaphone, href: '/Naveen/Admin/messages' },
+    { label: 'Conflict Overrides', icon: AlertTriangle, href: '/admin/conflicts' },
   ]
 
   const isActive = (href: string): boolean => {
-    if (href === '/Naveen/Admin/dashboard') {
-      return pathname === '/Naveen/Admin/dashboard'
-    }
-    if (href === '/Naveen/Admin/messages') {
-      return pathname === '/Naveen/Admin/messages'
-    }
+    if (href === '/Naveen/Admin/dashboard') return pathname === '/Naveen/Admin/dashboard'
+    if (href === '/Naveen/Admin/messages') return pathname === '/Naveen/Admin/messages'
     return pathname.startsWith(href)
   }
 
   return (
-    <aside className="flex min-h-screen w-64 flex-col border-r border-[var(--header-border)] bg-[var(--header-surface-solid)] shadow-lg">
-      {/* Logo Section */}
-      <div className="border-b border-[var(--header-border)] p-6">
+    <aside className="flex min-h-screen w-64 flex-col border-r border-[var(--surface-border)] bg-[var(--surface-elevated-solid)] shadow-[var(--surface-shadow)]">
+      <div className="border-b border-[var(--surface-border)] p-6">
         <div className="flex items-center gap-3">
           <Image
             src="/logo.jpeg"
             alt="StudyNest Logo"
             width={40}
             height={40}
-            className="rounded-lg object-cover w-10 h-10"
+            className="h-10 w-10 rounded-lg object-cover"
             style={{ width: 'auto', height: 'auto' }}
           />
           <div>
@@ -96,7 +62,6 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Menu Items */}
       <nav className="flex-1 px-4 py-6">
         <ul className="space-y-3">
           {menuItems.map((item) => {
@@ -107,21 +72,20 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative ${
+                  className={`relative flex items-center gap-3 rounded-lg px-4 py-3 transition-all duration-200 ${
                     active
-                      ? 'bg-[var(--header-accent-bg)] text-[var(--header-accent-text)] shadow-md border border-[var(--header-accent-border)]'
+                      ? 'border border-[var(--header-accent-border)] bg-[var(--header-accent-bg)] text-[var(--header-accent-text)] shadow-md'
                       : 'text-[var(--header-text-soft)] hover:bg-[var(--header-button-hover)] hover:text-[var(--header-text)]'
                   }`}
                 >
-                  <Icon className="w-5 h-5 flex-shrink-0" />
+                  <Icon className="h-5 w-5 flex-shrink-0" />
                   <span className="font-medium">{item.label}</span>
-                  
-                  {/* Notification Badge for Complaints */}
+
                   {item.label === 'Complaints' && complaintsCount > 0 && (
                     <div className="ml-auto">
                       <span
-                        className={`inline-block h-2.5 w-2.5 rounded-full animate-pulse ${
-                          active ? 'bg-red-200' : 'bg-red-500'
+                        className={`inline-block h-2.5 w-2.5 animate-pulse rounded-full ${
+                          active ? 'bg-rose-300' : 'bg-rose-500'
                         }`}
                       />
                     </div>
@@ -133,11 +97,8 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-[var(--header-border)] p-4">
-        <p className="text-center text-xs text-[var(--header-text-muted)]">
-          StudyNest © 2024
-        </p>
+      <div className="border-t border-[var(--surface-border)] p-4">
+        <p className="text-center text-xs text-[var(--header-text-muted)]">StudyNest © 2024</p>
       </div>
     </aside>
   )

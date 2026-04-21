@@ -85,7 +85,11 @@ const weeklyData = [
   { day: "Sun", visits: 180 },
 ];
 
-const statTileClassName = "rounded-xl border border-white/15 bg-white/5 p-4";
+const statTileClassName = "themed-chart-frame rounded-xl p-4";
+const chartGridStroke = "var(--chart-grid)";
+const chartAxisStroke = "var(--chart-axis)";
+const chartAxisTick = { fontSize: 12, fill: "var(--chart-axis-text)" };
+const chartCursor = { fill: "var(--accent-bg)" };
 
 const getPriorityFromCount = (count: number) => {
   if (count > 10) return "High" as const;
@@ -187,22 +191,10 @@ export default function AdminDashboard() {
   }, []);
 
   const complaintStats = useMemo(() => {
-    const pending = complaints.filter((c) => {
-      const value = (c.status || "").toLowerCase();
-      return value.includes("pending");
-    }).length;
-
-    const viewed = complaints.filter((c) =>
-      (c.status || "").toLowerCase().includes("view")
-    ).length;
-
-    const inProgress = complaints.filter((c) =>
-      (c.status || "").toLowerCase().includes("progress")
-    ).length;
-
-    const resolved = complaints.filter((c) =>
-      (c.status || "").toLowerCase().includes("resolve")
-    ).length;
+    const pending = complaints.filter((c) => (c.status || "").toLowerCase().includes("pending")).length;
+    const viewed = complaints.filter((c) => (c.status || "").toLowerCase().includes("view")).length;
+    const inProgress = complaints.filter((c) => (c.status || "").toLowerCase().includes("progress")).length;
+    const resolved = complaints.filter((c) => (c.status || "").toLowerCase().includes("resolve")).length;
 
     return {
       total: complaints.length,
@@ -227,17 +219,17 @@ export default function AdminDashboard() {
   );
 
   const chartTooltipStyle = {
-    backgroundColor: "#0f172a",
-    border: "1px solid rgba(148, 163, 184, 0.35)",
+    backgroundColor: "var(--chart-tooltip-bg)",
+    border: "1px solid var(--chart-tooltip-border)",
     borderRadius: 10,
-    color: "#f8fafc",
+    color: "var(--chart-tooltip-text)",
   };
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,_#0f172a,_#020617_58%)]">
+    <div className="themed-page-main min-h-screen">
       <div className="px-4 py-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <AnimatedSection className="mb-8">
+          <AnimatedSection className="mb-8 rounded-[2rem] themed-hero-surface px-6 py-8 sm:px-8">
             <PageHeader
               eyebrow="Admin Analytics"
               title="Campus Operations Dashboard"
@@ -299,10 +291,10 @@ export default function AdminDashboard() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={topLectureHalls} margin={{ top: 10, right: 24, left: 90, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
-                  <XAxis type="number" stroke="#94a3b8" />
-                  <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 12, fill: "#cbd5e1" }} />
-                  <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartGridStroke} />
+                  <XAxis type="number" stroke={chartAxisStroke} tick={chartAxisTick} />
+                  <YAxis type="category" dataKey="name" width={85} tick={chartAxisTick} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
                   <Bar dataKey="usage" fill="#6ee7b7" radius={[0, 8, 8, 0]} barSize={22} />
                 </BarChart>
               </ResponsiveContainer>
@@ -318,10 +310,10 @@ export default function AdminDashboard() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={topStudyAreas} margin={{ top: 10, right: 24, left: 90, bottom: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" />
-                  <XAxis type="number" stroke="#94a3b8" />
-                  <YAxis type="category" dataKey="name" width={85} tick={{ fontSize: 12, fill: "#cbd5e1" }} />
-                  <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={chartGridStroke} />
+                  <XAxis type="number" stroke={chartAxisStroke} tick={chartAxisTick} />
+                  <YAxis type="category" dataKey="name" width={85} tick={chartAxisTick} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
                   <Bar dataKey="usage" fill="#38bdf8" radius={[0, 8, 8, 0]} barSize={22} />
                 </BarChart>
               </ResponsiveContainer>
@@ -333,7 +325,7 @@ export default function AdminDashboard() {
               title="Recent Complaints"
               subtitle="Latest issues reported by students"
               action={(
-                <Link href="/admin/complaints" className="rounded text-sm font-semibold text-cyan-200 transition-colors hover:text-white">
+                <Link href="/admin/complaints" className="rounded text-sm font-semibold text-[var(--accent-text)] transition-colors hover:text-[var(--text-main)]">
                   View All
                 </Link>
               )}
@@ -341,7 +333,7 @@ export default function AdminDashboard() {
               {complaintsLoading ? (
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {Array.from({ length: 6 }).map((_, index) => (
-                    <LoadingSkeleton key={index} className="h-28 w-full border border-white/10 bg-white/5" />
+                    <LoadingSkeleton key={index} className="h-28 w-full themed-inset" />
                   ))}
                 </div>
               ) : recentComplaints.length === 0 ? (
@@ -372,9 +364,9 @@ export default function AdminDashboard() {
               subtitle="Live status distribution from database complaints"
             >
               {complaintsLoading ? (
-                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-slate-300">Loading chart data...</div>
+                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-[var(--text-soft)]">Loading chart data...</div>
               ) : complaintStatusChartData.every((item) => item.value === 0) ? (
-                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-slate-300">No complaint data available for chart</div>
+                <div className="flex h-[280px] items-center justify-center text-sm font-medium text-[var(--text-soft)]">No complaint data available for chart</div>
               ) : (
                 <div className="grid grid-cols-1 items-center gap-6 xl:grid-cols-2">
                   <div style={{ width: "100%", height: 280 }}>
@@ -393,7 +385,7 @@ export default function AdminDashboard() {
                           ))}
                         </Pie>
                         <Tooltip contentStyle={chartTooltipStyle} />
-                        <Legend wrapperStyle={{ color: "#cbd5e1" }} />
+                        <Legend wrapperStyle={{ color: "var(--chart-axis-text)" }} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -403,9 +395,9 @@ export default function AdminDashboard() {
                       <div key={item.name} className={statTileClassName}>
                         <div className="mb-1 flex items-center gap-2">
                           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">{item.name}</p>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">{item.name}</p>
                         </div>
-                        <p className="text-2xl font-black text-white">{item.value}</p>
+                        <p className="text-2xl font-black text-[var(--text-main)]">{item.value}</p>
                       </div>
                     ))}
                   </div>
@@ -426,10 +418,10 @@ export default function AdminDashboard() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={peakHoursData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                  <XAxis dataKey="hour" tick={{ fontSize: 12, fill: "#cbd5e1" }} stroke="#94a3b8" />
-                  <YAxis domain={[0, 180]} tick={{ fontSize: 12, fill: "#cbd5e1" }} stroke="#94a3b8" />
-                  <Tooltip contentStyle={chartTooltipStyle} cursor={{ fill: "rgba(148,163,184,0.12)" }} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridStroke} />
+                  <XAxis dataKey="hour" tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <YAxis domain={[0, 180]} tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <Tooltip contentStyle={chartTooltipStyle} cursor={chartCursor} />
                   <Bar dataKey="students" fill="#38bdf8" radius={[8, 8, 0, 0]} barSize={28} />
                 </BarChart>
               </ResponsiveContainer>
@@ -442,14 +434,14 @@ export default function AdminDashboard() {
             >
               <div className="space-y-4">
                 <div className={statTileClassName}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">Peak Hour</p>
-                  <p className="mt-1 text-2xl font-black text-white">1PM</p>
-                  <p className="text-xs text-slate-400">Highest load from configured trend data</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">Peak Hour</p>
+                  <p className="mt-1 text-2xl font-black text-[var(--text-main)]">1PM</p>
+                  <p className="text-xs text-[var(--text-muted)]">Highest load from configured trend data</p>
                 </div>
                 <div className={statTileClassName}>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-300">Weekly Growth</p>
-                  <p className="mt-1 text-2xl font-black text-emerald-200">+17%</p>
-                  <p className="text-xs text-slate-400">Compared to weekend baseline</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-soft)]">Weekly Growth</p>
+                  <p className="mt-1 text-2xl font-black text-emerald-600">+17%</p>
+                  <p className="text-xs text-[var(--text-muted)]">Compared to weekend baseline</p>
                 </div>
                 <AppLinkButton href="/admin/complaints" size="sm" variant="secondary">
                   <Activity className="h-4 w-4" />
@@ -475,9 +467,9 @@ export default function AdminDashboard() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={weeklyData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
-                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: "#cbd5e1" }} stroke="#94a3b8" />
-                  <YAxis domain={[0, 500]} tick={{ fontSize: 12, fill: "#cbd5e1" }} stroke="#94a3b8" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={chartGridStroke} />
+                  <XAxis dataKey="day" tick={chartAxisTick} stroke={chartAxisStroke} />
+                  <YAxis domain={[0, 500]} tick={chartAxisTick} stroke={chartAxisStroke} />
                   <Tooltip contentStyle={chartTooltipStyle} />
                   <Line type="monotone" dataKey="visits" stroke="#6ee7b7" strokeWidth={3} dot={{ fill: "#6ee7b7", r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>

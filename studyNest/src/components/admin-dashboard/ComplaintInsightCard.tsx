@@ -12,9 +12,9 @@ interface ComplaintInsightCardProps {
 
 const PriorityBadge = ({ priority }: { priority: "High" | "Medium" | "Normal" }) => {
   const colors = {
-    High: "border-rose-300/40 bg-rose-400/20 text-rose-100",
-    Medium: "border-amber-300/40 bg-amber-400/20 text-amber-100",
-    Normal: "border-emerald-300/40 bg-emerald-400/20 text-emerald-100",
+    High: "border-rose-500/20 bg-rose-500/10 text-rose-600",
+    Medium: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+    Normal: "border-emerald-500/20 bg-emerald-500/10 text-emerald-600",
   };
 
   return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${colors[priority]}`}>{priority}</span>;
@@ -28,18 +28,18 @@ export default function ComplaintInsightCard({
   timeText,
 }: ComplaintInsightCardProps) {
   return (
-    <div className="rounded-xl border border-white/15 bg-slate-950/45 p-4">
+    <div className="themed-inset rounded-xl p-4">
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-white">{location}</p>
-          <p className="mt-0.5 text-xs text-slate-300">{issueCategory}</p>
+          <p className="text-sm font-semibold text-[var(--text-main)]">{location}</p>
+          <p className="mt-0.5 text-xs text-[var(--text-soft)]">{issueCategory}</p>
         </div>
         <PriorityBadge priority={priorityLabel} />
       </div>
 
       <div className="mt-2 flex items-center justify-between">
         <StatusBadge status={status} className="normal-case tracking-normal" />
-        <p className="text-xs text-slate-400">{timeText}</p>
+        <p className="text-xs text-[var(--text-muted)]">{timeText}</p>
       </div>
 
       <AppLinkButton
