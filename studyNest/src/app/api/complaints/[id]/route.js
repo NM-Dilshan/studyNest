@@ -1,3 +1,4 @@
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 // GET a single complaint by ID
@@ -109,9 +110,9 @@ export async function DELETE(request, { params }) {
       where: { complaint_id: complaintId },
     })
 
-    return Response.json({
+    return NextResponse.json({
       success: true,
-      message: 'Complaint deleted successfully',
+      message: `Deleted complaint ${id}`,
     })
   } catch (error) {
     console.error('Error deleting complaint:', error)

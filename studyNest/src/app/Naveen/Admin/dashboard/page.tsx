@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
+import { jsPDF } from "jspdf";
 import {
   BarChart,
   Bar,
@@ -113,6 +114,8 @@ export default function AdminDashboard() {
   const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(true);
   const [summaryLoading, setSummaryLoading] = useState(true);
+  const [reportState, setReportState] = useState<"idle" | "success" | "error">("idle");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse["summary"] | null>(null);
   const [topLectureHalls, setTopLectureHalls] = useState<TopUsageItem[]>([]);
   const [topStudyAreas, setTopStudyAreas] = useState<TopUsageItem[]>([]);
@@ -225,6 +228,310 @@ export default function AdminDashboard() {
     color: "var(--chart-tooltip-text)",
   };
 
+  const handleGenerateReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      setReportState("idle");
+
+      const generatedAt = new Date();
+      const reportDate = generatedAt.toLocaleString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+
+      const summary = dashboardSummary ?? {
+        activeSpaces: 0,
+        activeHalls: 0,
+        activeStudyAreas: 0,
+        totalVolunteers: 0,
+        activeVolunteersToday: 0,
+      };
+
+      const response = await fetch("/logo.jpeg");
+      if (!response.ok) {
+        throw new Error("Logo could not be loaded for the PDF report.");
+      }
+
+      const logoBlob = await response.blob();
+      const logoDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Failed to convert logo image."));
+        reader.readAsDataURL(logoBlob);
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 16;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      const addFooter = () => {
+        const pageCount = pdf.getNumberOfPages();
+        for (let page = 1; page <= pageCount; page += 1) {
+          pdf.setPage(page);
+          pdf.setDrawColor(220, 228, 236);
+          pdf.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.setTextColor(100, 116, 139);
+          pdf.text(`StudyNest Admin Report`, margin, pageHeight - 7);
+          pdf.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 7, {
+            align: "right",
+          });
+        }
+      };
+
+      const ensureSpace = (neededHeight: number) => {
+        if (y + neededHeight > pageHeight - 20) {
+          pdf.addPage();
+          y = 20;
+        }
+      };
+
+      const drawSectionTitle = (title: string, subtitle?: string) => {
+        ensureSpace(20);
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(15);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(title, margin, y);
+        y += 6;
+
+        if (subtitle) {
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(10);
+          pdf.setTextColor(100, 116, 139);
+          pdf.text(subtitle, margin, y);
+          y += 6;
+        }
+
+        pdf.setDrawColor(209, 213, 219);
+        pdf.line(margin, y, pageWidth - margin, y);
+        y += 7;
+      };
+
+      const drawMetricCard = (
+        x: number,
+        top: number,
+        width: number,
+        height: number,
+        label: string,
+        value: string,
+        accent: [number, number, number]
+      ) => {
+        pdf.setFillColor(248, 250, 252);
+        pdf.setDrawColor(226, 232, 240);
+        pdf.roundedRect(x, top, width, height, 4, 4, "FD");
+        pdf.setFillColor(...accent);
+        pdf.roundedRect(x, top, 4, height, 2, 2, "F");
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(9);
+        pdf.setTextColor(71, 85, 105);
+        pdf.text(label, x + 8, top + 8);
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(18);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(value, x + 8, top + 18);
+      };
+
+      const drawListBlock = (
+        title: string,
+        items: TopUsageItem[],
+        accent: [number, number, number]
+      ) => {
+        const blockHeight = Math.max(36, items.length * 10 + 18);
+        ensureSpace(blockHeight);
+
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(226, 232, 240);
+        pdf.roundedRect(margin, y, contentWidth, blockHeight, 4, 4, "FD");
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(11);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(title, margin + 6, y + 8);
+
+        if (!items.length) {
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(10);
+          pdf.setTextColor(100, 116, 139);
+          pdf.text("No data available", margin + 6, y + 18);
+          y += blockHeight + 6;
+          return;
+        }
+
+        items.forEach((item, index) => {
+          const rowY = y + 16 + index * 10;
+          const maxBarWidth = 60;
+          const barWidth = Math.max(8, Math.min(maxBarWidth, item.usage * 0.55));
+
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(10);
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(`${index + 1}. ${item.name}`, margin + 6, rowY);
+
+          pdf.setFillColor(241, 245, 249);
+          pdf.roundedRect(pageWidth - margin - maxBarWidth - 22, rowY - 4, maxBarWidth, 4, 2, 2, "F");
+          pdf.setFillColor(...accent);
+          pdf.roundedRect(pageWidth - margin - maxBarWidth - 22, rowY - 4, barWidth, 4, 2, 2, "F");
+
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(9);
+          pdf.setTextColor(...accent);
+          pdf.text(String(item.usage), pageWidth - margin - 6, rowY, { align: "right" });
+        });
+
+        y += blockHeight + 6;
+      };
+
+      const drawComplaintCard = (complaint: ComplaintItem) => {
+        const location =
+          complaint.lecture_halls?.hall_name ||
+          complaint.study_areas?.area_name ||
+          "Unknown Location";
+        const priority = getPriorityFromCount(complaint.complaint_count || 0);
+        const lines = pdf.splitTextToSize(complaint.issue_category, contentWidth - 18);
+        const cardHeight = Math.max(28, 18 + lines.length * 5);
+
+        ensureSpace(cardHeight + 4);
+
+        pdf.setFillColor(255, 255, 255);
+        pdf.setDrawColor(226, 232, 240);
+        pdf.roundedRect(margin, y, contentWidth, cardHeight, 4, 4, "FD");
+
+        pdf.setFont("helvetica", "bold");
+        pdf.setFontSize(10);
+        pdf.setTextColor(15, 23, 42);
+        pdf.text(`#${complaint.complaint_id}  ${lines[0] || "Complaint"}`, margin + 6, y + 8);
+
+        if (lines.length > 1) {
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.setTextColor(71, 85, 105);
+          pdf.text(lines.slice(1), margin + 6, y + 13);
+        }
+
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(9);
+        pdf.setTextColor(71, 85, 105);
+        pdf.text(`Location: ${location}`, margin + 6, y + cardHeight - 10);
+        pdf.text(`Status: ${complaint.status}`, margin + 70, y + cardHeight - 10);
+        pdf.text(`Priority: ${priority}`, margin + 112, y + cardHeight - 10);
+        pdf.text(
+          new Date(complaint.created_at).toLocaleString("en-US"),
+          pageWidth - margin - 6,
+          y + cardHeight - 10,
+          { align: "right" }
+        );
+
+        y += cardHeight + 4;
+      };
+
+      pdf.setFillColor(18, 64, 88);
+      pdf.roundedRect(margin, 14, contentWidth, 34, 6, 6, "F");
+      pdf.addImage(logoDataUrl, "JPEG", margin + 6, 19, 20, 20);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(22);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text("StudyNest", margin + 31, 28);
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(14);
+      pdf.text("Admin Dashboard Report", margin + 31, 36);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+      pdf.setTextColor(219, 234, 254);
+      pdf.text(`Generated on ${reportDate}`, margin + 31, 42);
+      y = 58;
+
+      drawSectionTitle(
+        "Executive Snapshot",
+        "Live overview of complaint flow, space activity, and volunteer readiness."
+      );
+
+      const cardGap = 6;
+      const cardWidth = (contentWidth - cardGap) / 2;
+      const cardHeight = 24;
+      drawMetricCard(margin, y, cardWidth, cardHeight, "Total Complaints", String(complaintStats.total), [37, 99, 235]);
+      drawMetricCard(
+        margin + cardWidth + cardGap,
+        y,
+        cardWidth,
+        cardHeight,
+        "Pending Attention",
+        String(complaintStats.pendingAndViewed),
+        [245, 158, 11]
+      );
+      y += cardHeight + 6;
+      drawMetricCard(margin, y, cardWidth, cardHeight, "Active Spaces", String(summary.activeSpaces), [14, 165, 233]);
+      drawMetricCard(
+        margin + cardWidth + cardGap,
+        y,
+        cardWidth,
+        cardHeight,
+        "Volunteers",
+        String(summary.totalVolunteers),
+        [16, 185, 129]
+      );
+      y += cardHeight + 10;
+
+      ensureSpace(30);
+      pdf.setFillColor(244, 248, 251);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.roundedRect(margin, y, contentWidth, 24, 4, 4, "FD");
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text("Operational Highlights", margin + 6, y + 8);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9.5);
+      pdf.setTextColor(71, 85, 105);
+      pdf.text(
+        `Resolved complaints: ${complaintStats.resolved}   |   In progress: ${complaintStats.inProgress}   |   Active today: ${summary.activeVolunteersToday} volunteers`,
+        margin + 6,
+        y + 16
+      );
+      y += 32;
+
+      drawSectionTitle("Usage Leaders", "Most used spaces from the current dashboard dataset.");
+      drawListBlock("Top Lecture Halls", topLectureHalls, [110, 231, 183]);
+      drawListBlock("Top Study Areas", topStudyAreas, [56, 189, 248]);
+
+      drawSectionTitle("Recent Complaints", "Latest complaint records visible on the dashboard.");
+      if (!recentComplaints.length) {
+        ensureSpace(20);
+        pdf.setFont("helvetica", "normal");
+        pdf.setFontSize(10);
+        pdf.setTextColor(100, 116, 139);
+        pdf.text("No recent complaints available.", margin, y);
+        y += 10;
+      } else {
+        recentComplaints.forEach(drawComplaintCard);
+      }
+
+      const fileDate = generatedAt.toISOString().slice(0, 10);
+      addFooter();
+      pdf.save(`studynest-admin-dashboard-report-${fileDate}.pdf`);
+
+      setReportState("success");
+    } catch (error) {
+      console.error("Failed to generate dashboard report:", error);
+      setReportState("error");
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   return (
     <div className="themed-page-main min-h-screen">
       <div className="px-4 py-8 sm:px-6 lg:px-8">
@@ -235,12 +542,26 @@ export default function AdminDashboard() {
               title="Campus Operations Dashboard"
               subtitle="Track complaint flow, usage pressure, and response health in one place."
               actions={(
-                <AppButton variant="primary">
+                <AppButton
+                  variant="primary"
+                  onClick={handleGenerateReport}
+                  disabled={isGeneratingReport || complaintsLoading || summaryLoading}
+                >
                   <Download className="h-4 w-4" />
-                  Generate Report
+                  {isGeneratingReport ? "Generating..." : "Generate Report"}
                 </AppButton>
               )}
             />
+            {reportState === "success" && (
+              <p className="mt-4 text-sm font-semibold text-emerald-600">
+                Dashboard report downloaded successfully.
+              </p>
+            )}
+            {reportState === "error" && (
+              <p className="mt-4 text-sm font-semibold text-rose-600">
+                Unable to generate the dashboard report right now.
+              </p>
+            )}
           </AnimatedSection>
 
           <AnimatedSection delay={0.04} className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
