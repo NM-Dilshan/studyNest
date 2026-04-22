@@ -5,25 +5,28 @@ import { useState } from 'react'
 import { ResponseFeedbackForm } from '@/components/feedback/ResponseFeedbackForm'
 import StatusBadge from '@/components/ui/StatusBadge'
 import AppButton from '@/components/ui/AppButton'
+import ResponseReportButton from './ResponseReportButton'
+import type { HallRequestReportData } from '@/lib/hall-requests/report'
 
 interface HallUpdate {
   update_id: string
   responder_id: string
   availability_status: string
   occupancy_level: string
-  available_seats?: number
-  volunteer_note?: string
-  confidence_level?: string
+  available_seats?: number | null
+  volunteer_note?: string | null
+  confidence_level?: string | null
   created_at: string
-  expires_at?: string
-  responder: {
+  expires_at?: string | null
+  responder?: {
     user_id: string
     name: string
-    volunteer_id?: string
-  }
+    volunteer_id?: string | null
+  } | null
 }
 
 interface RequestResponseCardProps {
+  request: HallRequestReportData
   response: HallUpdate
   requestId?: string
   currentUserId?: string
@@ -31,12 +34,14 @@ interface RequestResponseCardProps {
 }
 
 export default function RequestResponseCard({
+  request,
   response,
   requestId,
   currentUserId,
   onFeedbackSubmitted,
 }: RequestResponseCardProps) {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
+  const responderName = response.responder?.name || response.responder_id
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -104,14 +109,29 @@ export default function RequestResponseCard({
         </div>
       )}
 
-      <div className="flex items-center justify-between border-t border-[var(--surface-border)] pt-2 text-xs text-[var(--text-muted)]">
-        <span>Responded: {formatDate(response.created_at)}</span>
-        {response.expires_at && !isExpired && (
-          <span className="inline-flex items-center gap-1">
-            <Clock3 className="h-3.5 w-3.5" />
-            Valid until: {formatDate(response.expires_at)}
-          </span>
-        )}
+      <div className="border-t border-[var(--surface-border)] pt-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
+            <span>Responded: {formatDate(response.created_at)}</span>
+            {response.expires_at && !isExpired && (
+              <span className="inline-flex items-center gap-1">
+                <Clock3 className="h-3.5 w-3.5" />
+                Valid until: {formatDate(response.expires_at)}
+              </span>
+            )}
+          </div>
+
+          <ResponseReportButton
+            request={request}
+            responseId={response.update_id}
+            label="Download Response PDF"
+            loadingLabel="Generating Response PDF..."
+            ariaLabel={`Download PDF for response from ${responderName}`}
+            variant="secondary"
+            size="sm"
+            className="whitespace-nowrap"
+          />
+        </div>
       </div>
 
       {currentUserId && requestId && (
@@ -130,12 +150,12 @@ export default function RequestResponseCard({
               requestId={requestId}
               userId={currentUserId}
               volunteerId={response.responder_id}
-              volunteerName={response.responder.name}
+              volunteerName={responderName}
               onSuccess={() => {
                 setShowFeedbackForm(false)
                 onFeedbackSubmitted?.()
               }}
-              onCancel={() => setShowFeedbackForm(false)}
+              onClose={() => setShowFeedbackForm(false)}
             />
           )}
         </div>
