@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
 /**
  * GET /api/hall-requests/my
  * Fetch user's own hall requests
@@ -16,6 +18,13 @@ export async function GET(request: NextRequest) {
     if (!userId) {
       return NextResponse.json(
         { success: false, error: 'User ID is required' },
+        { status: 400 }
+      )
+    }
+
+    if (!UUID_PATTERN.test(userId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid user ID format' },
         { status: 400 }
       )
     }
@@ -48,6 +57,13 @@ export async function GET(request: NextRequest) {
             confidence_level: true,
             created_at: true,
             expires_at: true,
+            responder: {
+              select: {
+                user_id: true,
+                name: true,
+                volunteer_id: true,
+              },
+            },
           },
         },
       },
@@ -62,35 +78,9 @@ export async function GET(request: NextRequest) {
       where: { requester_id: userId },
     })
 
-    // Fetch responder details for all updates
-    const responderIds = new Set<string>()
-    requests.forEach(req => {
-      req.hall_request_updates.forEach(update => {
-        responderIds.add(update.responder_id)
-      })
-    })
-
-    const responders = responderIds.size > 0
-      ? await prisma.users.findMany({
-          where: { user_id: { in: Array.from(responderIds) } },
-          select: { user_id: true, name: true, volunteer_id: true },
-        })
-      : []
-
-    const responderMap = new Map(responders.map(r => [r.user_id, r]))
-
-    // Map responder data to updates
-    const enrichedRequests = requests.map(req => ({
-      ...req,
-      hall_request_updates: req.hall_request_updates.map(update => ({
-        ...update,
-        responder: responderMap.get(update.responder_id) || null,
-      })),
-    }))
-
     return NextResponse.json({
       success: true,
-      data: enrichedRequests,
+      data: requests,
       pagination: {
         skip,
         take,

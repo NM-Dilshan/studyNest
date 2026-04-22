@@ -43,7 +43,7 @@ export default function ParticleHero() {
           enable: true,
           speed: 0.8,
           outModes: {
-            default: "bounce",
+            default: "bounce" as const,
           },
         },
         opacity: {

@@ -27,6 +27,7 @@ interface LocationMapContentProps {
   center: [number, number]
   bounds: [[number, number], [number, number]]
   markerPosition: { lat: number; lng: number } | null
+  radius?: number
   onMapClick: (lat: number, lng: number) => void
 }
 

@@ -72,14 +72,14 @@ export default function VolunteerRequestsPage() {
 
           <AnimatedSection delay={0.05} className="mb-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <StatCard title="Volunteer" value={user.name} icon={<ShieldCheck className="h-5 w-5 text-[var(--accent-text)]" />} />
-              <StatCard title="Role" value={user.role} icon={<Sparkles className="h-5 w-5 text-[var(--accent-text)]" />} />
+              <StatCard title="Volunteer" value={user.name || 'Volunteer'} icon={<ShieldCheck className="h-5 w-5 text-[var(--accent-text)]" />} />
+              <StatCard title="Role" value={user.role || 'Volunteer'} icon={<Sparkles className="h-5 w-5 text-[var(--accent-text)]" />} />
               <StatCard title="Session" value="Live" icon={<Bell className="h-5 w-5 text-[var(--accent-text)]" />} />
             </div>
           </AnimatedSection>
 
           <GlassCard className="themed-panel-info mb-6 p-5">
-            <h2 className="themed-panel-title mb-1 text-lg font-semibold">Welcome, {user.name}</h2>
+            <h2 className="themed-panel-title mb-1 text-lg font-semibold">Welcome, {user.name || 'Volunteer'}</h2>
             <p className="themed-panel-copy text-sm">
               Your updates help students find seating fast. Switch between request responses and direct hall updates below.
             </p>

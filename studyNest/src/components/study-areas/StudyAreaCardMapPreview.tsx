@@ -145,7 +145,10 @@ export default function StudyAreaCardMapPreview({
           offset: [0, -4],
         })
         .bindPopup(`<strong>${user.label}</strong><br/><em>Live inside user ${index + 1}</em>`)
-        .addTo(mapRef.current)
+      
+      if (mapRef.current) {
+        marker.addTo(mapRef.current)
+      }
 
       insideUserMarkersRef.current.push(marker)
     })
