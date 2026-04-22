@@ -8,11 +8,23 @@ export async function GET(request: NextRequest) {
     const limit = Number.isNaN(requestedLimit) ? 1 : Math.min(Math.max(requestedLimit, 1), 20)
     const now = new Date()
 
+    await prisma.admin_broadcast_messages.updateMany({
+      where: {
+        is_active: true,
+        expires_at: {
+          lt: now,
+        },
+      },
+      data: {
+        is_active: false,
+      },
+    })
+
     const messages = await prisma.admin_broadcast_messages.findMany({
       where: {
         is_active: true,
         scheduled_at: { lte: now },
-        OR: [{ expires_at: null }, { expires_at: { gt: now } }],
+        OR: [{ expires_at: null }, { expires_at: { gte: now } }],
       },
       orderBy: [{ scheduled_at: 'desc' }, { created_at: 'desc' }],
       take: limit,

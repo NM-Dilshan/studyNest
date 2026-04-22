@@ -11,9 +11,32 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const includeInactive = searchParams.get('includeInactive') === 'true'
+    const now = new Date()
+
+    await prisma.admin_broadcast_messages.updateMany({
+      where: {
+        is_active: true,
+        expires_at: {
+          lt: now,
+        },
+      },
+      data: {
+        is_active: false,
+      },
+    })
 
     const messages = await prisma.admin_broadcast_messages.findMany({
-      where: includeInactive ? undefined : { is_active: true },
+      where: includeInactive
+        ? undefined
+        : {
+            is_active: true,
+            scheduled_at: { lte: now },
+            AND: [
+              {
+                OR: [{ expires_at: null }, { expires_at: { gte: now } }],
+              },
+            ],
+          },
       orderBy: [{ scheduled_at: 'desc' }, { created_at: 'desc' }],
     })
 
