@@ -26,7 +26,7 @@ export async function GET(request: Request) {
     })
 
     // Get hall names for each hall with complaints
-    const hallIds = complaintCounts.map(c => c.hall_id).filter(Boolean)
+    const hallIds = (complaintCounts.map(c => c.hall_id).filter((id): id is string => Boolean(id))) as string[]
     
     const halls = await prisma.lecture_halls.findMany({
       select: {

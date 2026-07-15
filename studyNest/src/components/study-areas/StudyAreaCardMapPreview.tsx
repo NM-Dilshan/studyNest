@@ -90,7 +90,7 @@ export default function StudyAreaCardMapPreview({
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 22,
-      }).addTo(mapRef.current)
+      }).addTo(mapRef.current!)
     }
 
     if (zoneMarkerRef.current) mapRef.current.removeLayer(zoneMarkerRef.current)
@@ -113,7 +113,7 @@ export default function StudyAreaCardMapPreview({
       fillColor: color.fill,
       fillOpacity: 0.22,
       weight: 3,
-    }).addTo(mapRef.current)
+    }).addTo(mapRef.current!)
 
     if (userLocation) {
       userMarkerRef.current = L.circleMarker([userLocation.latitude, userLocation.longitude], {
@@ -128,7 +128,7 @@ export default function StudyAreaCardMapPreview({
             ? '<strong>You are inside this study zone</strong>'
             : '<strong>Your location</strong><br/><em>Outside this study zone</em>'
         )
-        .addTo(mapRef.current)
+        .addTo(mapRef.current!)
     }
 
     insideUsers.forEach((user, index) => {
@@ -145,7 +145,7 @@ export default function StudyAreaCardMapPreview({
           offset: [0, -4],
         })
         .bindPopup(`<strong>${user.label}</strong><br/><em>Live inside user ${index + 1}</em>`)
-        .addTo(mapRef.current)
+        .addTo(mapRef.current!)
 
       insideUserMarkersRef.current.push(marker)
     })

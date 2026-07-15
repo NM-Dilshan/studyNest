@@ -70,7 +70,7 @@ export default function ParticleHero() {
       background: {
         color: "transparent",
       },
-    }),
+    }) as unknown as any,
     []
   );
 

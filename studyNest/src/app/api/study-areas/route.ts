@@ -88,8 +88,8 @@ export async function GET() {
         is_active: area.is_active,
         created_at: area.created_at,
         area_occupancy: occupancy ? {
-          occupancy_id: occupancy.study_area_id,
-          study_area_id: occupancy.study_area_id,
+          occupancy_id: area.study_area_id,
+          study_area_id: area.study_area_id,
           current_count: currentCount,
           available_seats: availableSeats,
           occupancy_percentage: occupancyPercentage,

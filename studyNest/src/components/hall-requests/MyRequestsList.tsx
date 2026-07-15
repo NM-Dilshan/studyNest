@@ -4,47 +4,49 @@ import { useState, useEffect, useCallback } from 'react'
 import { AlertCircle } from 'lucide-react'
 import { motion, useReducedMotion } from 'framer-motion'
 import RequestResponseCard from './RequestResponseCard'
+import ResponseReportButton from './ResponseReportButton'
 import GlassCard from '@/components/ui/GlassCard'
 import EmptyState from '@/components/ui/EmptyState'
 import RequestStatusBadge from './RequestStatusBadge'
 import RequestListSkeleton from './RequestListSkeleton'
+import type { HallRequestReportData } from '@/lib/hall-requests/report'
 
 interface HallUpdate {
   update_id: string
   responder_id: string
   availability_status: string
   occupancy_level: string
-  available_seats?: number
-  volunteer_note?: string
-  confidence_level?: string
+  available_seats?: number | null
+  volunteer_note?: string | null
+  confidence_level?: string | null
   created_at: string
-  expires_at?: string
-  responder: {
+  expires_at?: string | null
+  responder?: {
     user_id: string
     name: string
-    volunteer_id?: string
-  }
+    volunteer_id?: string | null
+  } | null
 }
 
 interface Hall {
   hall_id: string
   hall_name: string
-  building?: string
-  floor?: number
-  capacity?: number
+  building?: string | null
+  floor?: number | null
+  capacity?: number | null
 }
 
-interface HallRequest {
+interface HallRequest extends HallRequestReportData {
   request_id: string
   requester_id: string
   requester_role: string
   requester_id_number: string
   hall_id: string
-  request_note?: string
+  request_note?: string | null
   request_status: string
   created_at: string
   updated_at: string
-  expires_at?: string
+  expires_at?: string | null
   lecture_halls: Hall
   hall_request_updates: HallUpdate[]
 }
@@ -146,12 +148,13 @@ export default function MyRequestsList({ userId, refreshTrigger }: MyRequestsLis
                   <h3 className="text-lg font-bold text-[var(--text-main)]">{request.lecture_halls.hall_name}</h3>
                   <p className="mt-1 text-sm text-[var(--text-soft)]">
                     {request.lecture_halls.building}
-                    {request.lecture_halls.floor && ` • Floor ${request.lecture_halls.floor}`}
-                    {request.lecture_halls.capacity && ` • Capacity: ${request.lecture_halls.capacity}`}
+                    {request.lecture_halls.floor && ` | Floor ${request.lecture_halls.floor}`}
+                    {request.lecture_halls.capacity && ` | Capacity: ${request.lecture_halls.capacity}`}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex flex-col items-end gap-3 text-right">
                   <RequestStatusBadge status={request.request_status} />
+                  <ResponseReportButton request={request} />
                 </div>
               </div>
 
@@ -175,6 +178,7 @@ export default function MyRequestsList({ userId, refreshTrigger }: MyRequestsLis
                 {request.hall_request_updates.map((update) => (
                   <RequestResponseCard
                     key={update.update_id}
+                    request={request}
                     response={update}
                     requestId={request.request_id}
                     currentUserId={userId}
