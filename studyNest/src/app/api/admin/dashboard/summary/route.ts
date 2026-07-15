@@ -81,12 +81,12 @@ export async function GET() {
       }),
     ])
 
-    const hallIds = hallComplaintGroups
-      .map((item) => item.hall_id)
-      .filter((id): id is string => Boolean(id))
-    const areaIds = areaComplaintGroups
-      .map((item) => item.study_area_id)
-      .filter((id): id is string => Boolean(id))
+    const hallIds = (
+      hallComplaintGroups.map((item) => item.hall_id).filter((id): id is string => Boolean(id))
+    ) as string[]
+    const areaIds = (
+      areaComplaintGroups.map((item) => item.study_area_id).filter((id): id is string => Boolean(id))
+    ) as string[]
 
     const [hallNames, areaNames] = await Promise.all([
       prisma.lecture_halls.findMany({

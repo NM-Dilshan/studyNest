@@ -28,6 +28,7 @@ interface LocationMapContentProps {
   bounds: [[number, number], [number, number]]
   markerPosition: { lat: number; lng: number } | null
   onMapClick: (lat: number, lng: number) => void
+  radius: number
 }
 
 interface DeviceLocationPickerProps {

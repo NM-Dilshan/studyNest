@@ -59,7 +59,7 @@ export default function AddStudyAreaPage() {
     silent_zone: false,
     ac: false,
   })
-
+//real-time validation class for input fields
   const inputClass =
     'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 outline-none transition-all duration-200 placeholder:text-slate-400 focus:border-[#2E6F95] focus:bg-white focus:ring-4 focus:ring-[#2E6F95]/10'
 
